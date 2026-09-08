@@ -117,7 +117,7 @@ A protocol with no completion test is not a protocol.
 | `written_not_older_than_newest_log_entry` | integrity | HANDOFF `written:` is not older than the newest LOG.md entry. | True |
 | `log_timestamps_not_in_the_future` | integrity | No LOG entry carries a timestamp later than the file's own mtime. | True |
 | `nag_delivered_once` | integrity | An unclosed-session report is marked delivered and is not repeated. | True |
-| `handoff_not_expired` | fresh | status: spent or a past `expires` date fails loudly, naming the file. | partially — a condition-form expiry is not machine-evaluable; see c-unimplementable-tests |
+| `handoff_not_expired` | fresh | status: spent or a past `expires` date fails loudly, naming the file. | yes, as of 2026-09-08. `expires` is now always a DATE; a condition may accompany it in prose but is never the sole value. That was the only reason this test was unimplementable. |
 
 - **`written_not_older_than_newest_log_entry`** — Distinguishes 'nobody thought about it' from 'someone decided none was needed'.
 - **`log_timestamps_not_in_the_future`** — Catches extrapolated clocks. Would have caught the 2026-09-07 failure immediately.

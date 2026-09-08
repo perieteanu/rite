@@ -317,7 +317,7 @@ _Rejected alternative: A .gitattributes with eol=lf. Correct, conventional, and 
 ```yaml
 genre: one of the ids above
 written: YYYY-MM-DD
-expires: YYYY-MM-DD or a condition
+expires: YYYY-MM-DD — a DATE, always. Required.
 status: live | spent
 session_end: written | updated | carried_forward | none — the outcome the closing session recorded
 ```
