@@ -233,7 +233,10 @@ honest_limits:
     which is deliberate: this protocol was designed so its own checks would not join the six
     already parked in c-unimplementable-tests.
   - >
-    The nag-once mechanism needs somewhere to record that a report was delivered. The obvious
-    place is HANDOFF front matter, but that file is write_once and freezes at session end — so
-    a SessionStart write to it would violate its own discipline. UNRESOLVED, and the first
-    thing to settle before implementing.
+    RESOLVED 2026-09-08. The nag-once mechanism needed somewhere to record that a report was
+    delivered; HANDOFF front matter was the obvious place and the wrong one, because that file
+    is write_once and freezes at session end. It lives in ${CLAUDE_PLUGIN_DATA} instead — the
+    plugin's own storage, which ARCHITECTURE's never_mutate_claude_home already names as its
+    one declared exception. Not a project artifact, so the inventory stays frozen at 13.
+    Verified: the nag prose appears on the first run and not the second, while the checker's
+    RED for the same condition correctly persists — a finding and a nag are different things.

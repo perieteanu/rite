@@ -123,8 +123,15 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
 - `SessionEnd` exists as a hook event (verified in the 2.1.263 binary alongside `Stop`,
   `PreCompact`, `SubagentStop`). **But it fires when there are no turns left**, so it can only
   do mechanical work. Judgement work must happen before, via a command.
-- A plugin marketplace repo needs `.claude-plugin/marketplace.json` and `plugins/` **at the
-  repo root**. `--sparse` limits checkout for monorepos; it does not relocate the manifest.
+- **A plugin and a marketplace are different things** — an earlier version of this finding
+  conflated them. A single PLUGIN is `.claude-plugin/plugin.json` at its own root, plus
+  `skills/`, `hooks/`, `scripts/`. A MARKETPLACE is `.claude-plugin/marketplace.json` listing
+  plugins by source path. Rite is both: the repo root is the plugin, and it advertises itself
+  with `"source": "."`. Corrected and verified against the plugins reference, 2026-09-08.
+  `--sparse` limits checkout for monorepos; it does not relocate a manifest.
+- **`commands/*.md` is the legacy form.** New plugins use `skills/<name>/SKILL.md`; both load
+  identically. A plugin skill is invoked as `/rite:<name>`, and
+  `disable-model-invocation: true` makes it user-only.
 - Publishing a plugin = pushing a git repo. No registry, account, review, or fee.
 - Licensing/trademark homework is done and the verdict is GO — see
   `~/projects/claude-persistent/docs-yaml/RESEARCH-licensing-delivery.yaml`. MIT, a distinct
@@ -135,6 +142,10 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
 No plugin, no `hooks/`, no `commands/`, no `skills/`, no port of `preflight.py` /
 `claude-mirror-memory.py` / `hookdedup.py`, no git repo, no LICENSE, no packaging, no
 namespace claimed. The session-protocol spec now exists; **nothing that implements it does.**
+
+**The plugin exists as of 2026-09-08** — `.claude-plugin/`, four skills, `hooks/`, and both
+launcher shims. Not yet installed or tested against the harness. `PostToolUse` is deliberately
+absent; see ARCHITECTURE.
 
 **`scripts/` is no longer empty.** As of 2026-09-08 it holds `riteyaml.py` — the stdlib-only
 YAML subset parser — and `test-riteyaml.py`, its differential test against PyYAML. The

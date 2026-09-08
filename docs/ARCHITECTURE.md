@@ -1,6 +1,6 @@
 ---
 schema_version: "1.0.0"
-as_of: "2026-09-07"
+as_of: "2026-09-08"
 status: current
 ---
 
@@ -74,15 +74,38 @@ scripts/
 .rite.yaml           The opt-in marker. Presence is the signal; empty would be valid.
 ```
 
-Planned, not built:
+The plugin, as of 2026-09-08 — **the repo root IS the plugin**:
 
 ```
-hooks/            SessionStart, PostToolUse, SessionEnd
-commands/         /preflight /log /end /handoff   (NOT /next — see below)
-skills/           end-session — the judgement half
-scripts/          preflight.py, mirror.py — ported, cross-platform
-.claude-plugin/   marketplace.json — MUST sit at repo root
+.claude-plugin/
+  plugin.json        name, version, description, author, license
+  marketplace.json   advertises this repo as a one-plugin marketplace
+skills/              /rite:log /rite:end /rite:handoff /rite:preflight
+  log/SKILL.md         both-invocable — Claude logs as work happens
+  end/SKILL.md         disable-model-invocation: Claude never ends a session
+  handoff/SKILL.md     disable-model-invocation
+  preflight/SKILL.md   user-invocable
+hooks/
+  hooks.json         SessionStart (startup + resume), SessionEnd
+  rite.sh            POSIX launcher shim — finds an interpreter or explains why not
+  rite.ps1           the same, for Windows without Git Bash
+scripts/
+  rite_session_start.py   verdict + did-the-last-session-close + handoff state
+  rite_session_end.py     mechanical close
 ```
+
+Still planned, not built:
+
+```
+hooks/            PostToolUse — belongs to port-mirror-memory (see below)
+scripts/          preflight.py port — port-preflight
+```
+
+**`PostToolUse` is deliberately absent.** The obvious implementation calls
+`~/.claude/scripts/claude-mirror-memory.py`, which is Costin's script, not Rite's — a plugin
+hook depending on a file only one machine has is broken by design for everyone else, and on
+this machine it would double-fire against the entry already in `settings.json`. It lands with
+`port-mirror-memory`.
 
 **`/next` is deliberately absent.** It writes to `next-steps.yaml`, which belongs to
 project-tracker — `d-project-tracker-stays-separate` and the standing don't-claim rule both
