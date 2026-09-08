@@ -1,0 +1,744 @@
+#!/usr/bin/env python3
+"""rite-check — run the project standard's completion tests against a project.
+
+Reads spec/project-standard.yaml (the authority) and executes the tests each artifact
+declares. Stdlib only; YAML via scripts/riteyaml.py.
+
+    python3 scripts/rite-check.py [PROJECT_DIR]
+
+PARTICIPATION IS OPT-IN. Without a .rite.yaml marker the project is not checked and nothing
+is printed — see `participation` in the spec. Rite is silent where it was not invited.
+
+VERDICTS follow the spec's level_to_severity mapping, inherited from claude-preflight:
+  exists / integrity  -> RED     (missing, or actively wrong)
+  populated / fresh   -> YELLOW  (present but thin, or true once and not now)
+Exit 1 on any RED. YELLOW alone exits 0, so the gate stays credible; `fail_on` overrides.
+
+A DECLARED RULE THIS CHECKER DOES NOT IMPLEMENT REPORTS **NA**, NEVER SILENCE.
+That is the point: the report states its own coverage, so the gap between what the standard
+claims and what it can actually verify is visible rather than flattering. A check that
+vanishes and a check that passed must never look alike.
+"""
+
+from __future__ import annotations
+
+import datetime as dt
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import riteyaml  # noqa: E402
+
+SPEC_PATH = HERE.parent / "spec" / "project-standard.yaml"
+
+RED, YELLOW, GREEN, NA = "RED", "YELLOW", "GREEN", "NA"
+LEVEL_SEVERITY = {"exists": RED, "integrity": RED, "populated": YELLOW, "fresh": YELLOW}
+
+
+class Finding:
+    __slots__ = ("severity", "side", "level", "rule", "path", "message")
+
+    def __init__(self, severity, side, level, rule, path, message):
+        self.severity, self.side, self.level = severity, side, level
+        self.rule, self.path, self.message = rule, path, message
+
+
+class Ctx:
+    """Everything a rule needs to know, gathered once."""
+
+    def __init__(self, root: Path, spec: dict):
+        self.root, self.spec = root, spec
+        self.marker = self._load_marker()
+        self.is_git = (root / ".git").is_dir()
+        self.today = dt.date.today()
+        self.thresholds = (self.marker or {}).get("thresholds") or {}
+        self.disabled = set((self.marker or {}).get("disabled_checks") or [])
+        self.fail_on = (self.marker or {}).get("fail_on", "red")
+
+    def _load_marker(self):
+        p = self.root / ".rite.yaml"
+        if not p.exists():
+            return None
+        try:
+            return riteyaml.load(p.read_text(encoding="utf-8"), str(p)) or {}
+        except riteyaml.RiteYamlError:
+            return {}
+
+    def read(self, rel: str) -> str | None:
+        p = self.root / rel
+        try:
+            return p.read_text(encoding="utf-8") if p.is_file() else None
+        except OSError:
+            return None
+
+    def exists_exactly(self, rel: str) -> bool:
+        """Case-SENSITIVE presence test.
+
+        Never Path.exists(): macOS and Windows are case-insensitive, so readme.md would pass
+        there and fail on Linux — the same repo, two verdicts. See portability
+        `case_sensitive_name_matching`.
+        """
+        p = self.root / rel
+        parent = p.parent
+        if not parent.is_dir():
+            return False
+        return p.name in {c.name for c in parent.iterdir()}
+
+    def resolve(self, rel: str) -> tuple[str, str | None]:
+        """Find an artifact, honouring superseded conventions.
+
+        The standard names docs/MISSION.md. Eleven existing projects predate that and use
+        docs-yaml/MISSION.yaml — and migration is explicitly opt-in, never a side effect of
+        other work. So a file found under a superseded directory or extension is PRESENT, not
+        missing; the checker says where it actually is and what the canonical name would be.
+        Reporting "missing MISSION" for a project that has one would be false, and a checker
+        that cries wolf on 11 projects is a checker nobody runs.
+
+        Returns (path_that_exists, note_if_non_canonical).
+        """
+        if self.exists_exactly(rel):
+            return rel, None
+        local = (self.spec.get("local") or {}).get("docs_dir") or {}
+        canonical_dir = local.get("default", "docs")
+        alts = local.get("alternatives") or []
+        head, _, tail = rel.partition("/")
+        if head != canonical_dir or not tail:
+            return rel, None
+        stem, dot, ext = tail.rpartition(".")
+        for d in alts:
+            for e in ([ext] + [x for x in ("yaml", "md") if x != ext]) if dot else [ext]:
+                cand = f"{d}/{stem}.{e}"
+                if self.exists_exactly(cand):
+                    return cand, f"found as {cand}; canonical is {rel}"
+        for e in ("yaml", "md"):
+            if dot and e != ext:
+                cand = f"{canonical_dir}/{stem}.{e}"
+                if self.exists_exactly(cand):
+                    return cand, f"found as {cand}; canonical is {rel}"
+        return rel, None
+
+    def threshold(self, artifact_id: str, rule: str, default):
+        key = f"{artifact_id}.{rule}"
+        return self.thresholds.get(key, default), key in self.thresholds
+
+
+# ── helpers ─────────────────────────────────────────────────────────────────
+_FM = re.compile(r"^---\s*\n(.*?)\n---\s*(\n|$)", re.S)
+_LOG_LINE = re.compile(
+    r"^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})(?::(\d{2}))?\s\|\s(\S+)\s\|\s(\S+)\s\|\s\[(\w+)\]\s"
+)
+
+
+def frontmatter(text: str):
+    m = _FM.match(text)
+    if not m:
+        return None
+    try:
+        return riteyaml.load(m.group(1), "<front matter>") or {}
+    except riteyaml.RiteYamlError:
+        return None
+
+
+def sections(text: str) -> list[str]:
+    """H2 headings, which are the structure unit for a Markdown artifact."""
+    return [m.group(1).strip() for m in re.finditer(r"^##\s+(.+?)\s*$", text, re.M)]
+
+
+def section_body(text: str, name: str) -> str:
+    parts = re.split(r"^##\s+", text, flags=re.M)
+    for p in parts[1:]:
+        head, _, body = p.partition("\n")
+        if head.strip() == name:
+            return body
+    return ""
+
+
+def parse_date(v):
+    if isinstance(v, str):
+        try:
+            return dt.date.fromisoformat(v.strip())
+        except ValueError:
+            return None
+    return None
+
+
+def newest_source_mtime(root: Path) -> dt.date | None:
+    """Newest mtime of anything that is NOT documentation.
+
+    Freshness is measured against the thing described, never against another document.
+    Returns None for a documents-only project, where this measure degenerates — see
+    c-freshness-thresholds-are-guesses.
+    """
+    newest, skip = None, {".git", "docs", "__pycache__", ".rite.yaml"}
+    for p in root.rglob("*"):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(root)
+        if rel.parts[0] in skip or rel.name in {"README.md", "CLAUDE.md", "LOG.md", "HANDOFF.md"}:
+            continue
+        if rel.suffix in {".md"} and rel.parts[0] == "spec":
+            continue
+        ts = dt.date.fromtimestamp(p.stat().st_mtime)
+        if newest is None or ts > newest:
+            newest = ts
+    return newest
+
+
+def git_show(root: Path, rel: str) -> str | None:
+    """The committed version of a file at HEAD, or None if unavailable."""
+    try:
+        out = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{rel}"],
+                             capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+def zone_of(root: Path, rel: str, key: str):
+    """(committed_value, current_value) for one top-level key. None when unavailable.
+
+    Line-diffing a MIXED file is wrong: ROADMAP has three zones with three different
+    disciplines, and deleting from the rewrite-only zone is not merely legal but REQUIRED
+    when closing an item. A whole-file diff cannot tell that from rewriting a milestone.
+    """
+    old_text = git_show(root, rel)
+    if old_text is None:
+        return None
+    try:
+        old = riteyaml.load(old_text, f"HEAD:{rel}") or {}
+        new = riteyaml.load((root / rel).read_text(encoding="utf-8"), rel) or {}
+    except (riteyaml.RiteYamlError, OSError):
+        return None
+    return old.get(key), new.get(key)
+
+
+def git_removed_lines(root: Path, rel: str) -> int | None:
+    """Lines deleted from a tracked file relative to HEAD. None when unavailable."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "diff", "-U0", "HEAD", "--", rel],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    return sum(1 for ln in out.stdout.splitlines() if ln.startswith("-") and not ln.startswith("---"))
+
+
+# ── rules ───────────────────────────────────────────────────────────────────
+# Each returns (severity, message). Absent from this table -> reported NA.
+RULES = {}
+
+
+def rule(name):
+    def deco(fn):
+        RULES[name] = fn
+        return fn
+    return deco
+
+
+@rule("file_present")
+def _file_present(ctx, art, test):
+    if ctx.exists_exactly(art["path"]):
+        return GREEN, "present"
+    return RED, "missing"
+
+
+@rule("min_lines")
+def _min_lines(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    n, want = len(text.splitlines()), test.get("value", 1)
+    return (GREEN, f"{n} lines") if n >= want else (YELLOW, f"{n} lines, want >= {want}")
+
+
+@rule("no_placeholders")
+def _no_placeholders(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    hits = [p for p in test.get("patterns", []) if p in text]
+    return (GREEN, "none") if not hits else (YELLOW, "contains " + ", ".join(hits))
+
+
+@rule("required_sections")
+def _required_sections(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    have = {s.lower() for s in sections(text)}
+    aliases = (art.get("structure") or {}).get("section_aliases") or {}
+    missing = []
+    for want in test.get("value", []) or (art.get("structure") or {}).get("required_sections", []):
+        names = [want] + list(aliases.get(want, []))
+        if not any(n.lower() in have for n in names):
+            missing.append(want)
+    return (GREEN, "all present") if not missing else (YELLOW, "missing: " + ", ".join(missing))
+
+
+@rule("no_empty_sections")
+def _no_empty_sections(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    empty = [s for s in sections(text) if not section_body(text, s).strip()]
+    return (GREEN, "none empty") if not empty else (YELLOW, "empty: " + ", ".join(empty))
+
+
+@rule("min_content_sections")
+def _min_content_sections(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    n, want = len(sections(text)), test.get("value", 1)
+    return (GREEN, f"{n} sections") if n >= want else (YELLOW, f"{n} sections, want >= {want}")
+
+
+@rule("required_any_of_sections")
+def _required_any_of(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    want = (art.get("structure") or {}).get("required_any_of_sections") or []
+    have = {s.lower() for s in sections(text)}
+    return (GREEN, "satisfied") if any(w.lower() in have for w in want) \
+        else (YELLOW, "none of: " + ", ".join(want))
+
+
+@rule("required_keys_present")
+def _required_keys(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    want = (art.get("structure") or {}).get("required_keys") or []
+    missing = [k for k in want if k not in doc]
+    return (GREEN, "all present") if not missing else (YELLOW, "missing: " + ", ".join(missing))
+
+
+@rule("as_of_present")
+def _as_of(ctx, art, test):
+    doc = _meta(ctx, art)
+    if doc is None:
+        return NA, "no provenance header found"
+    return (GREEN, str(doc.get("as_of"))) if doc.get("as_of") else (YELLOW, "as_of missing")
+
+
+@rule("as_of_within_days_of_activity")
+def _as_of_fresh(ctx, art, test):
+    doc = _meta(ctx, art)
+    if doc is None:
+        return NA, "no provenance header"
+    as_of = parse_date(doc.get("as_of"))
+    if as_of is None:
+        return YELLOW, "as_of missing or unparseable"
+    src = newest_source_mtime(ctx.root)
+    if src is None:
+        return NA, "documents-only project — no source to measure against"
+    window, overridden = ctx.threshold(art["id"], "as_of_within_days_of_activity",
+                                       test.get("value", 90))
+    age = (src - as_of).days
+    suffix = f" (window {window}d, overridden from {test.get('value')})" if overridden \
+        else f" (window {window}d)"
+    if age > window:
+        return YELLOW, f"as_of {age}d behind newest source{suffix}"
+    return GREEN, f"{max(age, 0)}d behind source{suffix}"
+
+
+@rule("min_entries")
+def _min_entries(ctx, art, test):
+    want = test.get("value", 1)
+    if art["path"].endswith(".md"):
+        text = ctx.read(art["path"])
+        if text is None:
+            return NA, "file absent"
+        n = sum(1 for ln in text.splitlines() if _LOG_LINE.match(ln))
+    else:
+        doc = _load_yaml(ctx, art)
+        if doc is None:
+            return NA, "file absent or unparseable"
+        top = (art.get("structure") or {}).get("top_level_key")
+        n = len(doc.get(top) or []) if top else 0
+    return (GREEN, f"{n} entries") if n >= want else (YELLOW, f"{n} entries, want >= {want}")
+
+
+@rule("entries_parse")
+def _entries_parse(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    bad = [i + 1 for i, ln in enumerate(text.splitlines())
+           if ln.strip() and not ln.startswith("#") and not _LOG_LINE.match(ln)]
+    return (GREEN, "all parse") if not bad else (YELLOW, f"{len(bad)} unparseable (first: line {bad[0]})")
+
+
+@rule("newest_entry_within_days_of_activity")
+def _log_fresh(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    newest = None
+    for ln in text.splitlines():
+        m = _LOG_LINE.match(ln)
+        if m:
+            d = dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            newest = d if newest is None or d > newest else newest
+    if newest is None:
+        return YELLOW, "no parseable entries"
+    src = newest_source_mtime(ctx.root)
+    if src is None:
+        return NA, "documents-only project — no source to measure against"
+    window, overridden = ctx.threshold(art["id"], "newest_entry_within_days_of_activity",
+                                       test.get("value", 30))
+    age = (src - newest).days
+    suffix = f" (window {window}d, overridden from {test.get('value')})" if overridden else ""
+    if age > window:
+        return YELLOW, f"source {age}d newer than the last log entry{suffix}"
+    return GREEN, f"log current to within {max(age, 0)}d{suffix}"
+
+
+@rule("min_list_items")
+def _min_list_items(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    key = test.get("key")
+    n = len(doc.get(key) or [])
+    want = test.get("value", 1)
+    return (GREEN, f"{key}: {n}") if n >= want else (YELLOW, f"{key}: {n}, want >= {want}")
+
+
+@rule("entry_required_keys")
+def _entry_keys(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    st = art.get("structure") or {}
+    top = st.get("top_level_key") or (st.get("top_level_keys") or [None])[0]
+    want = ((st.get("entry") or {}).get("required_keys")) or []
+    bad = []
+    for e in doc.get(top) or []:
+        if isinstance(e, dict):
+            miss = [k for k in want if k not in e]
+            if miss:
+                bad.append(f"{e.get('id', '?')}: {'/'.join(miss)}")
+    return (GREEN, "all entries complete") if not bad \
+        else (YELLOW, f"{len(bad)} incomplete ({bad[0]})")
+
+
+@rule("unique_ids")
+def _unique_ids(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    st = art.get("structure") or {}
+    top = st.get("top_level_key") or (st.get("top_level_keys") or [None])[0]
+    ids = [e.get("id") for e in (doc.get(top) or []) if isinstance(e, dict)]
+    dupes = {i for i in ids if ids.count(i) > 1}
+    return (GREEN, f"{len(ids)} unique") if not dupes else (RED, "duplicates: " + ", ".join(map(str, dupes)))
+
+
+@rule("no_dangling_supersedes")
+def _no_dangling(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    entries = doc.get("decisions") or []
+    ids = {e.get("id") for e in entries if isinstance(e, dict)}
+    dangling = []
+    for e in entries:
+        if not isinstance(e, dict):
+            continue
+        for k in ("supersedes", "superseded_by", "amends"):
+            v = e.get(k)
+            for ref in ([v] if isinstance(v, str) else (v or [])):
+                if ref and ref not in ids:
+                    dangling.append(f"{e.get('id')}.{k} -> {ref}")
+    return (GREEN, "all resolve") if not dangling else (RED, "; ".join(dangling[:3]))
+
+
+@rule("append_only_preserved")
+def _append_only(ctx, art, test):
+    if not ctx.is_git:
+        return NA, "requires revision history — no git repository"
+    removed = git_removed_lines(ctx.root, art["path"])
+    if removed is None:
+        return NA, "requires revision history — file not tracked"
+    return (GREEN, "additions only") if removed == 0 \
+        else (RED, f"{removed} existing line(s) changed or removed")
+
+
+@rule("milestones_append_only")
+def _milestones_append_only(ctx, art, test):
+    if not ctx.is_git:
+        return NA, "requires revision history — no git repository"
+    z = zone_of(ctx.root, art["path"], "milestones")
+    if z is None:
+        return NA, "requires revision history — file not tracked or unparseable"
+    old, new = z
+    old, new = old or [], new or []
+    if new[:len(old)] == old:
+        added = len(new) - len(old)
+        return GREEN, f"{len(old)} preserved" + (f", {added} appended" if added else "")
+    return RED, "an existing milestone was changed, reordered or removed"
+
+
+@rule("required_frontmatter_present")
+def _required_fm(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    fm = frontmatter(text)
+    if fm is None:
+        return YELLOW, "no front matter"
+    want = list(((art.get("structure") or {}).get("required_frontmatter") or {}).keys())
+    missing = [k for k in want if k not in fm]
+    return (GREEN, "complete") if not missing else (YELLOW, "missing: " + ", ".join(missing))
+
+
+@rule("not_expired")
+def _not_expired(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    fm = frontmatter(text) or {}
+    if str(fm.get("status", "")).lower() == "spent":
+        return YELLOW, f"status: spent — {art['path']} is stale and still present"
+    raw = str(fm.get("expires", ""))
+    m = re.search(r"\d{4}-\d{2}-\d{2}", raw)
+    if not m:
+        return YELLOW, "expires carries no date (a date is required; a condition may accompany it)"
+    d = dt.date.fromisoformat(m.group(0))
+    if d < ctx.today:
+        return YELLOW, f"expired {(ctx.today - d).days}d ago ({d})"
+    return GREEN, f"live until {d}"
+
+
+@rule("session_end_decision_recorded")
+def _session_end(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    fm = frontmatter(text) or {}
+    v = fm.get("session_end")
+    ok = {"written", "updated", "carried_forward", "none"}
+    if v in ok:
+        return GREEN, f"session_end: {v}"
+    return YELLOW, "session_end missing or not one of " + "/".join(sorted(ok))
+
+
+@rule("written_not_older_than_newest_log_entry")
+def _written_vs_log(ctx, art, test):
+    text = ctx.read(art["path"])
+    log = ctx.read("LOG.md")
+    if text is None or log is None:
+        return NA, "HANDOFF or LOG absent"
+    fm = frontmatter(text) or {}
+    written = parse_date(fm.get("written"))
+    if written is None:
+        return YELLOW, "written missing or unparseable"
+    newest = None
+    for ln in log.splitlines():
+        m = _LOG_LINE.match(ln)
+        if m:
+            d = dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            newest = d if newest is None or d > newest else newest
+    if newest is None:
+        return NA, "no parseable log entries"
+    if written < newest:
+        return YELLOW, f"handoff written {written}, newest log entry {newest} — session did not close"
+    return GREEN, f"written {written}, log current to {newest}"
+
+
+@rule("inception_present")
+def _inception(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    return (GREEN, "present") if doc.get("inception") else (YELLOW, "no inception block — drift is unmeasurable")
+
+
+@rule("inception_unchanged")
+def _inception_unchanged(ctx, art, test):
+    if not ctx.is_git:
+        return NA, "requires revision history — no git repository"
+    z = zone_of(ctx.root, art["path"], "inception")
+    if z is None:
+        return NA, "requires revision history — file not tracked or unparseable"
+    old, new = z
+    if old is None:
+        return NA, "no inception block at HEAD to compare against"
+    return (GREEN, "write-once zone intact") if old == new \
+        else (RED, "the inception block was edited — it is set once, at project birth")
+
+
+@rule("no_done_markers")
+def _no_done(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    items = ((doc.get("near_term") or {}).get("candidates")) or []
+    bad = [i.get("id") for i in items
+           if isinstance(i, dict) and str(i.get("status", "")).lower() in {"done", "completed", "finished"}]
+    return (GREEN, "none") if not bad else (YELLOW, "marked done in place: " + ", ".join(map(str, bad)))
+
+
+@rule("no_provenance_header")
+def _no_prov(ctx, art, test):
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    if frontmatter(text) is not None or re.search(r"^schema_version:", text, re.M):
+        return RED, "LICENSE must NOT carry a provenance header — it is verbatim third-party text"
+    return GREEN, "verbatim, no header"
+
+
+@rule("required_from_stage")
+def _required_from_stage(ctx, art, test):
+    stage = (ctx.marker or {}).get("stage")
+    if stage is None:
+        return NA, "no stage declared — the only remaining consumer of a stage value"
+    order = ctx.spec.get("stage_vocabulary", {}).get("values", [])
+    want = test.get("value") or art.get("required_from_stage")
+    try:
+        needed = order.index(stage) >= order.index(want)
+    except ValueError:
+        return NA, f"stage {stage!r} not in the declared vocabulary"
+    if not needed:
+        return NA, f"not required before stage {want}"
+    return (GREEN, "present") if ctx.exists_exactly(art["path"]) else (RED, f"required from stage {want}")
+
+
+def _load_yaml(ctx, art):
+    text = ctx.read(art["path"])
+    if text is None:
+        return None
+    try:
+        return riteyaml.load(text, art["path"]) or {}
+    except riteyaml.RiteYamlError:
+        return None
+
+
+def _meta(ctx, art):
+    """The provenance header, wherever it lives: front matter in .md, top level in .yaml."""
+    text = ctx.read(art["path"])
+    if text is None:
+        return None
+    if art["path"].endswith(".md"):
+        return frontmatter(text)
+    try:
+        return riteyaml.load(text, art["path"]) or {}
+    except riteyaml.RiteYamlError:
+        return None
+
+
+# ── engine ──────────────────────────────────────────────────────────────────
+def check(root: Path, spec: dict) -> tuple[list[Finding], dict]:
+    ctx = Ctx(root, spec)
+    findings: list[Finding] = []
+    declared = implemented = 0
+
+    for art in spec.get("artifacts", []):
+        tier = art.get("tier", 9)
+        actual, note = ctx.resolve(art["path"])
+        if note:
+            art = dict(art, path=actual)
+            findings.append(Finding(YELLOW, "project", "populated", "canonical_name",
+                                    actual, note))
+        present = ctx.exists_exactly(art["path"])
+        # Tier 2/3 are optional: absent is NA, never a failure.
+        optional_absent = tier >= 2 and not present
+
+        for test in art.get("tests") or []:
+            declared += 1
+            rule_name = test.get("rule")
+            # Coverage is about what this checker CAN do, not about which files this
+            # project happens to carry — otherwise an absent optional artifact would
+            # read as missing checker capability.
+            if rule_name in RULES:
+                implemented += 1
+            level = test.get("level", "exists")
+            severity_if_failed = LEVEL_SEVERITY.get(level, YELLOW)
+
+            if rule_name in ctx.disabled:
+                findings.append(Finding(NA, "project", level, rule_name, art["path"],
+                                        "disabled in .rite.yaml"))
+                continue
+            if rule_name in ("optional",):
+                continue
+            if optional_absent:
+                findings.append(Finding(NA, "project", level, rule_name, art["path"],
+                                        f"tier {tier}, not present — optional"))
+                continue
+
+            fn = RULES.get(rule_name)
+            if fn is None:
+                findings.append(Finding(NA, "project", level, rule_name, art["path"],
+                                        "declared in the spec, not implemented by this checker"))
+                continue
+            try:
+                sev, msg = fn(ctx, art, test)
+            except Exception as exc:  # a rule must never take the run down
+                findings.append(Finding(NA, "claude", level, rule_name, art["path"],
+                                        f"rule raised {type(exc).__name__}: {exc}"))
+                continue
+            if sev in (RED, YELLOW):
+                sev = severity_if_failed if sev != NA else NA
+            findings.append(Finding(sev, "project", level, rule_name, art["path"], msg))
+
+    return findings, {"declared": declared, "implemented": implemented, "ctx": ctx}
+
+
+def report(root: Path, findings: list[Finding], meta: dict) -> int:
+    ctx = meta["ctx"]
+    counts = {s: sum(1 for f in findings if f.severity == s) for s in (RED, YELLOW, GREEN, NA)}
+    width = max((len(f.path) for f in findings), default=10)
+
+    print(f"rite — {root.name}")
+    print()
+    for f in findings:
+        if f.severity == GREEN:
+            continue
+        print(f"  {f.severity:6} {f.side:8} {f.level:10} {f.path:{width}}  "
+              f"{f.rule} — {f.message}")
+    if not (counts[RED] or counts[YELLOW] or counts[NA]):
+        print("  all checks green")
+    print()
+    print(f"  {len(findings)} checks · {counts[RED]} RED · {counts[YELLOW]} YELLOW · "
+          f"{counts[NA]} NA · {counts[GREEN]} GREEN")
+    print(f"  coverage: {meta['implemented']} of {meta['declared']} declared tests implemented")
+    if not ctx.is_git:
+        print("  no git repository — integrity checks report NA (capability, not prerequisite)")
+
+    fail_on = str(ctx.fail_on).lower()
+    if fail_on == "none":
+        return 0
+    if counts[RED] or (fail_on == "yellow" and counts[YELLOW]):
+        return 1
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    args = [a for a in argv[1:] if not a.startswith("--")]
+    force = "--force" in argv
+    root = Path(args[0]).resolve() if args else Path.cwd()
+    if not (root / ".rite.yaml").exists() and not force:
+        # Opt-in. Silent where not invited — see participation in the spec.
+        # --force answers "what would this project score if it opted in?", which is the
+        # only way to evaluate before adopting. It reads; it never writes.
+        return 0
+    try:
+        spec = riteyaml.load(SPEC_PATH.read_text(encoding="utf-8"), str(SPEC_PATH))
+    except riteyaml.RiteYamlError as exc:
+        print(f"FAIL  cannot read the standard: {exc}", file=sys.stderr)
+        return 1
+    findings, meta = check(root, spec)
+    return report(root, findings, meta)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
