@@ -116,8 +116,10 @@ the next audit.
 ## Who owns "current state"
 
 `docs/ROADMAP.yaml` `current_state` owns it. `README.md` carries a one-line mirror — there is a
-declared test for exactly that drift (`claims_match_stage`), written because a README once
-asserted *"no extension code yet"* over a running extension. `HANDOFF.md` **references** it and
+**no longer a tested link** — `claims_match_stage` was removed on 2026-09-08 (see
+`d-drop-claims-match-stage`) and nothing replaced it. The failure it was written for — a README
+asserting *"no extension code yet"* over a running extension — is a claim about the FILESYSTEM,
+and belongs to `claims_match_filesystem`, which is still unimplemented. `HANDOFF.md` **references** it and
 must not restate it. Four files claiming current state was the measured condition here on
 2026-09-07.
 

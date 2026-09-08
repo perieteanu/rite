@@ -735,3 +735,39 @@ decisions:
     stated_by_user: true
     proposed_by: claude
     confirmed_by_user: true
+
+  - id: d-drop-claims-match-stage
+    date: "2026-09-08"
+    title: "claims_match_stage is dropped rather than solved"
+    context: >
+      The test needed a source for the project's "actual" stage. The candidates were
+      .rite.yaml — a second source of truth beside project-tracker's projects.yaml, which
+      already carries a `stage` field — or the registry itself, which a stranger installing
+      Rite does not have. Claude offered four routes and recommended treating a disagreement
+      between the two as its own finding.
+    decision: "Drop the test. Do not add a stage field to .rite.yaml for it."
+    rationale:
+      - >
+        It was REDUNDANT, which neither of us noticed while framing the options. Its own
+        justification cites claude-persistent's README asserting "spec — no extension code yet"
+        over a built, running extension — that is a claim about the FILESYSTEM, not about a
+        stage field. claims_match_filesystem covers it. The test was specified as a stage
+        comparison and justified by a filesystem example, so removing it is a consolidation
+        rather than lost coverage.
+      - "It avoids a project-tracker boundary decision, which d-project-tracker-stays-separate says must never be arrived at incrementally — and adding a stage field in passing is exactly arriving at it incrementally."
+    consequences:
+      - >
+        Tier 1's trigger CHANGED as a direct result. It read "required from stage `spec`
+        onward", which depended on a stage Rite has no reliable way to read. It is now the
+        PRESENCE OF THE .rite.yaml MARKER: opting in is the act of committing. Rite therefore
+        needs no stage source to enforce Tier 1 at all — the participation model absorbed the
+        requirement.
+      - >
+        LICENSE still declares required_from_stage: shipped, and that is now the ONLY remaining
+        consumer of a stage value. It is not resolved here. Until it is, that check cannot run
+        for a project that does not declare a stage somewhere. Recorded rather than papered over.
+      - "README's one-line current_state mirror is no longer tested by anything. The ownership rule stands; the enforcement is gone. Stated explicitly in the spec and in CONVENTIONS so it is not assumed to be checked."
+      - "Four documents referenced the removed test and were all corrected in the same pass — spec, ROADMAP, CONVENTIONS and CONCERNS. A dangling reference to a deleted test is precisely what no_dangling_supersedes exists to catch, one level up."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true

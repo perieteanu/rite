@@ -59,11 +59,9 @@ concerns:
           always a DATE; a condition may accompany it in prose but is never the sole value.
           The old rule was looser than anybody's actual behaviour.
       REMAINING TWO:
-        - claims_match_stage — needs the project's actual stage from somewhere. `.rite.yaml`
-          is the natural home, but projects.yaml already holds a `stage` field, so putting one
-          in both creates two sources of truth that can disagree. That is a project-tracker
-          boundary question and d-project-tracker-stays-separate forbids arriving at it
-          incrementally. NEEDS A RULING.
+        - claims_match_stage — RULED 2026-09-08: dropped, not solved. See
+          d-drop-claims-match-stage. Its motivating failure belongs to claims_match_filesystem,
+          so this is a consolidation rather than lost coverage.
         - claims_match_filesystem — still needs the machine-readable claim surface deferred on
           2026-09-08. The highest-value test in the standard, and it bit twice on 2026-09-08
           alone: three must_be_current claims went false the moment scripts/ appeared, and a

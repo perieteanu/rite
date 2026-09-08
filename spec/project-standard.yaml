@@ -192,7 +192,11 @@ tiers:
       corpus rather than from it: 0/11 carried one reliably, which is the gap, not the norm.
   - id: 1
     label: "Once committed"
-    rule: "Required from stage `spec` onward."
+    rule: >
+      Required once the project has committed. Since 2026-09-08 the trigger is the PRESENCE OF
+      THE .rite.yaml MARKER, not a stage field: opting in IS the act of committing, so Rite
+      needs no stage source to enforce Tier 1. This replaced "required from stage `spec`
+      onward", which depended on knowing a stage Rite has no reliable way to read.
     evidence: "9/11 sampled; adopted all-or-nothing, never partially."
   - id: 2
     label: "Situational"
@@ -638,12 +642,15 @@ artifacts:
       - level: populated
         rule: no_placeholders
         patterns: ["TODO", "FIXME", "<fill", "XXX", "Lorem ipsum"]
-      - level: fresh
-        rule: claims_match_stage
-        means: >
-          The README's stated stage must match the project's actual stage. This is the exact
-          failure that hit claude-persistent: README asserted "spec — no extension code yet"
-          while a built, running extension sat in the tree.
+      # claims_match_stage was REMOVED on 2026-09-08. It required a source for the project's
+      # "actual" stage, and the only candidates were .rite.yaml (a second source of truth
+      # beside project-tracker's projects.yaml) or the registry itself (which a stranger does
+      # not have). Neither was worth a cross-project boundary decision — and the test was
+      # redundant: its own justification cited claude-persistent's README asserting "spec —
+      # no extension code yet" over a built, running extension, which is a claim about the
+      # FILESYSTEM, not about a stage field. claims_match_filesystem covers it. The test was
+      # specified as a stage comparison and justified by a filesystem example; removing it is
+      # a consolidation, not a loss of coverage. See d-drop-claims-match-stage.
 
   - id: claude_md
     path: "CLAUDE.md"
@@ -904,7 +911,8 @@ artifacts:
           makes them look scheduled.
       ownership:
         current_state: >
-          OWNED here. README carries a one-line mirror (tested by claims_match_stage); HANDOFF
+          OWNED here. README carries a one-line mirror — NO LONGER TESTED, since
+          claims_match_stage was removed on 2026-09-08 and nothing replaced it; HANDOFF
           references it and must not restate it. Four files claiming current state was the
           measured condition on 2026-09-07 and it is how a README ends up asserting "no
           extension code yet" over a running extension.

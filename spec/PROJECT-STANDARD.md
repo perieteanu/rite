@@ -41,7 +41,7 @@ Tier 1 becomes required at stage `spec`.
 | tier | label | rule | evidence |
 |---|---|---|---|
 | 0 | Always, from creation | Present at every stage, including idea. | 11/11 sampled projects carry README, CLAUDE.md and LOG.md, including the two carrying none of Tier 1. HANDOFF.md was promoted here by user ruling on 2026-09-07, against the corpus rather than from it: 0/11 carried one reliably, which is the gap, not the norm. |
-| 1 | Once committed | Required from stage `spec` onward. | 9/11 sampled; adopted all-or-nothing, never partially. |
+| 1 | Once committed | Required once the project has committed. Since 2026-09-08 the trigger is the PRESENCE OF THE .rite.yaml MARKER, not a stage field: opting in IS the act of committing, so Rite needs no stage source to enforce Tier 1. This replaced "required from stage `spec` onward", which depended on knowing a stage Rite has no reliable way to read. | 9/11 sampled; adopted all-or-nothing, never partially. |
 | 2 | Situational | Not required. When present, the canonical name and shape apply. | — |
 | 3 | Generated | Written by tooling. Never hand-edited; edits do not propagate back. | — |
 
@@ -371,7 +371,6 @@ session_end: written | updated | carried_forward | none — the outcome the clos
 | exists | `file_present` | — |
 | populated | `min_lines` | `8` |
 | populated | `no_placeholders` | `TODO`, `FIXME`, `<fill`, `XXX`, `Lorem ipsum` |
-| fresh | `claims_match_stage` | The README's stated stage must match the project's actual stage. This is the exact failure that hit claude-persistent: README asserted "spec — no extension code yet" while a built, running extension sat in the tree. |
 
 ### `docs/ARCHITECTURE.md`
 
