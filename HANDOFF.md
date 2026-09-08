@@ -1,143 +1,82 @@
 ---
-genre: state
+genre: task_brief
 written: "2026-09-08"
-session_end: updated
-supersedes: "the 2026-09-08 00:02 handoff"
-expires: "when the checker runs, or 2026-12-07, whichever comes first"
+session_end: written
+supersedes: "the 2026-09-08 14:00 handoff"
+expires: "2026-12-07"
 status: live
 ---
 
 # HANDOFF — rite
 
-**Read this, then [`CLAUDE.md`](CLAUDE.md), then [`docs/ROADMAP.yaml`](docs/ROADMAP.yaml) and
-[`docs/CONCERNS.yaml`](docs/CONCERNS.yaml).**
+**You were started to test one thing the previous session could not: what the installed plugin
+actually does inside a live session.** Do that first, before anything else.
 
-Run this first:
+## The test, in order
 
-```bash
-cd ~/projects/rite
-python3 spec/render-standard.py --check              # must print OK
-python3 spec/render-standard.py --protocol --check   # must print OK
-```
+Rite is **installed and enabled** (`rite@rite`, user scope). Two of its skills share names with
+Costin's own commands, and the docs contradict themselves about which wins.
 
-## State (verified 2026-09-08 14:00)
+1. Type `/` and list what appears. Report the exact names — `end`, `log`, `preflight`,
+   `handoff`, and whether they show bare or as `rite:end` etc.
+2. **The one that matters:** run `/log` and observe which one runs.
+   - **Costin's** (`~/.claude/commands/log.md`) also matches `[done] X` against
+     `next-steps.yaml` and proposes removing the completed step.
+   - **Rite's** (`skills/log/SKILL.md`) deliberately never touches that file
+     (`d-project-tracker-stays-separate`) and instead insists the clock is read per entry.
+   - If Rite shadows his, he silently loses a daily integration. **Report it; do not fix it.**
+3. Same for `/preflight` — his runs `claude-preflight`; Rite's runs `rite-check.py`.
+4. Confirm the SessionStart hook fired: this session's context should carry a
+   `rite — project standard: 54 checks · 0 RED …` line, in addition to the usual preflight
+   verdict. Two lines covering different sides is correct; two saying the same thing is not.
+
+**Reverse if anything is wrong:**
+`~/projects/claude-run/claude-plugin-probe-20260908.sh --off rite`
+
+## State (verified 2026-09-08 19:01)
 
 | | |
 |---|---|
-| artifacts in the standard | **13, FROZEN** |
-| ADRs | 28 |
-| concerns | 7 open, 2 retired |
-| ROADMAP | 4 near_term · **12 mid_term** · 4 milestones |
-| LOG entries | 112 |
-| `spec/project-standard.yaml` → `.md` | 1094 → 533 (generated) |
-| `spec/session-protocol.yaml` → `.md` | 237 → 129 (generated) |
-| registered in `projects.yaml` | **yes** — `rite`, ai-collab, stage `spec` |
+| plugin | installed, enabled, `rite@rite`, 4 skills + 2 hooks |
+| checker | `scripts/rite-check.py`, 49/57 rules, 0 RED on rite |
+| parser | `scripts/riteyaml.py`, stdlib only, no PyYAML anywhere |
+| gates | standard OK · protocol OK · riteyaml PASS |
+| ADRs / LOG / commits | 33 · 189 · 8 |
+| still missing | LICENSE, `PostToolUse`, the 8 watchers, publication |
 
-**Both halves are now written.** The project standard and the session protocol, each generated
-and drift-gated by one renderer (`--check`, `--protocol --check`).
+## Settled today — do not re-litigate
 
-**Still no plugin code.** No `hooks/`, `commands/`, `skills/`, or scripts. Not a git repo. No
-LICENSE — so rite still fails its own standard at stage `shipped`, deliberately and visibly.
+`d-plugin-layout-root-is-the-plugin` (root IS the plugin; skills not commands; nag state in
+`${CLAUDE_PLUGIN_DATA}`) · `d-verdicts-and-participation` · `d-git-is-a-capability-not-a-prerequisite`
+· `d-never-instruct-installation` · `d-drop-claims-match-stage` · `d-stdlib-only-yaml-subset`.
 
-## What this session did
+Absolute, unchanged: **never touch `ai-collab-profile/`, `prompts.db`, `prompts-corpus.jsonl`.**
 
-1. **Registered rite** in project-tracker, the tracker's way — `seed-projects.py` PROJECTS list,
-   not by hand-editing the generated `projects.yaml`.
-2. **Wrote the session protocol** — `spec/session-protocol.yaml`. Four phases, five completion
-   tests, four of them implementable today with no revision history.
-3. **Accepted a third checking layer** — continuous watchers via command hooks
-   (`d-continuous-watcher-layer`). Eight into mid_term, four proposals rejected into
-   ARCHITECTURE.
-4. **LOG timestamps gained optional seconds**, across rite, project-tracker and preflight, with
-   a round-trip test.
+## Traps
 
-## The four findings worth keeping
+- **Read the machine clock per LOG entry.** Extrapolating produced ~30 fabricated timestamps on
+  07-09 and a second batch on 08-09, the latter with `date` output visible in the same command.
+- Both `spec/*.md` are generated; edit the `.yaml` and regenerate. Two gates.
+- `docs/` is deliberately mixed — prose is Markdown, structure is YAML, per file.
+- Closing a roadmap item means **deleting** it and **appending** a milestone.
+- `ROADMAP` is three zones; the integrity checks compare the **zone**, not the file.
+- Rite must never write to `~/.claude`. The probe script does, which is exactly why it lives
+  in `claude-run` and not in this repo.
 
-**A command hook is executed by the harness — Claude is not consulted, the user takes no
-action.** That makes the continuous layer the only mechanically reliable one, and the right one
-to police `/end`, which fires only if typed. This is the reframing the whole watcher idea rests on.
+## Known, unresolved
 
-**On tool events, plain-text stdout goes to the debug log only** — invisible to Claude *and* the
-user. A watcher must emit JSON with `additionalContext`. `additionalContext` reaches Claude,
-`systemMessage` reaches the user, and `systemMessage` does nothing on this machine.
+- **`claude plugin install` silently dropped `effortLevel: "max"`** from `settings.json` on
+  08-09. Restored. If it recurs after any plugin operation, that is the CLI, not Rite.
+- **The whole repo ships to the install cache** — 604K including this project's LOG.md and
+  `tools/`. Root-as-plugin bought a working checker at that price. No exclusion mechanism found.
+- **~225 tokens always-on, every session**, for four skills. Measured via
+  `claude plugin details rite`. An argument for fewer skills, not yet acted on.
+- `c-unimplementable-tests` is down to **one**: `claims_match_filesystem`, which needs the
+  machine-readable claim surface Costin deferred.
+- Whether `tools/` becomes a declared artifact needs a DECISIONS entry. Inventory frozen at 13.
 
-**Most of a plugin is not code.** Skills, commands and agents are Markdown prompts Claude
-interprets; only scripts execute. So `/end`, `/log`, `/handoff` need no interpreter at all —
-which narrows `d-python-is-the-runtime` to *Rite's scripts* need Python, not Rite.
+## Next, after the test
 
-**`seed-projects.py` rewrites every LOG.md from its own parse and silently drops unparseable
-lines.** Demonstrated, not predicted: the round-trip test drops 3 of 5 sample lines on the
-pre-patch parser. Any future log-format change must pass `project-tracker/test-log-roundtrip.py`.
-
-## Do NOT re-litigate
-
-28 ADRs. Load-bearing, in addition to yesterday's: `d-inventory-frozen-at-13`,
-`d-python-is-the-runtime`, `d-stdlib-only-yaml-subset`, `d-two-shims-sh-and-ps1`,
-`d-plugin-components-are-mostly-prompts`, `d-session-protocol-shape`,
-`d-continuous-watcher-layer`, `d-log-seconds-optional`.
-
-Still absolute: `d-profiling-never-integrated` — `ai-collab-profile/`, `prompts.db`,
-`prompts-corpus.jsonl` are Costin's alone. Never read, ingest, derive from or ship anything
-from them. A cross-transcript usage aggregate was rejected this session for having the same
-*shape*, even though the ADR names only three files.
-
-## Next, in order
-
-1. Both gates → OK.
-2. **`yaml-subset-parser`** — the first real code, and the reason to do it now is that **PyYAML
-   must still be installed as the differential-test oracle**. Acceptance criteria and a
-   reversal condition are already written into the roadmap item.
-3. `c-unimplementable-tests` — blocks the checker; postponed twice now.
-4. `checker-implementation`.
-5. The watcher layer (mid_term, 8 items). Costin has said it **will** be implemented; which
-   ones and in what order is not yet chosen.
-
-## Open concerns
-
-`c-unimplementable-tests` (**high**, blocks the checker) · `c-plan-attribution` (a closure route
-now exists — copy on creation via `FileChanged`) · `c-freshness-thresholds-are-guesses` ·
-`c-ai-collab-interaction-boundary` (no longer blocking; the start frame is deferred) ·
-`c-standard-version-policy` · `c-log-has-no-item-ids` · `c-log-timestamps-must-be-machine-read`
-(the watcher is its home)
-
-## Honest limits
-
-- **Nothing is implemented.** Two specs, no hooks, no commands, no scripts.
-- **The 8 portability rules are still predictions.** No Windows or macOS machine has run any of this.
-- **The watcher mechanics are documented, not tested.** `FileChanged` watching paths outside the
-  project root, and `PreCompact` accepting a `prompt`-type hook, are both **unverified**.
-- **The nag-once mechanism has an unresolved contradiction**, recorded in the protocol's
-  `honest_limits`: it needs to record that a report was delivered, and the obvious place is
-  HANDOFF front matter — but HANDOFF is `write_once` and freezes at session end, so a
-  SessionStart write would violate its own discipline. Settle this before implementing.
-- **LOG timestamps before 2026-09-08 13:56 are minute-precision, and those from 2026-09-07
-  22:34 onward were extrapolated rather than read.** The correction is logged. Don't trust
-  minute-level accuracy in that window.
-
-## Raised at the very end, unsettled
-
-`c-status-line-presence` — a **static** command-reference popup: which Rite commands exist and
-how to use them. Not live data.
-
-It solves the protocol's one unreliable link: **`/end` only fires if typed.** The harness fires
-SessionStart regardless, but the judgement half depends entirely on the user knowing the command
-exists. Without discoverability Rite is preflight with extra documents.
-
-Claude was wrong twice here and both are recorded in the concern: first framing it as "should we
-build a status bar" (one already exists in `claude-persistent`, 412 lines, verdict-shaped, a
-pure renderer of a status file), then arguing the content should be the verdict and calling a
-command list "wallpaper" — an argument that belongs to things which PUSH, not to a hover tooltip
-which PULLS.
-
-The one requirement worth holding: **generate the panel from `commands/*.md` frontmatter**, never
-hand-write it. It is a document describing the product, and hand-written it becomes a lie the
-first time a command is renamed — inside the tool whose argument is that unchecked docs rot.
-
-Open: where it lives — the existing claude-persistent tooltip (reviving the viewer earlier than
-`d-plugin-is-the-product` assumed) or a plugin-native `statusLine`, which is text-only and has
-no hover.
-
-## Session state
-
-Costin left mid-session ("will continue later"). This handoff was updated rather than frozen —
-if the session resumes, it can be rewritten; if it doesn't, this is accurate as of 14:00.
+`LICENSE` (rite fails its own standard at stage `shipped` without one) · the three
+unimplemented checker rules · `port-mirror-memory`, which is where `PostToolUse` belongs ·
+then the watchers.
