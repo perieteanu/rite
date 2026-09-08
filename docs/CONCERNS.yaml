@@ -1,0 +1,204 @@
+# What is proposed, worrying, or open — but NOT settled.
+# The staging area that keeps DECISIONS.yaml honest. Without it, an unsettled proposal either
+# pollutes DECISIONS (where a later session reads it as settled) or vanishes entirely.
+#
+# WRITE DISCIPLINE — this file is MIXED, and the line falls here:
+#   mutable     : every entry. `status`, `severity`, `proposal` change as thinking moves.
+#   append-only : retired_ids. An id is NEVER reused, even after the concern is gone.
+#
+# LIFECYCLE — a concern leaves this file in exactly one of three ways:
+#   settled  -> a DECISIONS.yaml entry is appended; the id moves to retired_ids as `settled`
+#   dropped  -> no longer a concern; id moves to retired_ids as `dropped`, with why
+#   promoted -> it was really a task; it moves to ROADMAP near_term; id retired as `promoted`
+# Nothing is deleted silently. A concern that just disappears is indistinguishable from one
+# that was forgotten, which is the failure this file exists to prevent.
+---
+schema_version: "1.0.0"
+as_of: "2026-09-07"
+status: current
+
+concerns:
+
+  - id: c-unimplementable-tests
+    title: "Six declared completion tests cannot run under the project's own no-AI constraint"
+    status: open
+    severity: high
+    opened: "2026-09-07"
+    blocks: [checker-implementation]
+    what: >
+      The standard declares 48 tests. The exists/populated ones are trivial — every template
+      repo can do those. The 16 fresh/integrity tests are the entire differentiator, and six
+      of them are not implementable as written under MISSION's settled constraint
+      ("no AI inference at check time; every check reproducible by plain Python"):
+      claims_match_stage (needs the project's actual stage; "falls back to inference" never
+      says inference from WHAT), claims_match_filesystem (requires extracting "not built yet"
+      claims from prose — the api.pdf test, and the highest-value one in the standard),
+      append_only_preserved x2 (needs a previous revision; rite is not a git repo and
+      dependencies lists git as OPTIONAL, so an integrity test rests on an optional
+      dependency), not_expired (required_frontmatter permits "YYYY-MM-DD OR a condition", and
+      a condition is not evaluable), source_plans_all_copied (already open as
+      c-plan-attribution).
+    why_it_matters: >
+      Every one of the six is a fresh or integrity test. The unimplementable tier is exactly
+      the differentiated tier — which means the part that is easy to ship is the part nobody
+      needs, and the part that justifies the project is the part that does not run yet.
+    proposal:
+      - "Declare a machine-readable claim surface — a `not_built_yet:` / `stage:` key the checker reads instead of prose."
+      - "Require git outright and stop calling it optional."
+      - "Mark them `manual:` in the spec so the checker reports '6 declared, not automatable' rather than passing silently."
+    do_not: "Leave them declared and unimplemented. A standard whose own checks do not run is the thing this project argues against."
+    user_ruling: "Postponed 2026-09-07 — 'too early'. Reopen before checker-implementation starts."
+
+  - id: c-plan-attribution
+    title: "A plan in ~/.claude/plans has no project attribution"
+    status: open
+    severity: medium
+    opened: "2026-09-07"
+    blocks: [port-mirror-memory]
+    what: >
+      Memory directories encode the project in their path; the plans directory does not —
+      names are harness-generated gibberish (cheeky-seeking-clock.md). Recovering
+      plan -> project needs mtime/session correlation or content inspection.
+    evidence: "Two of eight plans on this machine had been manually renamed to add the project — a workaround for exactly this gap."
+    why_it_matters: "The only genuinely hard part of the mechanical half of the session protocol."
+
+  - id: c-freshness-thresholds-are-guesses
+    title: "The staleness windows are guesses, and degenerate on docs-only projects"
+    status: open
+    severity: medium
+    opened: "2026-09-07"
+    what: >
+      The spec says 60 days for ROADMAP and 90 for ARCHITECTURE. Both are guesses, never
+      calibrated against the 50-project corpus. Worse, `as_of_within_days_of_activity` is
+      measured against SOURCE mtime — and a docs-only project has no source, so the docs are
+      compared against themselves and pass forever.
+    why_it_matters: >
+      That is mtime theatre arriving through a different door than the one the spec guards,
+      and it lands hardest on non-code projects (plumbing, plan-evacuare) — the exact category
+      d-noncode-first-class exists to protect. rite itself is currently in that category.
+    proposal: "Calibrate the windows against the corpus, and define `activity` for a project whose only artifacts ARE documents."
+    partially_resolved_2026_09_08: >
+      The MECHANISM half is settled (d-verdicts-and-participation): the three windows are
+      per-project overridable via .rite.yaml, and overrides are reported rather than silent.
+      The CALIBRATION half is untouched — the defaults are still guesses, and the degeneracy
+      stands: as_of_within_days_of_activity measures against SOURCE mtime, so a documents-only
+      project compares its docs against themselves and passes forever. rite is currently such a
+      project and deliberately takes NO override, so the defect surfaces here rather than being
+      tuned away locally.
+
+  - id: c-ai-collab-interaction-boundary
+    title: "Is ai-collab-interaction/session-frame.yaml usable as the basis for the start-session protocol?"
+    status: resolved_pending_decision
+    severity: high
+    opened: "2026-09-07"
+    blocks: [session-protocol-spec]
+    what: >
+      A drafted, never-wired start-session frame: goal, constraints, non_goals,
+      context.start_here, context.do_not_touch, trust_level, session_budget, first_action.
+      It sits in the same family as the profiling corpus that d-profiling-never-integrated
+      permanently excludes, but it is collaboration TECHNIQUE, not personal data.
+    user_ruling: >
+      2026-09-07 — cleared for use as a starting point ("is pretty old.. but read it as a
+      starting point"). Read and assessed: it is a blank paste-in template, unfilled since
+      2026-04-11. The one idea worth carrying forward is `trust_level`
+      (discuss / plan / implement-and-review / just-do-it) — declared collaboration intent,
+      distinct from tool permission, which nothing else ships.
+    remaining: "Needs a DECISIONS entry to close it properly, which is why it is not yet retired."
+
+  - id: c-standard-version-policy
+    title: "How does a project declare WHICH version of the standard it targets?"
+    status: open
+    severity: low
+    opened: "2026-09-07"
+    what: "And what happens on a bump — does an older project fail, warn, or pin?"
+    why_it_matters: "Only bites after the first external user exists, but the answer constrains the provenance header, which is already shipped."
+
+  - id: c-log-has-no-item-ids
+    title: "LOG entries cannot be linked to the roadmap items they close"
+    status: open
+    severity: medium
+    opened: "2026-09-07"
+    what: >
+      The LOG line format is `DD-MM-YYYY HH:MM | DDD | short | [TYPE] desc` and carries no
+      field for a near_term id. The new milestones mechanism links a deleted item to a
+      milestone entry, and the milestone carries a `log_ref` timestamp — but the link is
+      one-directional and by hand.
+    why_it_matters: "deleted_ids_appear_in_milestones is checkable; the LOG side of the same link is not."
+    proposal: "Either accept the one-directional link, or allow an optional trailing `(#id)` in the log description."
+
+  - id: c-log-timestamps-must-be-machine-read
+    title: "A model-written LOG entry can carry an invented timestamp indistinguishable from a real one"
+    status: open
+    severity: medium
+    opened: "2026-09-08"
+    what: >
+      During the 2026-09-07 session Claude read the machine clock at 22:11 and then wrote
+      roughly thirty further LOG entries with extrapolated times, some of them AHEAD of real
+      time — verified when the clock was finally re-read at 00:02 against entries claiming
+      00:13. CONVENTIONS already forbids this ("the machine clock. Never invent, round, or
+      approximate") and the rule failed exactly the way this project says rules fail: nothing
+      checked it.
+    why_it_matters: >
+      It is the project's own thesis landing on the project. A plausible invented timestamp is
+      indistinguishable from a real one after the fact, so the corpus's 1808 LOG entries cannot
+      be assumed to be clock-accurate either. Timestamps are also the ONLY ordering key —
+      CONVENTIONS says file order may differ from chronological order and consumers must sort
+      by parsed timestamp.
+    proposal:
+      - "A shipped /log reads the clock itself, per entry, and never accepts a model-supplied time."
+      - "A check that fails: no LOG entry may carry a timestamp later than the file's own mtime."
+      - "That check is cheap, needs no revision history, and would have caught this immediately — so it does NOT belong in c-unimplementable-tests."
+    do_not: "Backfill or correct the existing entries. They are append-only, and the correction is already logged."
+
+  - id: c-status-line-presence
+    title: "A static command-reference popup — discoverability for /end, which only fires if typed"
+    status: open
+    severity: medium
+    opened: "2026-09-08"
+    what: >
+      A status-bar presence whose hover shows STATIC information: which Rite commands exist and
+      how to use them. Explicitly not live data, "at least for the moment".
+    the_problem_it_solves: >
+      /end only fires if the user types it. That is the single unreliable link in the whole
+      protocol — the harness fires SessionStart whether or not anyone remembers, but the
+      judgement half depends entirely on the user knowing the command exists. If nobody learns
+      /end is there, Rite is preflight with extra documents. This is the mitigation, and no
+      cheaper one is obvious.
+    claude_corrections_recorded:
+      - "Claude first argued the content should be the VERDICT rather than a command list, and called a command list 'wallpaper by day two'. WRONG: that argument came from the timer-reminder discussion and applies to things that PUSH. A hover tooltip is PULL — it appears only when asked and costs nothing when ignored. Different failure profile entirely."
+      - "Claude also framed it as 'should we build a status bar', which the user corrected: one already exists in claude-persistent. Both framings are recorded so neither is re-floated."
+    why_static_is_right_for_v1: >
+      No dependency on the status file, no multi-window bug, no stale data. It cannot be wrong —
+      which is more than the existing tooltip's Session section manages.
+    the_one_requirement: >
+      GENERATE it from the command definitions (commands/*.md frontmatter: name plus
+      description), never hand-write it. That panel is a document describing the product, and
+      this project exists because such documents rot. Hand-written, the first renamed command
+      makes it a lie — inside the tool whose entire argument is that unchecked docs go stale.
+      Same treatment and same reason as PROJECT-STANDARD.md.
+    content_notes:
+      - "Say WHEN to use each command, not just its name: '/end — run before closing; records the handoff decision'."
+      - "Say what happens if you do not. That sentence is the product."
+    what_would_close_this: >
+      A ruling on where it lives — the existing claude-persistent tooltip (which would revive
+      the viewer earlier than d-plugin-is-the-product assumed) or a plugin-native statusLine,
+      which renders text only and has no hover.
+
+retired_ids:
+  - id: c-vendor-pyyaml
+    retired: "2026-09-07"
+    how: settled
+    outcome: d-stdlib-only-yaml-subset
+    why: >
+      Superseded by a stronger answer to the same question. Vendoring PyYAML would have cut one
+      install step; a stdlib-only subset parser cuts the dependency entirely. Opened and
+      retired the same day, roughly an hour apart.
+  - id: c-python-chosen-by-inheritance
+    retired: "2026-09-07"
+    how: settled
+    outcome: d-python-is-the-runtime
+    why: >
+      Opened and closed the same day. It asked for a rationale, and measurement supplied one:
+      the counter-argument it rested on — that Node is guaranteed present because Claude Code
+      is a Node application — was verified FALSE against the binary on disk. Successor concern
+      for the part that survived: c-vendor-pyyaml.

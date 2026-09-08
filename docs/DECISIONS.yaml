@@ -1,0 +1,737 @@
+# Settled decisions. Append, never rewrite. Supersede by linking ids.
+# Do NOT re-litigate anything here. Unsettled items go to CONCERNS.yaml.
+---
+schema_version: "1.0.0"
+as_of: "2026-09-07"
+status: current
+
+decisions:
+
+  - id: d-name-rite
+    date: "2026-09-07"
+    title: "Project is named Rite"
+    context: >
+      Needs a distinct, non-"Claude"-led mark per the trademark research. Candidates ranked:
+      Cairn (rejected on sound), Waymark, Varde, Blaze, Fingerpost, HASP, CHART, LATCH.
+    decision: "Rite — Record, Inspect, Track, Enforce."
+    rationale:
+      - "Rites are performed at thresholds, which is exactly what a session start and end are."
+      - "The expansion is honest rather than reverse-engineered; each verb is a real operation."
+      - "Four letters, no trademark shadow, no slang trap."
+    consequences:
+      - "Known cost: spoken aloud it is a homophone of right/write. Accepted."
+      - "Descriptor in all listings: 'a companion for Claude Code' (nominative use)."
+      - "Every listing carries: Unofficial. Not affiliated with, endorsed by, or sponsored by Anthropic."
+    chosen_by_user: true
+    revisit_when: "The GitHub or plugin namespace turns out to be taken."
+
+  - id: d-plugin-is-the-product
+    date: "2026-09-07"
+    title: "Rite is a Claude Code plugin; the VS Code extension is an optional viewer"
+    context: >
+      claude-persistent was designed with the extension as the product and a plugin as its
+      data source. Reviewing the built code reversed that: the extension derives everything
+      real from the transcript itself, and the plugin contributed one string.
+    decision: "Ship ONE plugin containing hooks, commands and skills. The extension is optional and ships later."
+    rationale:
+      - "A plugin cannot draw UI — but the differentiated half is the checking, not the surface."
+      - "Eight incumbents already ship status-bar monitors; none have preflight behind them."
+      - "A plugin installs with a git push. No registry, account, review, or fee."
+    consequences:
+      - "claude-persistent is demoted to optional viewer; its own docs still claim otherwise and need correcting."
+      - "health-probe is dropped: verdict and source are hardcoded constants, entrypoint is redundant, transcript_path is derivable."
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-preflight-is-config-not-fork
+    date: "2026-09-07"
+    title: "claude-preflight becomes a config of Rite, never a fork"
+    context: >
+      preflight is 744 lines of working, months-proven code, but hardcoded to one machine
+      (/mnt/storage, the psr extension, projects.yaml).
+    decision: "Rite is the upstream engine. Costin's preflight shrinks to his own checks.yaml plus checks too personal to publish."
+    rationale:
+      - "checks.yaml already makes the machine-specific checks toggles — the generalisation work was done accidentally."
+      - "One codebase means nothing to drift."
+      - "Forking would recreate, in code, the exact doc-rot this project exists to catch."
+    consequences:
+      - "preflight keeps the right to hardcode, because it stays a config rather than becoming the product."
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-audience-public-standard
+    date: "2026-09-07"
+    title: "The standard is written for publication; local conventions become config"
+    decision: "Two marked layers in one document — core (publishable) and local (this machine)."
+    consequences:
+      - "EU date order, [TYPE] vocabulary, short_name, registry integration and docs-yaml/ naming all move to the local layer."
+      - "Rite defines its own stage vocabulary, because a stranger has no portfolio registry to borrow one from."
+    chosen_by_user: true
+
+  - id: d-evolution-out-of-scope
+    date: "2026-09-07"
+    title: "EVOLUTION.yaml belongs to project-tracker and is explicitly out of scope"
+    context: >
+      An earlier answer in the same session was to fold it into DECISIONS. The user corrected
+      it: EVOLUTION answers "what can I tackle tonight?" — a scheduling question.
+    decision: "Rite neither requires, folds, renames, nor checks EVOLUTION.yaml. Named as an out-of-scope boundary in the spec."
+    rationale:
+      - "Its schema — lanes, nodes, edges, branches, progress, slippages — is a timeline renderer."
+      - "It is the only file in the corpus with a fully declared schema, and it serves a different product."
+    consequences:
+      - "Its vocabulary enum block stays with project-tracker; Rite defines its own stage vocabulary instead."
+      - "The 8 EVOLUTION naming schemes across 12 projects are project-tracker's to fix, not Rite's."
+    superseded_advice: >
+      Claude initially recommended folding branches/pivots into DECISIONS entry types. Retracted
+      on the user's correction. Recorded so it is not re-floated.
+    stated_by_user: true
+
+  - id: d-conventions-stays-required
+    date: "2026-09-07"
+    title: "CONVENTIONS.yaml stays in the required five"
+    context: "Claude proposed demoting it to 'earned' to avoid ceremonial empty files."
+    decision: "Keep all five as one required unit."
+    rationale:
+      - "The evidence shows the five are adopted all-or-nothing, never partially; splitting risks breaking the habit."
+    consequences:
+      - "Mitigation: a project with no rules of its own must SAY so in one line. An explicit 'nothing project-specific' passes; an empty file does not."
+    chosen_by_user: true
+
+  - id: d-noncode-first-class
+    date: "2026-09-07"
+    title: "Non-code projects are first-class in the standard"
+    decision: "The standard covers any tracked project — a plumbing schematic as readily as a Rust codebase."
+    rationale:
+      - "plumbing, plan-evacuare and usa-beci already adopted the set unprompted."
+      - "It is the proof the standard is not overfit to web development — most competing specs have three repos in one language."
+      - "plumbing is also the ONLY project versioning its core files, and the source of the provenance header."
+    consequences:
+      - "ARCHITECTURE.yaml keeps the loosest required-key set in the standard, by design, so a physical topology passes."
+    chosen_by_user: true
+
+  - id: d-provenance-header-required
+    date: "2026-09-07"
+    title: "Every docs-yaml/*.yaml carries schema_version, as_of, status"
+    context: >
+      Only 9 files in the whole corpus declared a schema_version, and plumbing — the non-code
+      project — was the only one versioning its core five.
+    decision: "A three-line provenance header is mandatory."
+    rationale:
+      - "Without as_of, a checker can only guess freshness from mtime, which a reformat or typo fix resets."
+      - "It is what makes level-3 (freshness) completion tests possible at all, and it is the cheapest addition in the standard."
+    consequences:
+      - "as_of means 'last verified against the thing described', NOT 'last edited'. Collapsing the two turns the tests into mtime theatre."
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-spec-generated-and-gated
+    date: "2026-09-07"
+    title: "The human form of the spec is generated from the machine form, and drift is gated"
+    decision: "PROJECT-STANDARD.md is generated by render-standard.py; --check exits 1 on drift."
+    rationale:
+      - "Maintaining both by hand would make this spec its own first doc-rot casualty."
+      - "It applies the project's own principle to the project itself on day one."
+    consequences:
+      - "Generated output must contain no timestamp or other run-varying value, or the gate fails constantly and gets switched off."
+      - "Verified failing (hand-edit -> exit 1) and passing (regenerate -> exit 0) on 2026-09-07."
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-log-ownership-split
+    date: "2026-09-07"
+    title: "Rite owns the LOG.md contract; project-tracker owns registration and consumption"
+    context: >
+      project-tracker's ARCHITECTURE.yaml already declares LOG.md a per-project artifact that
+      seed-projects.py creates and requires. Rite's Tier 0 also claims it.
+    decision: >
+      Rite defines the CONTRACT — it must exist, be append-only, and its entries must parse.
+      project-tracker CREATES it on registration and READS it for portfolio ranking. Neither
+      owns the other's half.
+    rationale:
+      - "A standard and a consumer of that standard are different roles; the overlap is only apparent."
+    consequences:
+      - "project-tracker's ARCHITECTURE.yaml will need updating to reference the standard rather than restate it. Not done here — out of this plan's scope."
+    proposed_by: claude
+    confirmed_by_user: false
+    revisit_when: "project-tracker is next opened."
+
+  - id: d-goal-is-credibility
+    date: "2026-09-07"
+    title: "Optimise for credibility, not adoption"
+    context: "The blocking question carried over from claude-persistent's publishing handoff."
+    decision: "One clear idea, an honest README, negative findings left in, no over-engineering toward installs."
+    rationale:
+      - "There is no distribution channel and the idea is niche by construction."
+      - "These repos are portfolio artifacts shown to recruiters; an excellent README outweighs install counts."
+      - "Optimising for adoption would push toward the generic status-bar lane the incumbents already own."
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-project-tracker-stays-separate
+    date: "2026-09-07"
+    title: "project-tracker is out of scope; integration only after a dedicated session"
+    context: >
+      Both projects touch LOG.md and both are session-adjacent, so drifting into merging them
+      would be easy and would happen by accident rather than by decision.
+    decision: >
+      Rite does not absorb, require, or reshape project-tracker. It answers a different
+      question — "what should I touch tonight?" versus "did this session close properly?".
+      Rite may read the registry as optional auto-detected enrichment; nothing more.
+    rationale:
+      - "Different question, different scope (cross-project vs one project), different lifetime."
+      - "A stranger installing Rite has no registry, so it can never be a dependency."
+    consequences:
+      - "Integration remains possible but must NOT be arrived at incrementally — it needs its own thorough session."
+      - "d-log-ownership-split already splits LOG.md: Rite owns the contract, project-tracker creates and consumes."
+    stated_by_user: true
+    revisit_when: "A dedicated session is opened for exactly this question."
+
+  - id: d-profiling-never-integrated
+    date: "2026-09-07"
+    title: "Self-profiling is permanently out of scope — privacy boundary, not a scoping preference"
+    context: >
+      ai-collab-profile/ is a longitudinal profile of how Costin works with Claude: 4864
+      prompts, 462 sessions, 2.72M characters of his own words. Claude had been treating it
+      as evidence for a measurement question rather than as a standing goal of its own.
+    decision: >
+      Rite must NEVER read, ingest, derive from, or ship anything from that corpus — not as a
+      feature, not as enrichment, not as an optional layer, not as a documentation example.
+    rationale:
+      - "It is personal data and it is his alone."
+      - "It is a THIRD goal, distinct from scheduling and from session discipline."
+      - "Rite is intended for publication; a boundary that softens on publication is not a boundary."
+    consequences:
+      - "If a future feature would benefit from session-behaviour data, it is refused, not negotiated."
+      - "Rite's end-session capture is designed for the project's own docs only."
+    stated_by_user: true
+
+  - id: d-docs-dir-and-format-split
+    date: "2026-09-07"
+    title: "Docs directory is `docs/`; prose is Markdown, structure is YAML, per file"
+    context: >
+      The directory was named docs-yaml/ and every core file was .yaml, including three that
+      are almost entirely paragraphs. Measured on this project's own spec, which exists in
+      both forms with byte-identical content: 25287 bytes as YAML against 19275 as Markdown,
+      24% smaller, because YAML charges a `key:` and an indent for every line of prose.
+      Markdown additionally needs no parser and cannot fail to load on a bad indent, whereas
+      YAML requires PyYAML.
+    decision: >
+      Rename docs-yaml/ to docs/. Convert MISSION, ARCHITECTURE and CONVENTIONS to Markdown
+      with YAML front matter. Keep DECISIONS and ROADMAP as YAML. The form is chosen per FILE
+      by one test: if a checker must read a field of it, it is YAML; if a human reads it end
+      to end, it is Markdown.
+    rationale:
+      - "A directory named for a file format is a claim that goes stale the first time one file inside it changes shape — the exact failure class this project exists to catch."
+      - "DECISIONS and ROADMAP carry repeated entries whose fields the completion tests read (unique_ids, no_dangling_supersedes, entry_required_keys, min_list_items). Scraping those out of headings would mean hand-writing a Markdown-structure parser to avoid a dependency that is already installed — trading a good dependency for a worse bespoke one."
+      - "The provenance header survives the split unchanged: YAML front matter in a .md, top-level keys in a .yaml. One parser reads both, so no test was lost."
+    consequences:
+      - "Spec tests for MISSION/ARCHITECTURE/CONVENTIONS move from key-based rules to section-based ones: required_keys_present -> required_sections, no_empty_values -> no_empty_sections, min_content_keys -> min_content_sections. An H2 scan is as deterministic as a mapping lookup, so nothing became unimplementable."
+      - "Every artifact in the spec now carries an explicit `form:` field, and a new core `file_format:` block states the rule."
+      - "local.docs_dir default moves from docs-yaml to docs; docs-yaml stays listed as an accepted alternative, because the 11 existing projects use it and migration is opt-in (see d-audience-public-standard)."
+      - "d-provenance-header-required is amended in scope, not overturned: it said 'every docs-yaml/*.yaml' and now reads 'every file in the docs directory, in whichever form it takes'."
+      - "as_of was NOT advanced on the three converted files. A format conversion is not a re-verification of their claims."
+    amends: d-provenance-header-required
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-write-discipline-declared-per-artifact
+    date: "2026-09-07"
+    title: "Every artifact declares one write discipline: append_only, rewrite_only, write_once, free_replace or mixed"
+    context: >
+      Before this, the spec declared a write rule for 2 of 12 artifacts (LOG and DECISIONS,
+      both append_only) plus read_only on the memory mirror. Nine artifacts had no declared
+      rule, which means nine files had nothing a check could ever test. "Edit the docs" was
+      covering five genuinely different operations.
+    decision: >
+      A required `write_discipline` field on every artifact, from a closed five-value
+      vocabulary, rendered into the human form as its own table.
+    rationale:
+      - "An artifact with no declared write discipline has no rule a check can test, which is the same as having no rule."
+      - "The failure modes are silent and different in each direction: an appended roadmap becomes a graveyard, a rewritten log destroys the only durable record, an edited plan falsifies what was actually approved."
+      - "write_once was missing from the obvious taxonomy and is the one that covers HANDOFF and PLAN. free_replace says 'overwrite freely, the source is elsewhere'; write_once says 'overwrite is forbidden, there IS no source'. Collapsing them loses the only two files where an edit is undetectable."
+    consequences:
+      - "Three new integrity tests are implied — content_stable_after_creation, regenerates_identically, milestones_append_only — and they land in the same bucket as append_only_preserved: they need revision history. Tracked as c-unimplementable-tests, not solved here."
+      - "CONVENTIONS.md gained the full per-file table; CLAUDE.md gained the short version as a trap."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-roadmap-mixed-with-milestones
+    date: "2026-09-07"
+    title: "ROADMAP is mixed: the body is rewrite-only, `milestones` is append-only"
+    context: >
+      Deleting a finished near_term item was correct — a roadmap that accumulates done items
+      becomes a second, non-append-only record of the past that competes with LOG.md and wins
+      the race to be wrong. But the user pushed back that deletion loses the development path,
+      and he was right that LOG alone does not give it back at a useful grain.
+    decision: >
+      Closing a near_term item DELETES it from near_term and APPENDS one entry to a new
+      `milestones` list: id, what, closed, optional log_ref. ROADMAP's write discipline
+      becomes `mixed`, and the file must state internally where the line falls.
+    rationale:
+      - "LOG.md and milestones are two RESOLUTIONS of the same past, not two copies. The log records every choice and implementation step; milestones record only what a near_term item delivered. Neither is cheaply derivable from the other — the log is too fine to skim, milestones too coarse to debug from."
+      - "The item changes SECTION rather than growing a status field, so the rewrite-only half stays a statement about the future only."
+      - "It makes deletion traceable: deleted_ids_appear_in_milestones is a real integrity test, where deletion into the log alone was not checkable."
+    consequences:
+      - "milestones is a FLAT LIST and must stay one. Lanes, nodes, edges, branches, progress and slippages is EVOLUTION.yaml — a timeline renderer answering a scheduling question, owned by project-tracker. This is the nearest point at which Rite can drift into that product by accident, so the boundary is now restated at the point of temptation, not only in d-evolution-out-of-scope."
+      - "ROADMAP.open_questions was moved out to the new docs/CONCERNS.yaml; it was duplicating the staging area's job."
+      - "The LOG side of the link stays one-directional and manual — logged as c-log-has-no-item-ids."
+    stated_by_user: true
+    confirmed_by_user: true
+
+  - id: d-handoff-tier-0-always-present
+    date: "2026-09-07"
+    title: "HANDOFF.md is Tier 0 — it always exists, and 'nothing to hand off' is written down"
+    context: >
+      The spec had HANDOFF at tier 2 (situational). The user ruled that a handoff must always
+      exist, and that a session with nothing to hand off says so in the file.
+    decision: >
+      HANDOFF.md moves to tier 0. A new genre `none` states explicitly that there is nothing to
+      hand off, and why. Every session ends having recorded one of four outcomes: written,
+      updated, carried_forward, none.
+    rationale:
+      - "A handoff saying 'nothing to hand off' and a missing handoff look identical from the next session's side, except that one proves somebody decided and the other proves nothing."
+      - "The mandatory thing is the DECISION, not the prose — which is what makes it checkable. 'Must have a handoff' is not testable; 'must have recorded one of four outcomes' is."
+      - "Same principle already settled for CONVENTIONS in d-conventions-stays-required: an explicit 'nothing project-specific' passes, an empty file does not. Stated twice on purpose — it is the rule people talk themselves out of."
+    consequences:
+      - "Promoted against the corpus rather than from it: 0/11 sampled projects carried a handoff reliably and none carried an expiry. That is the gap this closes, not a practice being described."
+      - "session_end_decision_recorded must check the /end stamp, not the file: a session that wrote nothing and decided nothing is indistinguishable, on the file alone, from one that correctly decided none was needed."
+      - "This is the first hard requirement of Rite's second half — the session protocol — and it arrived from the user, not from the standard."
+    stated_by_user: true
+
+  - id: d-roadmap-inception-write-once
+    date: "2026-09-07"
+    title: "ROADMAP gains a write-once `inception` block; `blockers` deleted; current_state gets one owner"
+    context: >
+      The user asked whether ROADMAP earns its place at all, given how many files appeared to
+      track the same things. The audit found roughly half of it duplicated: `blockers` was
+      empty and every CONCERNS entry already carries a `blocks:` field; `current_state` had
+      four claimants (ROADMAP, README, HANDOFF, CLAUDE.md "Explicitly NOT built yet");
+      `if_revisiting_cold` overlapped the newly-mandatory HANDOFF; `open_questions` had already
+      moved to CONCERNS.
+    decision: >
+      Keep ROADMAP, thinner. Delete `blockers`. Declare current_state OWNED by ROADMAP, with
+      README carrying a one-line mirror and HANDOFF referencing rather than restating. Add a
+      write-once `inception` block recording the project's founding intent. ROADMAP becomes a
+      three-zone mixed file: inception write-once, body rewrite-only, milestones append-only.
+    rationale:
+      - "near_term cannot be delegated to project-tracker's next-steps.yaml: a stranger installing Rite has no registry, so delegating would make Rite depend on it, which d-project-tracker-stays-separate forbids. That alone forces ROADMAP to exist."
+      - "if_revisiting_cold is NOT HANDOFF. HANDOFF is momentary and expires; the cold-restart checklist is durable — 'run render-standard.py --check first' is true forever. Durable instructions in an expiring write-once file are lost at the next handoff. It is also the most-adopted concept in the corpus, present in every sampled project under five different names."
+      - "current_state is rewrite-only, so the project's original intent is destroyed the first time the roadmap is adjusted. Drift-from-original is the one thing LOG.md cannot reconstruct: the log says what happened, never what was intended before it changed."
+      - "A separate frozen file for the same purpose would be a 13th artifact whose only job is to hold the same content, older — which is the pattern this project exists to prevent. A zone inside the file it belongs to cannot drift from it."
+    consequences:
+      - "ROADMAP required_keys gains `inception`; `blockers` and `open_questions` are named in a new `forbidden_keys` block so a future session does not helpfully re-add them."
+      - "`write_once` gained an explicit `freeze_point`, because 'frozen at creation' is ambiguous for anything a human drafts. HANDOFF freezes at SESSION END, PLAN at COPY, inception at project birth. Without this, a handoff could never be drafted iteratively."
+      - "Two new tests implied — inception_present and inception_unchanged — the latter needing revision history, so it joins c-unimplementable-tests."
+      - "PLAN-*.md is explicitly NOT the project plan: it is an archive copy of a ~/.claude/plans file, produced by tooling, many per project. Recorded because Claude conflated the two in conversation and the user corrected it."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-inventory-frozen-at-13
+    date: "2026-09-07"
+    title: "The artifact inventory is frozen at 13; script-produced files are specified separately"
+    context: >
+      The inventory grew from 12 to 13 in one session and would have grown to 16 if every
+      reasonable suggestion had been taken — a status file, a checks config, and a stamp
+      marking that /end ran. Each was individually defensible. Together they would have
+      doubled the standard's surface in an evening.
+    decision: >
+      Freeze the human-authored artifact list at 13. Adding a 14th requires a DECISIONS entry.
+      Files produced by scripts are OUT of the freeze and get specified separately, once their
+      producers exist and their purpose is settled.
+    rationale:
+      - "An artifact whose producer does not exist cannot be specified honestly — its shape is guesswork dressed as a standard. This is the same error as declaring tests that cannot run, which the project already has six of."
+      - "docs/claude-memory.md stays declared despite being script-produced, because its producer already exists and runs. That is the rule applied, not an exception to it."
+      - "A standard that grows whenever a good idea appears has no edge, and cannot be learned."
+    consequences:
+      - "LICENSE added as the 13th — tier 2, required from stage `shipped`, write_once, and the ONLY artifact forbidden a provenance header, because a license is third-party text reproduced verbatim and editing it changes its legal meaning."
+      - "rite itself now fails its own standard at stage `shipped`. Left visible on purpose."
+      - "status.json deferred: necessity asserted, not established. checks.yaml deferred: it will exist per d-preflight-is-config-not-fork, but what it must contain for a stranger versus for this machine is unsettled."
+      - "A `text` form was added alongside md and yaml, for LICENSE alone."
+    stated_by_user: true
+
+  - id: d-end-outcome-recorded-in-handoff
+    date: "2026-09-07"
+    title: "/end is a process; its outcome is recorded in HANDOFF front matter, not in a stamp file"
+    context: >
+      ARCHITECTURE describes SessionEnd stamping whether /end ran, and the next SessionStart
+      reading that stamp — the mechanism by which the loop closes. Claude proposed a dedicated
+      stamp file and argued the check could not work without one, because a session that wrote
+      nothing and a session that correctly decided nothing was needed look identical on the
+      file alone.
+    decision: >
+      No stamp file. HANDOFF.md front matter carries `session_end: written | updated |
+      carried_forward | none`. /end is a process, and its result belongs in the artifact the
+      process is about.
+    rationale:
+      - "Avoids inventing a file. The inventory had just been frozen for exactly this reason."
+      - "Claude's objection is answered by two files that already exist: if HANDOFF `written:` is older than the newest LOG.md entry, the session worked and then closed without touching the handoff. Stale date means nobody thought about it; current date saying `none` means someone decided. They are no longer indistinguishable."
+      - "It also removes a file that would have had to be gitignored, and therefore invisible to exactly the cold agent it was meant to inform."
+    consequences:
+      - "New test `written_not_older_than_newest_log_entry` — checkable today, with no revision history and no new artifact. It does NOT join c-unimplementable-tests."
+      - "`session_end` becomes required front matter on HANDOFF; this project's own handoff carries it as of 2026-09-07."
+      - "The stamp file is recorded as REJECTED rather than deferred, so it is not helpfully re-proposed."
+    stated_by_user: true
+
+  - id: d-portability-rules-are-normative
+    date: "2026-09-07"
+    title: "Cross-platform behaviour is specified as eight normative rules, not left to MISSION's constraint line"
+    context: >
+      MISSION declared "cross-platform, no assumption of Linux, bash, or VS Code" from day one,
+      but nothing said what that meant operationally. Asking what actually breaks on Windows
+      and macOS produced eight concrete rules, one of which is a correctness bug rather than a
+      portability nicety.
+    decision: "A `portability:` block in the spec, mirrored as a CONVENTIONS section; eight rules, each with its reason."
+    rationale:
+      - "case_sensitive_name_matching is the load-bearing one: macOS and Windows are case-insensitive, so Path('README.md').exists() is True for readme.md. The same repo gets two different verdicts depending on the machine — fatal for a standard whose entire value is canonical names."
+      - "PyYAML is not installed by default on macOS or Windows. Graceful degradation is therefore the DEFAULT first-run path on two of three targets, not an edge case."
+      - "The harness splits the field harder than the OS does — VS Code on Windows resembles VS Code on macOS more than either resembles its own terminal — but only for what a hook can surface, never for file handling."
+    consequences:
+      - "render-standard.py now writes newline='\\n'. Found by inspection, not by failure — no non-Linux machine has run this yet."
+      - "README gained the Windows invocation and the pip line; `python3` in documentation is now a declared defect."
+      - "A .gitattributes with eol=lf was REJECTED in favour of normalizing inside the comparison — it would have been a hand-authored 14th file an hour after the inventory was frozen, and the /end ruling had just set the precedent for not inventing files."
+      - "All eight are PREDICTIONS. None has met a real Windows or macOS machine. Recorded as such so a later session does not read them as verified."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-python-is-the-runtime
+    date: "2026-09-07"
+    title: "Python is Rite's runtime — chosen, not inherited; Node evaluated and refused"
+    context: >
+      Python appeared as an assumption in four files and in zero decisions, having been
+      inherited from preflight.py, claude-mirror-memory.py and hookdedup.py. Claude raised what
+      looked like a strong counter-argument: Node is guaranteed present on any machine running
+      Claude Code, because Claude Code is a Node application.
+    decision: "Python 3 is the runtime. Node is refused."
+    rationale:
+      - >
+        The counter-argument was MEASURED FALSE. The claude CLI on this machine is
+        ~/.local/share/claude/versions/2.1.260 — a 205 MB self-contained ELF binary linking
+        only libc, librt, libpthread and libdl. No libnode, not an npm package. Claude Code
+        bundles its own runtime, so a machine can run it with no node on PATH at all. The
+        VS Code extension does not change this: it is platform-specific, declares zero
+        dependencies, and runs in VS Code's extension host, which never puts node on a hook's
+        PATH.
+      - "With Node not guaranteed either, there is no availability edge. On Debian both python3 and nodejs are Priority: optional — measured, not assumed."
+      - "So the pre-existing grounds decide it: 744 proven lines of preflight.py, and d-preflight-is-config-not-fork, which makes those lines the engine. Porting to Node would recreate the two-codebases-drift problem that decision exists to prevent."
+    consequences:
+      - "Python is documented as a HARD prerequisite in ARCHITECTURE, with per-platform install cost, rather than as a bare dependency line."
+      - "The outermost prerequisite cannot report on itself: if Python is absent the hook fails at the shell level, and under entrypoint=claude-vscode the user may see nothing. It therefore belongs in the README's install section, not in a runtime check."
+      - "Shipping a self-contained binary was considered and refused as absurd for a few hundred KB of file checks — but it is what Anthropic did, and it names the real trade: zero prerequisites requires bringing your own runtime."
+      - "What survives is the install-step count, the only lever actually in our control. Tracked as c-vendor-pyyaml."
+    reconstructed: false
+    proposed_by: claude
+    confirmed_by_user: false
+    revisit_when: "Claude Code's distribution changes, or a Windows/macOS user reports the install chain as a real barrier."
+
+  - id: d-two-shims-sh-and-ps1
+    date: "2026-09-07"
+    title: "The launcher shim is .sh + .ps1; cmd.exe/.bat is never involved"
+    context: >
+      The question was which shell Claude Code invokes for a hook on Windows and macOS. It was
+      answered in three stages, and the first two were both wrong in different directions.
+      Claude first asserted a .sh/.bat pair from general Windows knowledge. Reading the 2.1.260
+      binary then suggested a single .sh, because Windows routes through Git Bash — but that
+      reading treated Git for Windows as a hard requirement. The official documentation,
+      fetched on the user's instruction to spend tokens on a web search, settled it.
+    decision: "Ship two launcher shims, .sh and .ps1. Never .bat."
+    rationale:
+      - "MEASURED, from code.claude.com/docs/en/hooks: a hook's `shell` field accepts bash or powershell and 'defaults to bash, or to powershell on Windows when Git Bash isn't installed'. Shell form passes the command to `sh -c` on macOS and Linux, Git Bash on Windows, or PowerShell when Git Bash is absent."
+      - "cmd.exe is never the hook shell on any configuration, so a .bat would be dead code. The Windows fallback is PowerShell."
+      - "From code.claude.com/docs/en/setup: Git for Windows is OPTIONAL and recommended, not required. The binary's error string that implied otherwise fires only when Git Bash is absent AND the PowerShell tool is disabled."
+      - "Exec form (setting `args`) bypasses the shell entirely on every platform and would remove the Git Bash quirks — but it needs a concrete executable name, and none works everywhere: macOS has python3 but not python, Debian likewise, Windows has python and py but often not python3. It solves the shell problem, not the interpreter problem."
+      - "The two shims cannot meaningfully drift: one job each, no check, parse or logic, and PowerShell is a real language, so the .ps1 is a translation rather than a reimplementation. This is materially unlike a .bat, which could not do the job at all."
+    consequences:
+      - "The 'guaranteed present versus written once' framing was wrong on both halves. Shell is not guaranteed to be POSIX (PowerShell path), and the duplication is two small translations rather than two implementations."
+      - "Windows traps recorded where the path runs through Git Bash: unquoted backslashes are consumed, `node` is auto-aliased to `winpty node.exe`, and CLAUDE_CODE_GIT_BASH_PATH may relocate it."
+      - "Exec form is recorded as the escape hatch to prefer wherever a concrete interpreter path is already known."
+      - "STILL UNVERIFIED on real hardware. This is documentation plus binary strings — better than assumption, worse than a test. Nothing here has run on Windows or macOS."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+    supersedes_advice: >
+      Two earlier answers in the same session, both retracted: '.sh and .bat' (from general
+      knowledge, wrong about cmd.exe) and 'one .sh, no .bat' (from binary strings, wrong that
+      Git for Windows is required). Recorded so neither is re-floated.
+
+  - id: d-stdlib-only-yaml-subset
+    date: "2026-09-07"
+    title: "Rite reads YAML with a stdlib-only subset parser; PyYAML is dropped as a dependency"
+    context: >
+      The user proposed dropping Python entirely and writing the scripts as .sh with a Windows
+      counterpart, to reduce prerequisites. That was refused — PowerShell has no built-in YAML
+      cmdlet (an open PowerShell issue asks for ConvertFrom-Yaml; every implementation is a
+      PSGallery module), POSIX sh cannot parse YAML or JSON without jq, and two shell
+      implementations of the CHECKS would be two copies of the core logic, which is the exact
+      drift d-preflight-is-config-not-fork refuses. But the underlying goal — fewer
+      prerequisites — was right, and shell was the wrong lever.
+    decision: >
+      Write a stdlib-only parser for the YAML subset the project actually uses. Drop PyYAML.
+      Python becomes Rite's single declared prerequisite, with nothing to pip install.
+    rationale:
+      - >
+        MEASURED across 1839 lines of the project's own YAML: anchors (0), aliases (0), tags
+        (0), flow mappings (0), block literals (0), merge keys (0), complex keys (0). Every
+        construct that makes YAML genuinely hard to parse is unused. What IS used: block
+        mappings and sequences, plain/single/double-quoted scalars, folded blocks (151),
+        flow sequences of scalars (50), comments and --- to skip, nesting to 6 levels.
+        Estimated 150-250 lines.
+      - "It removes the prerequisite instead of duplicating the codebase — the same goal the shell proposal was reaching for, without the drift."
+      - "It also makes the pyyaml_absence_degrades_loudly portability rule unnecessary: there is nothing left to be absent."
+    consequences:
+      - "The parser MUST REFUSE, not guess. On meeting an anchor, alias, tag, block literal or merge key it errors and names the file and line. A hand-rolled parser that silently mis-parses is far worse than none."
+      - "Completion test is DIFFERENTIAL: parse every project file with both the subset parser and PyYAML, compare the resulting structures, fail on any difference. PyYAML stays installed on this machine as the ORACLE, not as a runtime dependency. The test is written and run while the oracle is still available."
+      - "Install cost: Linux 0, macOS 0-1, Windows 1. Python is the only remaining prerequisite and is surfaced at preflight rather than assumed."
+      - "c-vendor-pyyaml is retired as superseded — vendoring solves a smaller version of the same problem."
+      - "ARCHITECTURE dependencies change from 'Python 3 (stdlib + PyYAML)' to 'Python 3 - stdlib only'."
+    risk: >
+      This is new, unproven code replacing a mature library. The differential test is what
+      makes it defensible; without it this decision would be reckless. If the test cannot be
+      made to pass on all five files, the decision is reversed rather than the test weakened.
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-plugin-components-are-mostly-prompts
+    date: "2026-09-08"
+    title: "Rite's judgement half is Markdown prompts, not code; only the mechanical half needs Python"
+    context: >
+      The question was how skill and plugin internals are executed. Checked against
+      code.claude.com/docs/en/plugins-reference rather than answered from memory.
+    finding: >
+      Skills (SKILL.md), commands (.md) and agents (.md + frontmatter) are PROMPTS that Claude
+      interprets — not executable code. Hooks are JSON configuration whose type may be command,
+      http, mcp_tool, prompt or agent. Scripts are the only genuinely executable component, and
+      they are invoked BY hooks or referenced by skills, never run directly by the user.
+    decision: >
+      /end, /log and /handoff are commands — Markdown prompts requiring no interpreter.
+      preflight, the checker, mirror-memory and plan copy are scripts and require Python.
+    rationale:
+      - "It coincides exactly with the judgement/mechanical boundary ARCHITECTURE already draws. That boundary was forced by SessionEnd having no turns left; that it also separates 'prompt' from 'executable' is a happy accident, not a design."
+      - "It makes degradation real rather than theoretical: with no Python the entire judgement half still works, and only preflight, the checker and the mirror are lost. That is a usable product without the prerequisite, instead of nothing running."
+    consequences:
+      - "d-python-is-the-runtime is NARROWED, not overturned: Rite's SCRIPTS need Python. Rite does not."
+      - "Hooks reference plugin files as \"${CLAUDE_PLUGIN_ROOT}\"/scripts/... — the documented variable, which also satisfies the no-hardcoded-paths rule."
+      - "No Rite command may DEPEND on inline shell execution: the settings schema carries disableSkillShellExecution, which strips it from skills and commands from user, project and plugin sources."
+      - "Hook types `prompt` and `agent` exist and were not previously known. Not used yet; recorded because they may matter for SessionStart, which does have turns."
+    amends: d-python-is-the-runtime
+    proposed_by: claude
+    confirmed_by_user: false
+
+  - id: d-session-protocol-shape
+    date: "2026-09-08"
+    title: "Session protocol: four rulings that fix its shape"
+    context: >
+      Before writing the session-protocol spec, four judgement calls were put to the user
+      because each changes the shape of the whole document rather than a detail.
+    decision: >
+      1. SKIPPED /end — the next session NAGS ONCE and then lets it go.
+      2. MINIMUM SESSION — none. The full ritual runs every session regardless of size.
+      3. LOG CADENCE — continuous during the session, with a distilling pass at /end.
+      4. START FRAME — out of scope for now. Ship the end half; start-session stays preflight
+         plus the handoff.
+    rationale:
+      - "Nag-once keeps the signal honest without becoming a warning that never clears — a gate that always fails gets switched off within a week, which is the project's own standing argument."
+      - "Continuous logging was validated in practice on 2026-09-07: 85 entries written as events happened. The /end pass exists to catch gaps and entries that turned out wrong, which continuous logging alone never does."
+      - "Dropping the start frame keeps the first spec small and targets the actual gap. Preflight already covers session start; the end half is what has never existed."
+    consequences:
+      - "No threshold config is needed anywhere, which removes a calibration problem before it starts."
+      - "c-ai-collab-interaction-boundary stops blocking: the start frame is deferred, so session-frame.yaml is not needed for this spec. trust_level remains the one idea worth carrying if the start half is ever built."
+    dissent_recorded: >
+      Claude recommended a measured threshold for the minimum session and argued that ceremony
+      which does not scale down gets abandoned on a quick fix. The user chose the full ritual
+      every time. Recorded so that IF the protocol is later skipped in practice, the cause is
+      already written down rather than rediscovered.
+    stated_by_user: true
+
+  - id: d-continuous-watcher-layer
+    date: "2026-09-08"
+    title: "A third checking layer: continuous watchers via command hooks"
+    context: >
+      The user asked whether hooks of type command could run during the session flow as a
+      mechanical second channel — something that watches the project and raises flags for
+      Claude without depending on Claude. Everything Rite had until now depends on someone
+      remembering: preflight fires at a boundary, /end fires only if typed, docs get updated if
+      the agent does not forget.
+    decision: >
+      Yes, and it becomes a declared third layer. Eight watchers accepted into mid_term; four
+      proposals rejected outright and recorded in ARCHITECTURE so they are not re-floated.
+    rationale:
+      - "Command hooks are executed by the harness with no involvement from Claude and no action from the user. That makes this the only mechanically reliable layer, and the right one to police the two that are not."
+      - "The write-discipline watcher has a 100% hit rate against this project's own real failures — a milestones entry inserted mid-list, and roughly thirty LOG entries with extrapolated timestamps, both found by luck rather than by check."
+      - "It gives c-log-timestamps-must-be-machine-read a home. That check exists on paper and has nowhere to run, because the checker only runs at session boundaries."
+      - "Plan-copy on creation CLOSES c-plan-attribution: the problem is only hard retroactively. A plan copied when it appears belongs to the project the session is in."
+    mechanics_verified_2026_09_08:
+      - "On tool events, plain-text stdout goes to the debug log only — invisible to Claude AND the user. A watcher MUST emit JSON with additionalContext."
+      - "additionalContext reaches Claude; systemMessage reaches the user. Two fields, two audiences."
+      - "systemMessage does nothing on this machine (0 refs in 2.1.263), so the user-facing channel is dead here and the Claude-facing one is not."
+      - "Exit code 2 blocks the action and delivers the reason to Claude — the escalation from observation to enforcement is one exit code away."
+      - "Session metrics are free and exact from transcript_path; usage against the 5-hour limit is NOT on disk and cannot be derived."
+    consequences:
+      - "Watchers must be SILENT on success: additionalContext on PostToolUse injects into Claude's context on every write, so a chatty watcher spends the scarce resource the work needs."
+      - "Watchers observe and report; they never edit. Same boundary as never_mutate_claude_home."
+      - "Two opportunities were considered and NOT taken — machine-readable claims (the route out of c-unimplementable-tests) and stale-on-touch. Both recorded in deferred_deliberately rather than dropped."
+      - "status.json is accepted only conditionally: it may be where flags accumulate between firings, but the purpose must prove itself first. The inventory stays frozen at 13."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-log-seconds-optional
+    date: "2026-09-08"
+    title: "LOG timestamps gain optional seconds; the >=1-minute spacing rule is deleted"
+    context: >
+      The user asked whether minute resolution was enough. The honest answer was not "I need
+      seconds" but that the existing convention contained a defect: CONVENTIONS required
+      entries from one session to be at least a minute apart, which MANDATES inventing spacing
+      whenever several things happen inside the same minute. That rule produced roughly thirty
+      fabricated timestamps on 2026-09-07 — the rule written to keep the log honest was the
+      rule forcing the lie.
+    decision: >
+      Seconds become OPTIONAL in the format: "%d-%m-%Y %H:%M" or "%d-%m-%Y %H:%M:%S". The
+      spacing rule is deleted. Milliseconds are refused.
+    rationale:
+      - "Additive rather than a migration: 1808 existing entries across 50 projects stay valid and are re-emitted byte-identically, so append-only is never violated and the format-migration exception is never invoked."
+      - "It removes a rule that required fabrication, which is a better reason than need."
+      - "It closes a 60-second blind spot in the accepted watcher check 'no LOG entry newer than the file's own mtime' — at minute resolution an entry at 13:50:59 and an mtime of 13:50:01 both read as 13:50."
+      - "Milliseconds refused as false precision: a human-authored log entry has no millisecond meaning, and precision beyond meaning is the same failure as the usage gauge rejected the same day."
+    the_blocker_found_first: >
+      seed-projects.py REWRITES every project's LOG.md from its own parse and silently drops
+      unparseable lines. Adopting seconds before updating that parser would have deleted every
+      seconds-format entry with no error. Demonstrated, not predicted: the round-trip test run
+      against the pre-patch parser drops 3 of 5 sample lines. Parser first, format second.
+    implementation:
+      - "seed-projects.py — parse_ts() accepts both forms; parse_existing_log returns a had_seconds flag; fmt_entry PRESERVES the precision it was given, so nothing existing is rewritten."
+      - "show-portfolio.py — accepts both forms."
+      - "preflight.py — regex already tolerated a trailing :SS by ignoring it; now captures it, making last_log_age exact instead of rounded down."
+      - "project-tracker/test-log-roundtrip.py — new. Asserts both precisions survive parse-and-rewrite byte-identically. Loads only function definitions via AST, because importing seed-projects.py executes it and writes the registry."
+      - "project-tracker/CLAUDE.md — records the format, the preserve-precision requirement, and that any parser change must pass the test."
+    verified:
+      - "test-log-roundtrip.py PASSES on the patched parser and FAILS on the backup (3 of 5 lines dropped)."
+      - "End-to-end: three seconds-precision entries appended to rite's real LOG.md, then a full seed-projects run over all 51 projects — rite's LOG.md came back byte-identical."
+    cross_project: >
+      This touches project-tracker, which owns the parser, and claude-preflight. Done with the
+      user's explicit instruction to implement rather than scope.
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-verdicts-and-participation
+    date: "2026-09-08"
+    title: "Failure semantics defined; participation is opt-in by a .rite.yaml marker"
+    context: >
+      A spec audit found that nothing said what a failing check DOES — a hole in a project
+      whose entire product is "a check that fails" — and nothing said how a project opts in,
+      so a non-conforming project would fail forever.
+    decision: >
+      Verdicts are GREEN / YELLOW / RED / NA with whose-side-to-fix tagging, INHERITED from
+      claude-preflight rather than invented. Test levels map to severity: exists and integrity
+      are RED, populated and fresh are YELLOW. Exit 1 on any RED; YELLOW exits 0; `fail_on`
+      overrides. Participation is OPT-IN via a `.rite.yaml` marker — Rite is silent in any
+      project without one.
+    rationale:
+      - "The vocabulary is not a choice: d-preflight-is-config-not-fork makes Rite preflight's upstream, so a second severity scheme would be exactly the drift that decision refuses."
+      - "The level mapping falls out of what the levels mean. `integrity` catches a LIE — an append-only file rewritten, a supersedes id resolving to nothing — while `fresh` catches a LAPSE. A lie is RED; a lapse is YELLOW."
+      - "YELLOW must not fail the exit code by default, or the gate fires on every slightly-old document and gets switched off within a week — this project's own standing argument, applied to itself."
+      - "It must be able to fail at all, because a non-zero exit is what lets Rite gate a pre-commit hook or a CI run. That is the strongest enforcement available to it."
+      - "Opt-in matches the standing rule that migration of the 11 existing projects is separate and opt-in. A tool that starts reporting on 40 projects nobody asked it to check is noise on first contact, and noise gets a plugin uninstalled."
+    consequences:
+      - "Verdicts are REPORTED at session start, never enforced there — the start phase already declares must_not: block. Gating belongs to an explicitly invoked checker."
+      - "`.rite.yaml` is declared CONFIG, not a documentation artifact, so it does not count against the inventory frozen at 13. The inventory covers what a cold reader reads to understand the project; this file is operational, like .gitignore. Stated explicitly BECAUSE the freeze exists to stop additions being absorbed without argument — the freeze worked."
+      - "An empty .rite.yaml is a valid marker: presence is the signal. Optional keys are standard_version, fail_on, thresholds, disabled_checks."
+    corrections_made_in_the_same_pass:
+      - "ARCHITECTURE listed /next among the planned commands. It writes to next-steps.yaml, which d-project-tracker-stays-separate forbids Rite owning. Removed, with the reason recorded inline so it is not re-added."
+      - >
+        Claude claimed the spec contained 10 'hardcoded values' violating MISSION. OVERSTATED —
+        they live in spec/project-standard.yaml, which is human-visible YAML, not baked into
+        code. The real defect is narrower: there is no OVERRIDE, so a stranger who wants a
+        different window must edit the standard itself and their copy drifts from upstream.
+        And only three of the ten are genuinely tunable — the freshness windows 30/60/90, which
+        c-freshness-thresholds-are-guesses already admits are uncalibrated. The structural
+        minimums (min_lines, min_entries, min_content_sections, min_list_items) are the standard
+        and are not tunable: a LOG with zero entries is broken regardless of taste.
+    open: "Whether the three freshness windows become per-project overridable via .rite.yaml. Not yet ruled."
+    resolved_2026_09_08: >
+      RULED: yes, overridable. Only the three freshness windows — log 30, roadmap 60,
+      architecture 90 — and only those. The structural minimums stay fixed, because a project
+      able to lower every bar to its own current state is not being measured by anything.
+      Claude added one condition the user did not ask for and would defend: an override is
+      NEVER SILENT. Any finding computed with an overridden window must report the override
+      and the default beside it, and a check silenced via `disabled_checks` reports as NA with
+      the reason rather than vanishing. There is deliberately NO cap on an override — any cap
+      would be as arbitrary as the default it protects — so visibility is the control instead
+      of a limit. Without that, setting 99999 disables a check permanently with nothing to show
+      it ever existed, which is the same failure as a document that quietly stops being true.
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-git-is-a-capability-not-a-prerequisite
+    date: "2026-09-08"
+    title: "git is a capability; missing it degrades the integrity tier to NA, never to failure"
+    context: >
+      Five declared tests need revision history — append_only_preserved (x2),
+      milestones_append_only, inception_unchanged, content_stable_after_creation — and Claude
+      was about to recommend making git a second prerequisite so they could run.
+    decision: >
+      git is a CAPABILITY, not a prerequisite. Absent, those tests report
+      "NA — requires revision history": never RED, never silently omitted.
+    rationale:
+      - >
+        MEASURED across 10 sampled projects: SIX are not git repositories — plumbing, usa-beci,
+        claude-preflight, claude-persistent, project-tracker, and rite itself. plumbing and
+        usa-beci are the non-code projects d-noncode-first-class explicitly promises to serve.
+        Requiring git would fail 60% of the corpus and break a settled ADR.
+      - "The NA-with-reason machinery already exists — it was specified the same day for disabled_checks — so this needs no new concept."
+    correction_2026_09_08: >
+      The rationale above CONFLATES two things and the user caught it. `git --version` returns
+      2.47.3 on this machine — the TOOL is installed. What is missing is that six project
+      DIRECTORIES are not repositories. Requiring git-the-tool would be a reasonable assumption
+      about a Claude Code user; requiring every project to be under version control would not,
+      and that is the real reason the integrity tier cannot be mandatory. The decision stands;
+      the reasoning as first written was imprecise, and a later session reading it would have
+      drawn the wrong lesson about what may be assumed of a user's machine.
+    consequences:
+      - "Three degradation tiers are now declared. With NEITHER python nor git, the ENTIRE judgement half still works, because /end, /log and /handoff are Markdown prompts needing no interpreter. The zero-prerequisite tier is not empty and it is the DIFFERENTIATED half — status-bar monitors are the commodity, a session-end protocol is not."
+      - "Expectation set before building: on most of this machine's projects the integrity tier will read NA, and the useful coverage is exists / populated / fresh."
+      - "rite itself should still `git init` — it is going to be published and cannot currently verify its own append-only discipline. That is rite-the-project, not rite-the-standard."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-never-instruct-installation
+    date: "2026-09-08"
+    title: "The setup check reports capabilities; it never tells the user to install anything"
+    context: >
+      The user described a real incident: his boss, on Windows 11, was told by an AI coding
+      tool to install Python. The attempt broke his existing Python and pyenv installation, and
+      getting git working afterwards was a separate ordeal. The damage was caused BY the tool's
+      instruction.
+    decision: >
+      Rite reports which capabilities are present and what each enables. It never instructs an
+      installation, never prints a command to paste, and never modifies the environment.
+    rationale:
+      - >
+        The tool cannot see the machine's existing state — system python, pyenv, conda, the
+        Microsoft Store alias, WSL, Git Bash's own interpreter — so any install instruction is
+        a guess with the user's working environment as the stake. A wrong guess breaks a setup
+        that was fine, and the user then owns a problem the tool created.
+      - "If the user asks how to fix something, link the vendor's documentation. Never a command."
+    rules_that_follow:
+      - "never_modify_the_environment — no installs, no PATH edits, no writes to python/pyenv/git config. Extends never_mutate_claude_home from ~/.claude to the whole machine."
+      - >
+        probing_must_not_trigger_installs — on Windows, do NOT invoke bare `python` to test for
+        it: the App Execution Alias opens the Microsoft Store. The DETECTION would cause the
+        surprise it exists to prevent. Probe with `py -0` or resolve the path without executing.
+      - >
+        three_states_not_two — report absent / present-but-broken / working. Broken is the
+        worst state and the most confusing, because something IS installed, so "install Python"
+        is actively wrong advice that sends the user to make it worse. Detect by running a
+        trivial program, not by finding a file. Say "found at <path> but it fails to run";
+        state the path and the symptom, prescribe nothing.
+      - "pull_not_push — the report is available on request, not shown unprompted more than once. Same argument as the nag policy and the rejected timer reminders."
+    stated_by_user: true
+    proposed_by: claude
+    confirmed_by_user: true

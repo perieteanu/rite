@@ -1,0 +1,240 @@
+# What is next, what is deferred, and how to restart cold.
+# The cold-restart checklist is at the bottom. Read it first if returning after a gap.
+#
+# WRITE DISCIPLINE — this file is MIXED, THREE zones, and the lines fall here:
+#   write-once   : inception        -> set ONCE at project birth. Never edited, ever.
+#   rewrite-only : current_state, near_term, mid_term, long_term, deferred_deliberately,
+#                  if_revisiting_cold             -> stale content is DELETED, never annotated
+#   append-only  : milestones                     -> never rewrite an entry
+#
+# current_state is OWNED here. README carries a one-line mirror of it (tested by
+# claims_match_stage); HANDOFF references it and must not restate it.
+# deferred_deliberately means "yes, later". MISSION non_goals means "never". Not the same list.
+# Closing a near_term item = DELETE it from near_term and APPEND one milestones entry naming
+# its id. LOG.md keeps the fine grain (every choice, every step); milestones keep the coarse
+# grain (what this project actually delivered). Two resolutions, not two copies.
+# milestones is a FLAT LIST and stays one — lanes/nodes/edges/progress is EVOLUTION.yaml,
+# which belongs to project-tracker (d-evolution-out-of-scope).
+---
+schema_version: "1.0.0"
+as_of: "2026-09-07"
+status: current
+
+# ── WRITE-ONCE ───────────────────────────────────────────────────────────────
+# What this project set out to do, as first agreed. Set once, never edited. This is the only
+# baseline that makes drift measurable: current_state is rewritten as reality moves, so
+# without a frozen original there is nothing to compare a milestone against. If the plan is
+# genuinely re-agreed rather than adjusted, that is a DECISIONS entry — not an edit here.
+inception:
+  date: "2026-09-07"
+  origin: "design conversation, same day the project was created"
+  goal: >
+    One Claude Code plugin that bookends a session: a start-of-session self-test and an
+    end-of-session protocol, plus a written project standard, all enforced by checks that fail
+    rather than conventions to remember.
+  first_near_term: [session-protocol-spec, checker-implementation, validate-against-real-projects, claim-namespaces]
+  first_mid_term: [port-preflight, port-mirror-memory, plugin-packaging, publish-github]
+  first_long_term: [vscode-viewer, official-marketplace]
+  known_unbuilt_at_inception: >
+    No plugin, hooks, commands, skills or ported scripts. Not a git repo, no LICENSE, no
+    namespace. Only spec/ plus this project's own Tier 0 + Tier 1 documents.
+
+current_state: >
+  Stage `spec`. BOTH halves are now written and self-gating — the project standard and the
+  session protocol. The project standard: spec/project-standard.yaml
+  is authoritative, spec/PROJECT-STANDARD.md is generated from it, and render-standard.py
+  --check fails on drift (verified both directions on 2026-09-07, and again after the format
+  split). This project carries its own Tier 0 + Tier 1 set, now in docs/ with prose as
+  Markdown and DECISIONS/ROADMAP as YAML (d-docs-dir-and-format-split). The session protocol
+  lives in spec/session-protocol.yaml under the same generate-and-gate treatment.
+  FIRST CODE LANDED 2026-09-08: scripts/riteyaml.py (358 lines) and its differential test.
+  The renderer now runs on it — PyYAML is imported nowhere, and both generated files are
+  byte-identical to the versions PyYAML produced. Verdicts, opt-in participation
+  (.rite.yaml) and tunable freshness windows are specified. Still NO hooks, commands or
+  skills. Not a git repo. No LICENSE. No namespace claimed.
+
+milestones:
+  # APPEND-ONLY. One entry per closed near_term item. Never rewrite an entry.
+  - id: project-standard-written
+    what: "The project standard written, generated to a readable form, and self-gating on drift"
+    closed: "2026-09-07"
+    log_ref: "07-09-2026 21:26 / 21:27"
+    note: >
+      Predates the near_term list — there was no roadmap yet to delete it from. Recorded so
+      the milestone track does not start empty and imply the project began at the format split.
+  - id: docs-format-split
+    what: "docs-yaml/ -> docs/; prose to Markdown, structure stays YAML, chosen per file"
+    closed: "2026-09-07"
+    log_ref: "07-09-2026 22:09"
+  - id: write-discipline-declared
+    what: "Every artifact declares one of append_only / rewrite_only / write_once / free_replace / mixed"
+    closed: "2026-09-07"
+    log_ref: "07-09-2026 22:14"
+
+  - id: session-protocol-spec
+    what: "The session start/end protocol written, generated to a readable form, and self-gating on drift"
+    closed: "2026-09-08"
+    log_ref: "08-09-2026 13:05"
+    note: >
+      The second of Rite's two halves and the only one of the four pieces never written down.
+      Four shape-fixing rulings came from the user; five completion tests, four of them
+      implementable with no revision history and no new artifact.
+
+  - id: yaml-subset-parser
+    what: "scripts/riteyaml.py — stdlib-only YAML subset parser, plus its differential test"
+    closed: "2026-09-08"
+    log_ref: "08-09-2026 17:50:32"
+    log_ref_corrected_2026_09_08: >
+      Written as the literal placeholder "15:4x" and never filled in — an unfinished write, not
+      a recorded value, so replacing it is not a rewrite of history. It also pointed at LOG
+      entries whose own timestamps were fabricated (they claim 15:47; the real time was 17:50,
+      printed by `date` in the same command that wrote them). The corrected reference points at
+      the clock-verified correction entry instead.
+    note: >
+      The project's FIRST code beyond the renderer. 358 lines + 156 of test. Acceptance met in
+      full: 10 documents parse identically to PyYAML, 9/9 out-of-subset constructs are refused
+      rather than guessed, and the renderer now runs on it with PyYAML imported nowhere —
+      both generated files byte-identical to the versions PyYAML produced. Verified working
+      with PyYAML made unimportable. The differential test found two real bugs that reading the
+      code had not: a quoted scalar containing a colon was mis-read as a mapping, and flow
+      sequences can wrap across lines.
+
+near_term:
+  label: "Next 1-3 sessions"
+  candidates:
+    - id: checker-implementation
+      what: "Implement the checker that reads project-standard.yaml and runs the completion tests"
+      deliverables:
+        - "the checker itself"
+        - >
+          status.json — its measured output: what is actually on disk, against what
+          current_state claims. NOT a separate roadmap item and NOT a concern; it is part of
+          this one, because it cannot exist before its producer. Tier 3, free_replace,
+          generated, must carry its measurement time.
+      why: >
+        The standard is currently a document making claims about checks that do not exist.
+        Until the checker runs, Rite is a template — which is precisely what it argues against.
+      mode: execute
+      est_minutes: 120
+      depends_on: [session-protocol-spec]
+    - id: validate-against-real-projects
+      what: "Run the checker against hwprivacy, plumbing, and claude-persistent"
+      why: >
+        claude-persistent MUST fail, naming its missing Tier 1 files. A standard that passes
+        everything is not a standard. plumbing proves the non-code claim.
+      mode: review
+      est_minutes: 30
+      depends_on: [checker-implementation]
+    - id: claim-namespaces
+      what: "Check and claim github.com/perieteanu/rite; confirm no existing Claude plugin uses the name"
+      why: "Free, permanent, and blocks nothing else until it is done. Cheap insurance against a rename."
+      mode: execute
+      est_minutes: 15
+
+mid_term:
+  # ── the continuous layer (accepted 2026-09-08; see d-continuous-watcher-layer) ──
+  - id: watcher-write-discipline
+    what: "PostToolUse watcher on Write|Edit — flag any change to an existing line in an append-only file"
+    why: >
+      100% hit rate on this project's own real failures: a milestones entry inserted mid-list,
+      and ~30 LOG entries with extrapolated timestamps. It is also the only home for
+      c-log-timestamps-must-be-machine-read, whose check has nowhere to run today.
+    mechanism: "JSON stdout with additionalContext — plain text is discarded on tool events"
+    must: "silent on success; it injects into Claude's context on every write"
+  - id: watcher-precompact-distiller
+    what: "Distil the log at PreCompact, before context is compacted away"
+    why: >
+      The highest-value moment in a session: the project's founding measurement — whatever is
+      not distilled is gone — happening INSIDE a session rather than between them.
+    unverified: "needs hook type prompt or agent, since distilling is judgement. Not yet confirmed for this event."
+  - id: watcher-plan-copy-on-create
+    what: "Copy a plan the moment it appears in ~/.claude/plans, via FileChanged"
+    why: >
+      CLOSES c-plan-attribution. That problem is only hard retroactively — a plan copied at
+      creation belongs to the project the session is in. Attribution by timing, not by content
+      inspection.
+    unverified: "that FileChanged watches paths outside the project root"
+    user_note: "accepted conditionally — will be tested before it is trusted"
+  - id: watcher-unlogged-change
+    what: "Flag material change with no LOG entry — files written since the last entry"
+    why: >
+      The user's 'distil after 3 prompts' idea with a trigger that carries information. A prompt
+      count is a clock in disguise; unlogged file writes are a real discrepancy.
+  - id: session-metrics-from-transcript
+    what: "Derive tokens, duration, message and tool counts from transcript_path"
+    why: >
+      Free and exact — the hook receives transcript_path on stdin and every message carries
+      usage. Measured live on 2026-09-08: 558K output, 77M cache-read, 951 messages, no API
+      call. The strongest argument for the claude-persistent port.
+  - id: watcher-cwd-changed
+    what: "Flag a mid-session project switch via CwdChanged"
+    why: "Rite assumes one project per session and has never said so. Cheap, and it makes an unstated assumption visible."
+  - id: setup-hook-scaffolding
+    what: "Use the Setup event for first-run scaffolding"
+    why: "The natural home for 'this project does not meet the standard yet'."
+  - id: status-json-as-flag-accumulator
+    what: "Give status.json a purpose: hold watcher flags between firings"
+    why: "A continuous watcher needs somewhere to accumulate. May be what resolves the deferral in the inventory block."
+    condition: "ONLY if the purpose proves itself in use. Deferred until then, by the user's call."
+
+  - id: port-preflight
+    what: "Port preflight.py into Rite as the engine; reduce ~/projects/claude-preflight to a checks.yaml"
+    why: "744 proven lines. The generalisation is mostly done — the machine-specific checks are already toggles."
+  - id: port-mirror-memory
+    what: "Port claude-mirror-memory.py; extend the same tool to plan copying"
+    why: "Plans are the identical problem with a different source dir. One tool, not two."
+  - id: plugin-packaging
+    what: ".claude-plugin/marketplace.json at repo root, plugins/ layout, LICENSE, git init"
+  - id: publish-github
+    what: "Push to GitHub as the first public artifact"
+
+long_term:
+  - id: vscode-viewer
+    what: "Revive claude-persistent's extension as the optional persistent surface"
+    why: "Only after the plugin ships and works alone. It is the upgrade, never the entry point."
+  - id: official-marketplace
+    what: "Submit to anthropics/claude-plugins-official external_plugins/"
+    why: "Quality-gated, and a far better CV line than a self-hosted repo."
+
+deferred_deliberately:
+  - what: "Machine-readable doc claims, to unpark claims_match_filesystem"
+    why: >
+      Proposed 2026-09-08 and NOT taken. claims_match_filesystem is stuck in
+      c-unimplementable-tests because it must read prose; a declared claim list would make it
+      trivial and would unpark the highest-value test in the standard. Not chosen because it
+      changes the document format and deserves its own decision. Recorded so the route is not
+      lost — it attacks that concern from a direction nothing else does.
+  - what: "Stale-on-touch — flag docs whose as_of predates a source change"
+    why: >
+      Proposed 2026-09-08 and NOT taken. It would repair the degeneracy in
+      c-freshness-thresholds-are-guesses, where a docs-only project compares its docs against
+      themselves and passes forever. Deferred with the thresholds it depends on.
+  - what: "Migrating the 11 existing projects to the canonical names"
+    why: "The standard defines the target. Migration is separate, later, and opt-in."
+  - what: "Windows support for any shell-based hook"
+    why: "Ship Linux+macOS and say so honestly. Python-only checks are portable anyway."
+  - what: "Backfilling the provenance header into the 11 conforming projects"
+    why: >
+      Measured 2026-09-07: hwprivacy (15 fields) and plumbing (8) are structurally clean and
+      fail ONLY on schema_version/as_of/status, which post-date them. Mechanical, but as_of
+      cannot be backfilled honestly by a script — it means "last verified against the thing
+      described", so each value needs a human or a real re-verification. Do not fake it.
+  - what: "Fixing astrolabe's ROADMAP (no current_state, no cold-restart checklist) and MISSION (flat, no mission/constraints keys)"
+    why: "Real findings from the 2026-09-07 audit, confirmed independently by the structure survey. Another project's files."
+  - what: "Correcting project-tracker's ARCHITECTURE.yaml (LOG.md ownership, dead CRM-EVOLUTION.yaml reference)"
+    why: "Real findings, but another project's files. Do it when project-tracker is next opened."
+  - what: "Correcting claude-persistent's README (3 false claims) and SPEC.yaml"
+    why: "Same reason. Recorded so it is not lost."
+
+# open_questions moved to docs/CONCERNS.yaml on 2026-09-07 — that is the declared staging
+# area for anything unsettled. `blockers:` deleted the same day: every CONCERNS entry carries
+# a `blocks:` field, so a second empty list here was duplication with no id.
+
+if_revisiting_cold:
+  - "Read docs/MISSION.md, then this file's current_state above. Both are short."
+  - "Run `python3 spec/render-standard.py --check` first. If it fails, someone hand-edited the generated Markdown; fix by regenerating, not by editing."
+  - "Read spec/PROJECT-STANDARD.md to see the standard as a reader sees it. Edit spec/project-standard.yaml if it needs changing — never the .md."
+  - "Check whether the plugin still does not exist. If hooks/ or commands/ appeared, this file is stale — trust the filesystem, not this line."
+  - "Do NOT re-litigate: the name (d-name-rite), plugin-not-extension (d-plugin-is-the-product), preflight-as-config-not-fork (d-preflight-is-config-not-fork), EVOLUTION being out of scope (d-evolution-out-of-scope), or credibility-over-adoption (d-goal-is-credibility)."
+  - "Do NOT re-research licensing or trademark. It is done, verdict GO: ~/projects/claude-persistent/docs-yaml/RESEARCH-licensing-delivery.yaml."
+  - "The next real piece of work is the session protocol spec, not code."
