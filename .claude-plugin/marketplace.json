@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "rite",
+  "description": "Rite — session discipline for Claude Code, enforced by checks that fail.",
+  "owner": {
+    "name": "Perieteanu Costin",
+    "email": "perieteanu@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "rite",
+      "source": ".",
+      "description": "Session start/end protocol and the project standard, with a checker that reports whose-side-to-fix."
+    }
+  ]
+}

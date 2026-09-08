@@ -1,0 +1,12 @@
+{
+  "name": "rite",
+  "version": "0.1.0",
+  "description": "Session discipline for Claude Code, enforced by checks that fail. Defines what a project must carry so a cold agent can pick it up, and what happens at the start and end of a session. Unofficial; not affiliated with Anthropic.",
+  "author": {
+    "name": "Perieteanu Costin",
+    "email": "perieteanu@gmail.com"
+  },
+  "homepage": "https://perieteanu.pro",
+  "license": "MIT",
+  "keywords": ["session", "documentation", "discipline", "checks", "handoff"]
+}

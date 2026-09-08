@@ -771,3 +771,54 @@ decisions:
     stated_by_user: true
     proposed_by: claude
     confirmed_by_user: true
+
+  - id: d-plugin-layout-root-is-the-plugin
+    date: "2026-09-08"
+    title: "The repo root IS the plugin; skills, not commands; nag state lives in CLAUDE_PLUGIN_DATA"
+    context: >
+      Building the plugin shell required four structural calls that the specs did not cover.
+    decision: >
+      The repo root is the plugin (.claude-plugin/plugin.json), and it advertises itself as a
+      one-plugin marketplace with "source": ".". Components are skills/<name>/SKILL.md, not
+      commands/. Nag state lives in ${CLAUDE_PLUGIN_DATA}. PostToolUse is deliberately not
+      shipped.
+    rationale:
+      - >
+        ROOT-AS-PLUGIN: the proven local pattern (claude-persistent) nests plugins under
+        plugins/<name>/, but Rite cannot copy it — the checker needs spec/project-standard.yaml
+        at RUNTIME, and the plugin is COPIED into the install cache, so a nested plugin would
+        have to contain scripts/ and spec/ too, i.e. most of the repo. Root-as-plugin avoids
+        duplicating them.
+      - >
+        SKILLS OVER COMMANDS: the plugins reference states commands/*.md is the legacy form and
+        both load identically. Skills give /rite:<name> and support
+        disable-model-invocation, which is what keeps /end and /handoff user-only — Claude must
+        never decide a session is over. /log is deliberately BOTH-invocable, so "log
+        continuously" becomes something the harness can surface rather than a discipline to
+        remember.
+      - >
+        NAG STATE: this resolves the contradiction recorded in the protocol's honest_limits.
+        HANDOFF front matter was the obvious home and the wrong one — it is write_once and
+        freezes at session end, so a SessionStart write would violate its own discipline.
+        ${CLAUDE_PLUGIN_DATA} is the plugin's own storage, which never_mutate_claude_home
+        already names as its ONE declared exception. Not a project artifact, so the inventory
+        stays frozen at 13.
+      - >
+        POSTTOOLUSE OMITTED: the plan called for it, reusing
+        ~/.claude/scripts/claude-mirror-memory.py. That is Costin's script, not Rite's. A plugin
+        hook depending on a file only one machine has is broken by design for everyone else,
+        and on this machine it would double-fire against the entry already in settings.json.
+        It belongs to port-mirror-memory. Deviation from the approved plan, recorded rather
+        than silently dropped.
+    consequences:
+      - "'source': '.' has NO precedent — every string source in the official marketplace is ./plugins/<name>. UNVERIFIED until `claude plugin marketplace add` is run. If rejected, the fallback is plugins/rite/ with scripts/ and spec/ moved and their paths updated."
+      - "The locked finding in CLAUDE.md conflated a plugin with a marketplace. Corrected: a plugin is .claude-plugin/plugin.json at its own root; a marketplace is marketplace.json listing plugins by source path. Rite is both."
+      - "Skill names log, preflight and handoff collide with Costin's existing ~/.claude/commands/. The docs are self-contradictory about precedence, so it must be TESTED after install; the fallback is renaming Rite's skills rather than letting them shadow his."
+      - "Rite ships no PostToolUse hook, so on this machine there is no duplication with the existing settings.json entries. Coexistence, not replacement — the switchover belongs to port-preflight."
+    verified:
+      - "SessionStart hook runs end to end and emits valid JSON with additionalContext carrying a real verdict."
+      - "Shim with no interpreter on PATH: names what is unavailable, names what still works, exits 1, and prints NO install command — grep-checked for apt/brew/winget/pip/curl-pipe patterns."
+      - "Handoff detection: written: backdated to 2026-09-01 against a log running to 2026-09-08 produced both the checker RED and the nag. Second run dropped the nag and kept the RED."
+    not_verified: "Nothing has been installed. The plugin has never been loaded by the harness."
+    proposed_by: claude
+    confirmed_by_user: false

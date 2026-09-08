@@ -1,0 +1,38 @@
+{
+  "description": "rite — session protocol: verdict at start, mirror during, mechanical close at end",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" session-start",
+            "timeout": 20
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" session-start",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" session-end",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
