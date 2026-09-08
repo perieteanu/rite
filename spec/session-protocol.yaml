@@ -1,0 +1,237 @@
+# Rite — the session protocol (MACHINE FORM, authoritative)
+#
+# Companion to project-standard.yaml. That document defines the TARGET STATE — what files a
+# project must carry. This one defines WHEN they are written, by whom, and what check fails
+# when a step is skipped.
+#
+# GENERATED TWIN: spec/SESSION-PROTOCOL.md, produced by render-standard.py --protocol.
+# Never hand-edit the .md; --check fails when the two disagree.
+---
+schema: rite-session-protocol
+schema_version: "1.0.0"
+as_of: "2026-09-08"
+status: draft
+
+meta:
+  title: "The session protocol"
+  one_line: >
+    What happens at the start and end of a session, which half is mechanical and which needs
+    judgement, and what check fails if you skip it.
+  why_this_exists: >
+    claude-preflight is a session-START self-test with months of real use behind it. There has
+    never been a session-END counterpart: the closing ritual — log, docs, memory, handoff — was
+    three scattered sentences of prose and nothing that checked it. This is the half that was
+    missing.
+  the_measurement: >
+    Transcripts are retained about four weeks on this machine (43 sessions, back to
+    2026-08-11) against ten months of LOG.md. Whatever is not distilled before a session ends
+    is gone. The protocol exists because the raw record evaporates on the harness's schedule,
+    not the user's.
+
+# ── the two facts that force the shape ───────────────────────────────────────
+forced_by_the_harness:
+
+  - id: session_end_has_no_turns
+    fact: "SessionEnd fires when Claude has no turns left."
+    consequence: >
+      It can copy files and stamp state. It CANNOT write a handoff, distil a LOG entry, or
+      update docs. Every step needing judgement must run earlier, from a user-invoked command.
+    status: "verified in the 2.1.263 binary"
+
+  - id: prompts_versus_scripts
+    fact: >
+      Skills, commands and agents are Markdown PROMPTS that Claude interprets. Hooks are JSON
+      configuration. Scripts are the only executable component, invoked by hooks.
+    consequence: >
+      The judgement half is commands — no interpreter, no prerequisite, works anywhere Claude
+      Code runs. The mechanical half is scripts and needs Python. The split the harness forced
+      turns out to be the same split as prompt-versus-executable.
+    status: "verified against code.claude.com/docs/en/plugins-reference, 2026-09-08"
+    note: >
+      A happy accident, not a design. Recorded as such so nobody later mistakes it for
+      cleverness and builds on it as though it were guaranteed.
+
+# ── phases ───────────────────────────────────────────────────────────────────
+phases:
+
+  - id: start
+    label: "Session start"
+    runs_as: "SessionStart hook -> script"
+    needs_python: true
+    degrades_to: "nothing — without Python the user simply gets no verdict; the session proceeds"
+    must_not: "block, prompt, or re-run anything with side effects"
+    surface_constraint: >
+      Under entrypoint=claude-vscode only `additionalContext` reaches the session;
+      systemMessage and showOutput do nothing. Design for additionalContext as the lowest
+      common denominator and never assume a second channel.
+    steps:
+      - id: preflight_verdict
+        what: "Run the configured checks and emit one verdict line, each finding tagged whose-side-to-fix."
+        sides: [claude, project, machine]
+        why: "Nobody else frames session health this way; it is the differentiated idea and it already works."
+      - id: did_the_last_session_close
+        what: "Compare HANDOFF.md `written:` against the newest LOG.md entry."
+        means: >
+          `written` older than the newest log entry means the session worked and then closed
+          without touching the handoff. No stamp file is involved — two Tier 0 files that
+          already exist.
+      - id: surface_the_handoff
+        what: "Report the live handoff, or fail loudly on an expired or spent one, naming the file."
+        why: >
+          A spent handoff is worse than no handoff, because it is confidently wrong. No HANDOFF
+          in the sampled corpus carried any expiry marker.
+    nag_policy:
+      rule: "Report an unclosed previous session ONCE, then never again."
+      recorded_where: "the same HANDOFF front matter; the report is marked as delivered"
+      why: >
+        A warning that never clears is the gate that always fails, and a gate that always fails
+        gets switched off within a week. Nagging once keeps the signal honest; nagging forever
+        destroys it.
+      rejected: "block until acknowledged — highest enforcement, highest chance the plugin is disabled on a busy morning"
+
+  - id: during
+    label: "During the session"
+    runs_as: "PostToolUse hook -> script, plus the agent's own discipline"
+    steps:
+      - id: mirror_memory
+        what: "Mirror agent memory into the repo whenever a memory file changes."
+        why: >
+          A workspace rooted at the project cannot reach ~/.claude, which makes agent memory
+          unauditable from the repo. One file, never a directory of them.
+      - id: log_continuously
+        what: "Write LOG.md entries as events happen, not at the end."
+        why: >
+          Validated in practice on 2026-09-07: 85 entries written as the work happened. If the
+          session dies before /end, everything up to that point survives. Distilling only at
+          the end reproduces the evaporation problem the project exists to measure.
+        cost_accepted: "Logs are long. One evening produced 85 entries. That is the price of not losing the session."
+      - id: clock_per_entry
+        what: "Read the machine clock for EVERY entry. Never extrapolate from an earlier reading."
+        why: >
+          Failed live on 2026-09-07: the clock was read at 22:11 and roughly thirty subsequent
+          entries carried extrapolated times, some AHEAD of real time, discovered only when the
+          clock was re-read at 00:02. An invented timestamp is indistinguishable from a real
+          one afterwards.
+        check: "no LOG entry may carry a timestamp later than the file's own mtime"
+        tracked_as: c-log-timestamps-must-be-machine-read
+
+  - id: end_judgement
+    label: "Session end — the judgement half"
+    runs_as: "/end command -> a Markdown prompt Claude interprets"
+    needs_python: false
+    when: "user-invoked, while Claude still has turns"
+    degrades_to: "nothing — this half has no prerequisites and works on any machine Claude Code runs on"
+    steps:
+      - id: distil_the_log
+        what: >
+          Review the continuous entries. Add what is missing. Where an entry turned out wrong,
+          APPEND a dated correction — never rewrite it.
+        why: "Continuous logging alone never reviews itself for gaps or for entries that were later disproved."
+      - id: update_what_changed
+        what: "Bring the docs whose claims moved back to true."
+        detail:
+          - "ROADMAP current_state — it owns the project's stated state"
+          - "ARCHITECTURE — declared must_be_current; rewrite in the same session the shape changes"
+          - "DECISIONS — append any decision settled this session"
+          - "CONCERNS — open, update or retire, using the declared three-way lifecycle"
+        do_not: "Touch as_of unless the file's claims were actually re-verified against the thing they describe."
+      - id: close_roadmap_items
+        what: "Delete each finished near_term item and append one milestones entry naming its id."
+        do_not: "Mark an item done in place. The roadmap states the future only."
+      - id: handoff_decision
+        what: "Record one of four outcomes in HANDOFF.md front matter as `session_end`."
+        outcomes: [written, updated, carried_forward, none]
+        mandatory: true
+        why: >
+          The mandatory thing is the DECISION, not the prose. "Must have a handoff" is not
+          testable; "must have recorded one of four outcomes" is. `none` is a real answer,
+          written as genre: none — an explicit nothing beats an absence, because the two look
+          identical from the next session's side except that one proves somebody decided.
+        freeze_point: "the handoff freezes here. Before this moment it is drafted freely; after it, a change means a NEW file."
+      - id: memory
+        what: "Write or update what is worth remembering, and only that."
+        do_not: >
+          Duplicate what the repo already records. Decisions belong in DECISIONS, not in memory.
+          Memory is for what the repo cannot hold.
+
+  - id: end_mechanical
+    label: "Session end — the mechanical half"
+    runs_as: "SessionEnd hook -> script"
+    needs_python: true
+    degrades_to: "skipped, with the loss named at the next session start"
+    constraint: "No judgement. If a step needs a decision, it belongs in /end, not here."
+    steps:
+      - id: copy_plans
+        what: "Copy plans from ~/.claude/plans into docs/PLAN-<date>-<slug>.md."
+        blocked_by: c-plan-attribution
+        why_blocked: >
+          Plan files carry harness-generated names with no project attribution
+          (cheeky-seeking-clock.md). Recovering plan -> project needs mtime or session
+          correlation. The only genuinely hard part of this half.
+      - id: mirror_memory_final
+        what: "Run the memory mirror once more, so the repo-visible copy matches at close."
+
+# ── the four rulings that fixed the shape ────────────────────────────────────
+rulings:
+  source: "user, 2026-09-08. See d-session-protocol-shape."
+  skipped_end: "Nag once, then let it go."
+  minimum_session:
+    ruling: "None. The full ritual runs every session, regardless of size."
+    how_it_stays_bearable: >
+      The ritual is always RUN; its OUTPUT is proportional. A three-minute session has nothing
+      to distil, no docs whose claims moved, no roadmap item to close, and a handoff of
+      genre: none. Every step still executes and each one is a no-op with a recorded reason.
+      It scales by content, not by exemption — which is why no threshold config exists.
+    dissent: >
+      Claude recommended a measured threshold and argued that ceremony which does not scale
+      down gets abandoned on a quick fix. Recorded so that IF the protocol is later skipped in
+      practice, the cause is already written down rather than rediscovered.
+  log_cadence: "Continuous during the session, with a distilling pass at /end."
+  start_frame:
+    ruling: "Out of scope for now."
+    why: >
+      Preflight already covers session start. The end half is the actual gap and has never
+      existed. Shipping the smaller spec targets it.
+    if_ever_built: >
+      ai-collab-interaction/session-frame.yaml is the prior art — a blank template, unfilled
+      since 2026-04-11. The one idea worth carrying is `trust_level`
+      (discuss / plan / implement-and-review / just-do-it): declared collaboration INTENT,
+      distinct from tool permission, which nothing else ships.
+
+# ── completion tests ─────────────────────────────────────────────────────────
+# The point of the whole document. A protocol with no completion test is not a protocol.
+tests:
+  - id: session_end_decision_recorded
+    level: integrity
+    checks: "HANDOFF front matter carries `session_end` with one of the four outcomes."
+    implementable_today: true
+  - id: written_not_older_than_newest_log_entry
+    level: integrity
+    checks: "HANDOFF `written:` is not older than the newest LOG.md entry."
+    means: "Distinguishes 'nobody thought about it' from 'someone decided none was needed'."
+    implementable_today: true
+  - id: log_timestamps_not_in_the_future
+    level: integrity
+    checks: "No LOG entry carries a timestamp later than the file's own mtime."
+    means: "Catches extrapolated clocks. Would have caught the 2026-09-07 failure immediately."
+    implementable_today: true
+  - id: nag_delivered_once
+    level: integrity
+    checks: "An unclosed-session report is marked delivered and is not repeated."
+    implementable_today: true
+  - id: handoff_not_expired
+    level: fresh
+    checks: "status: spent or a past `expires` date fails loudly, naming the file."
+    implementable_today: "partially — a condition-form expiry is not machine-evaluable; see c-unimplementable-tests"
+
+honest_limits:
+  - "Nothing here has run. It is a specification, not a working plugin — no hooks, no commands, no scripts exist."
+  - >
+    Four of the five tests are implementable with no revision history and no new artifact,
+    which is deliberate: this protocol was designed so its own checks would not join the six
+    already parked in c-unimplementable-tests.
+  - >
+    The nag-once mechanism needs somewhere to record that a report was delivered. The obvious
+    place is HANDOFF front matter, but that file is write_once and freezes at session end — so
+    a SessionStart write to it would violate its own discipline. UNRESOLVED, and the first
+    thing to settle before implementing.

@@ -1,0 +1,15 @@
+# Rite participates in its own standard. The presence of this file IS the opt-in signal;
+# an empty file would be equally valid. Everything below is optional.
+#
+# NO threshold overrides, deliberately. Rite runs on the shipped defaults so that any
+# degeneracy in them surfaces here first, on the project that can fix them — rather than
+# being tuned away locally and discovered by a stranger.
+#
+# In particular: `as_of_within_days_of_activity` is measured against SOURCE mtime, and this
+# project is currently documents-only, so its docs are compared against themselves and pass
+# trivially. That is c-freshness-thresholds-are-guesses, and widening the window here would
+# hide the very defect this file is meant to expose.
+---
+# standard_version is deliberately absent: how a project declares which version of the
+# standard it targets is still open (c-standard-version-policy). Writing a value here would
+# pre-empt that decision rather than record it.
