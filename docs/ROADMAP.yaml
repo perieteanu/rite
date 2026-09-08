@@ -8,7 +8,8 @@
 #   append-only  : milestones                     -> never rewrite an entry
 #
 # current_state is OWNED here. README carries a one-line mirror of it (tested by
-# claims_match_stage); HANDOFF references it and must not restate it.
+# claims_match_stage, REMOVED 2026-09-08 and not replaced); HANDOFF references it and
+#   must not restate it.
 # deferred_deliberately means "yes, later". MISSION non_goals means "never". Not the same list.
 # Closing a near_term item = DELETE it from near_term and APPEND one milestones entry naming
 # its id. LOG.md keeps the fine grain (every choice, every step); milestones keep the coarse
