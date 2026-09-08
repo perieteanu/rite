@@ -222,7 +222,9 @@ tests:
   - id: handoff_not_expired
     level: fresh
     checks: "status: spent or a past `expires` date fails loudly, naming the file."
-    implementable_today: "partially — a condition-form expiry is not machine-evaluable; see c-unimplementable-tests"
+    implementable_today: >
+      yes, as of 2026-09-08. `expires` is now always a DATE; a condition may accompany it in
+      prose but is never the sole value. That was the only reason this test was unimplementable.
 
 honest_limits:
   - "Nothing here has run. It is a specification, not a working plugin — no hooks, no commands, no scripts exist."

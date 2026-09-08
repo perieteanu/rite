@@ -65,7 +65,7 @@ stage_vocabulary:
     note: "Identical value set today; kept as a mapping so the two can diverge."
 
 # ── provenance header (CORE) ─────────────────────────────────────────────────
-# Modeled on plumbing/docs/, the only project in the corpus that versions its core
+# Modeled on plumbing/docs-yaml/, the only project in the corpus that versions its core
 # files. Three lines, and they are what make staleness checkable rather than inferred:
 # without `as_of` a checker can only guess from mtime, which a reformat or a typo fix resets.
 provenance_header:
@@ -1042,7 +1042,7 @@ artifacts:
       required_frontmatter:
         genre: "one of the ids above"
         written: "YYYY-MM-DD"
-        expires: "YYYY-MM-DD or a condition"
+        expires: "YYYY-MM-DD — a DATE, always. Required."
         status: "live | spent"
         session_end: "written | updated | carried_forward | none — the outcome the closing session recorded"
       session_end_rule:
@@ -1073,6 +1073,18 @@ artifacts:
           This is a SESSION-PROTOCOL requirement stated here because it constrains the
           artifact. It is the first hard requirement of Rite's second half, and it came from
           the user, not from this spec.
+      expires_must_be_a_date:
+        rule: >
+          `expires` is ALWAYS a date. A condition may accompany it in prose — "when the checker
+          runs, or 2026-12-07, whichever comes first" — but the date is what the check reads and
+          it is never optional.
+        why: >
+          The spec previously permitted "a date OR a condition", and a condition is not
+          machine-evaluable, which alone made not_expired unimplementable. It was a rule looser
+          than anybody's actual practice: every handoff written in this project carries both,
+          and MEASURED across the sampled corpus, no HANDOFF carried any expiry marker at all.
+          Narrowing it to match what people already do costs nothing and makes the test run.
+        changed: "2026-09-08 — narrowing only. Nothing that existed becomes invalid."
       expiry_rule: >
         MANDATORY, and the clearest gap this standard closes. No HANDOFF in the entire
         sampled corpus carried any expiry, spent, consumed or valid_until marker. The failure
@@ -1087,6 +1099,7 @@ artifacts:
       - level: fresh
         rule: not_expired
         means: "status:spent or a past `expires` date must fail, loudly, and name the file."
+        implementable: true
       - level: integrity
         rule: session_end_decision_recorded
         means: >

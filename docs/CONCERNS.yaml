@@ -48,6 +48,27 @@ concerns:
       - "Mark them `manual:` in the spec so the checker reports '6 declared, not automatable' rather than passing silently."
     do_not: "Leave them declared and unimplemented. A standard whose own checks do not run is the thing this project argues against."
     user_ruling: "Postponed 2026-09-07 — 'too early'. Reopen before checker-implementation starts."
+    reduced_2026_09_08: >
+      SIX became TWO, and none of it required reopening the postponed decision — the reductions
+      arrived as side effects of other work.
+        - append_only_preserved (LOG) and (DECISIONS): RESOLVED by `git init`. Demonstrated,
+          not asserted — appending reports GREEN, rewriting an existing line reports RED.
+        - source_plans_all_copied: a route exists — copy-on-creation via FileChanged closes
+          c-plan-attribution, because that problem is only hard retroactively.
+        - not_expired: RESOLVED by narrowing the spec to match practice. `expires` is now
+          always a DATE; a condition may accompany it in prose but is never the sole value.
+          The old rule was looser than anybody's actual behaviour.
+      REMAINING TWO:
+        - claims_match_stage — needs the project's actual stage from somewhere. `.rite.yaml`
+          is the natural home, but projects.yaml already holds a `stage` field, so putting one
+          in both creates two sources of truth that can disagree. That is a project-tracker
+          boundary question and d-project-tracker-stays-separate forbids arriving at it
+          incrementally. NEEDS A RULING.
+        - claims_match_filesystem — still needs the machine-readable claim surface deferred on
+          2026-09-08. The highest-value test in the standard, and it bit twice on 2026-09-08
+          alone: three must_be_current claims went false the moment scripts/ appeared, and a
+          careless global replace rewrote a reference to plumbing's real directory. Both were
+          caught by hand.
 
   - id: c-plan-attribution
     title: "A plan in ~/.claude/plans has no project attribution"
