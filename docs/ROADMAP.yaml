@@ -109,6 +109,19 @@ milestones:
       code had not: a quoted scalar containing a colon was mis-read as a mapping, and flow
       sequences can wrap across lines.
 
+  - id: validate-against-real-projects
+    what: "The checker run against three outside projects, with predictions written first"
+    closed: "2026-09-09"
+    log_ref: "09-09-2026 21:0x"
+    note: >
+      The standard DISCRIMINATES — claude-persistent 7 RED / 11 GREEN, hwprivacy 2 RED / 21
+      GREEN, plumbing 1 RED / 20 GREEN — which was the acceptance condition. But the run's value
+      was in the two predictions it FALSIFIED. "hwprivacy near-clean, 2-4 findings": it has 17.
+      "the parser will crash": the output said it did not, and a direct call to riteyaml.load()
+      showed four refusals the checker had buried as NA. Opened
+      c-na-conflates-absent-with-unparseable and c-yaml-subset-too-narrow-for-the-wild, both
+      high. Nothing was written outside rite; --force scores a project without a marker.
+
 near_term:
   label: "Next 1-3 sessions"
   candidates:
@@ -127,14 +140,6 @@ near_term:
       mode: execute
       est_minutes: 120
       depends_on: [session-protocol-spec]
-    - id: validate-against-real-projects
-      what: "Run the checker against hwprivacy, plumbing, and claude-persistent"
-      why: >
-        claude-persistent MUST fail, naming its missing Tier 1 files. A standard that passes
-        everything is not a standard. plumbing proves the non-code claim.
-      mode: review
-      est_minutes: 30
-      depends_on: [checker-implementation]
     - id: claim-namespaces
       what: "Check and claim github.com/perieteanu/rite; confirm no existing Claude plugin uses the name"
       why: "Free, permanent, and blocks nothing else until it is done. Cheap insurance against a rename."
@@ -225,10 +230,13 @@ deferred_deliberately:
     why: "Ship Linux+macOS and say so honestly. Python-only checks are portable anyway."
   - what: "Backfilling the provenance header into the 11 conforming projects"
     why: >
-      Measured 2026-09-07: hwprivacy (15 fields) and plumbing (8) are structurally clean and
-      fail ONLY on schema_version/as_of/status, which post-date them. Mechanical, but as_of
-      cannot be backfilled honestly by a script — it means "last verified against the thing
-      described", so each value needs a human or a real re-verification. Do not fake it.
+      CORRECTED 2026-09-09 against a real run; the previous text was written from another
+      document and was false. It claimed hwprivacy and plumbing are structurally clean and fail
+      ONLY on schema_version/as_of/status. They do not: hwprivacy scores 17 findings and
+      plumbing 13, most of them canonical_name on docs-yaml/ rather than docs/, plus a missing
+      or headerless HANDOFF. The deferral stands and the reason is unchanged — as_of means "last
+      verified against the thing described", so no script can backfill it honestly. But the work
+      is larger than this file claimed.
   - what: "Fixing astrolabe's ROADMAP (no current_state, no cold-restart checklist) and MISSION (flat, no mission/constraints keys)"
     why: "Real findings from the 2026-09-07 audit, confirmed independently by the structure survey. Another project's files."
   - what: "Correcting project-tracker's ARCHITECTURE.yaml (LOG.md ownership, dead CRM-EVOLUTION.yaml reference)"
