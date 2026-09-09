@@ -61,6 +61,11 @@ Verbatim, because paraphrase drifts:
 - Portfolio scheduling, ranking, or "what should I do tonight" — that is project-tracker's job.
 - Migrating existing projects to the canonical names. The standard defines the target; migration is opt-in.
 - AI inference at check time. Every check must be reproducible by plain Python.
+- Any harness but Claude Code. Not Cursor, not a generic "coding agent" abstraction. The
+  enforcement Rite sells — a check that fires whether or not you remember to run it — exists
+  only where the harness will run a `SessionStart` hook and read its output. Supporting a
+  second harness means shipping only what both expose, which is precisely the capability this
+  project is built on. Reach is not worth the mechanism.
 
 ## Evidence base
 
