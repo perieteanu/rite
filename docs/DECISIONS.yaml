@@ -1065,3 +1065,42 @@ decisions:
     chosen_by_user: true
     proposed_by: user
 
+  - id: d-status-json-dropped-not-deferred
+    date: "2026-09-09"
+    title: "status.json is dropped, not deferred; an artifact with no consumer is the mirror of a test that cannot run"
+    context: >
+      status.json was the second deliverable of checker-implementation and the only thing
+      holding that item open. d-artifact-inventory deferred it on 2026-09-07 with the exact
+      words "necessity asserted, not established". Two days and a working checker later,
+      nothing had established it.
+    decision: >
+      Dropped from checker-implementation, which closes without it. Not added to the artifact
+      inventory, which stays frozen at 13. If a consumer ever appears, it ships with that
+      consumer as part of its work.
+    rationale:
+      - >
+        EVERY CANDIDATE CONSUMER IS UNBUILT. The VS Code viewer is demoted to optional and does
+        not exist; the watcher flag accumulator was accepted only on the condition that "the
+        purpose proves itself in use", which cannot happen before the watchers exist; and the
+        measured-counterpart-to-current_state job belongs to claims_match_filesystem, which
+        needs a machine-readable claim surface rather than a JSON file.
+      - >
+        WHAT IT WAS FOR ALREADY WORKS. The SessionStart verdict reaches the model live, observed
+        on 2026-09-09. A file carrying the same verdict adds a second surface that must be kept
+        true, with nothing reading it and nothing checking it — this project's own failure mode,
+        shipped voluntarily.
+      - >
+        THE SPEC ALREADY ARGUES THIS, IN ONE DIRECTION ONLY: "an artifact whose producer does not
+        exist is the same error as a test that cannot run." The mirror holds and is now stated —
+        an artifact whose CONSUMER does not exist is the same error.
+      - >
+        DROPPED, NOT DEFERRED, ON PURPOSE. Deferral keeps an obligation alive and quietly blocks
+        an item, which is what happened here for two days. Dropping states that nothing is owed
+        until something asks for it.
+    consequences:
+      - "checker-implementation closes, which empties near_term."
+      - "The shape recorded in CLAUDE.md — tier 3, free_replace, generated, carrying its measurement time, the one file where a clock is mandatory — is preserved as a note for whoever eventually needs it. It is a sketch, not a commitment."
+      - "mid_term status-json-as-flag-accumulator still stands on its own conditional terms; it is now the only route by which this file could return."
+    chosen_by_user: true
+    proposed_by: claude
+

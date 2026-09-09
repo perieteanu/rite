@@ -221,15 +221,22 @@ Reads `spec/project-standard.yaml`, writes `spec/PROJECT-STANDARD.md`.
 Gate: `render-standard.py --check` exits 1 on drift.
 The project applies its own principle to its own spec on day one.
 
-**planned_session_start** — reads the checks config, the project's `docs/*`, and the `/end`
-stamp from last session. Writes `additionalContext` (a verdict line) and `status.json`.
-Never re-runs anything with side effects; surfaces data AGE instead.
+**session_start** — BUILT, `scripts/rite_session_start.py`. Reads the project's `docs/*` and
+`HANDOFF.md` front matter, and compares `written:` against the newest `LOG.md` entry. Writes one
+thing: `hookSpecificOutput.additionalContext`, a verdict line. Never re-runs anything with side
+effects; surfaces data AGE instead.
 
-`status.json` is **not built.** It is the SessionStart verdict, written by a script, and it
-spans all three sides preflight already tags — **machine** (disk, GPU, host), **project** (doc
-freshness, whether the last session closed), **claude** (harness and plugin state). Its config
-is `checks.yaml`, whose shape is inherited from claude-preflight: `thresholds`, `disk_mounts`,
-`checks`, `caveats`, `remotes`.
+Two claims that stood here until 2026-09-09 were false and are corrected rather than quietly
+edited away. It does **not** read an `/end` stamp file — `d-end-outcome-recorded-in-handoff`
+rejected that file, and the outcome lives in `HANDOFF.md` front matter as
+`session_end:`. It does **not** write `status.json`.
+
+`status.json` is **dropped**, not pending — see `d-status-json-dropped-not-deferred`
+(2026-09-09). It was to carry the SessionStart verdict as a file, and every candidate consumer
+is unbuilt while the verdict itself already reaches the model live through the hook. An
+artifact whose consumer does not exist is the mirror of a test that cannot run. The shape it
+would have taken is preserved in that decision as a sketch, not a commitment; `mid_term`
+`status-json-as-flag-accumulator` is the only route by which it returns.
 
 The project side of it is the *measurement* against which `ROADMAP.current_state` is the
 *claim*. Neither replaces the other — the value is in their disagreement, which turns "the
