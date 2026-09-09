@@ -2,81 +2,76 @@
 genre: task_brief
 written: "2026-09-08"
 session_end: written
-supersedes: "the 2026-09-08 14:00 handoff"
+supersedes: "the 2026-09-08 19:04 handoff, whose single purpose — the live-session test — is complete"
 expires: "2026-12-07"
 status: live
 ---
 
 # HANDOFF — rite
 
-**You were started to test one thing the previous session could not: what the installed plugin
-actually does inside a live session.** Do that first, before anything else.
+The previous handoff existed to answer one question: what does the installed plugin do inside a
+live session. **Answered.** Both halves, and they went opposite ways.
 
-## The test, in order
+- The feared failure did **not** happen: plugin skills are namespaced (`/rite:log`,
+  `/rite:preflight`, `/rite:handoff`, `/rite:end`), so nothing of Costin's is shadowed.
+- A failure nobody had considered **did**: the SessionStart hook had never spoken. It emitted a
+  top-level `additionalContext`; the harness reads `hookSpecificOutput.additionalContext`. It
+  ran, exited 0, emitted valid JSON, was logged `success`, and reached nobody.
 
-Rite is **installed and enabled** (`rite@rite`, user scope). Two of its skills share names with
-Costin's own commands, and the docs contradict themselves about which wins.
+Fixed, pinned by `scripts/test-hook-output.py`, shipped as 0.1.1. State is in
+`ROADMAP.current_state`; the reasoning is `d-hook-output-shape-is-a-contract`.
 
-1. Type `/` and list what appears. Report the exact names — `end`, `log`, `preflight`,
-   `handoff`, and whether they show bare or as `rite:end` etc.
-2. **The one that matters:** run `/log` and observe which one runs.
-   - **Costin's** (`~/.claude/commands/log.md`) also matches `[done] X` against
-     `next-steps.yaml` and proposes removing the completed step.
-   - **Rite's** (`skills/log/SKILL.md`) deliberately never touches that file
-     (`d-project-tracker-stays-separate`) and instead insists the clock is read per entry.
-   - If Rite shadows his, he silently loses a daily integration. **Report it; do not fix it.**
-3. Same for `/preflight` — his runs `claude-preflight`; Rite's runs `rite-check.py`.
-4. Confirm the SessionStart hook fired: this session's context should carry a
-   `rite — project standard: 54 checks · 0 RED …` line, in addition to the usual preflight
-   verdict. Two lines covering different sides is correct; two saying the same thing is not.
+## Do this first — it takes one minute and it expires
 
-**Reverse if anything is wrong:**
-`~/projects/claude-run/claude-plugin-probe-20260908.sh --off rite`
+**Look at the top of your own context for a line beginning `rite — project standard:`.**
 
-## State (verified 2026-09-08 19:01)
+This session is the first one that can possibly show it, and the observation cannot be made
+later. Three outcomes, all worth knowing:
 
-| | |
+| what you see | what it means |
 |---|---|
-| plugin | installed, enabled, `rite@rite`, 4 skills + 2 hooks |
-| checker | `scripts/rite-check.py`, 49/57 rules, 0 RED on rite |
-| parser | `scripts/riteyaml.py`, stdlib only, no PyYAML anywhere |
-| gates | standard OK · protocol OK · riteyaml PASS |
-| ADRs / LOG / commits | 33 · 189 · 8 |
-| still missing | LICENSE, `PostToolUse`, the 8 watchers, publication |
+| the line, once | the fix landed. Say so in the log; it is the completion of the 08-09 work |
+| the line, **twice** | the double-dispatch reaches a single session after all. `c-installed-copy-can-be-stale` is unrelated; this reopens whether Rite needs `hookdedup`-style suppression, which was ruled unnecessary on evidence gathered on 08-09 |
+| no line at all | the fix did not deploy. Check the cache version before assuming the code is wrong: `claude plugin list` against `.claude-plugin/plugin.json` |
 
-## Settled today — do not re-litigate
+## Two rulings Costin owes, both raised and both unanswered
 
-`d-plugin-layout-root-is-the-plugin` (root IS the plugin; skills not commands; nag state in
-`${CLAUDE_PLUGIN_DATA}`) · `d-verdicts-and-participation` · `d-git-is-a-capability-not-a-prerequisite`
-· `d-never-instruct-installation` · `d-drop-claims-match-stage` · `d-stdlib-only-yaml-subset`.
+Neither blocks work. Both will rot into "we always did it this way" if nobody decides.
 
-Absolute, unchanged: **never touch `ai-collab-profile/`, `prompts.db`, `prompts-corpus.jsonl`.**
+1. **`c-installed-copy-can-be-stale`** — should the checker enforce that the installed cache
+   matches the repo? It would be the first check about Rite's own delivery rather than about a
+   project's documents, which may be the reason to refuse it.
+2. **`c-marker-lookup-not-case-exact`** — `Path.exists()` finds the `.rite.yaml` marker in both
+   `rite_session_start.py` and `rite-check.py`, while `rite-check.py` carries the case-exact
+   helper written to forbid exactly that. Deliberate exemption, or the checker failing to check
+   itself? Either answer is fine; silence is not.
 
-## Traps
+## The trap this session actually taught
 
-- **Read the machine clock per LOG entry.** Extrapolating produced ~30 fabricated timestamps on
-  07-09 and a second batch on 08-09, the latter with `date` output visible in the same command.
-- Both `spec/*.md` are generated; edit the `.yaml` and regenerate. Two gates.
-- `docs/` is deliberately mixed — prose is Markdown, structure is YAML, per file.
+**`success` from a third-party harness means it did not crash — not that it did anything.**
+The 08-09 session verified the hook by running it by hand and recorded it as working. It *was*
+working, uselessly. Only a live session could tell the difference, and only because the missing
+line was noticed. Prefer observing the effect over reading the report of the attempt.
+
+Its corollary, which cost a real debugging detour: **the working tree is not what runs.** The
+install cache is a real copy and `claude plugin update` is version-gated, so editing a file
+changes nothing until `.claude-plugin/plugin.json` gets a new version. Bump it, or you are
+testing the previous install.
+
+## Standing traps, unchanged
+
+- **Read the machine clock per LOG entry.** This session's entries were written by a shell loop
+  calling `date` so no timestamp passed through the model at all. That is the cheapest known fix
+  for `c-log-timestamps-must-be-machine-read` and it is worth keeping.
+- Both `spec/*.md` are generated. Edit the `.yaml`, regenerate. Two gates.
 - Closing a roadmap item means **deleting** it and **appending** a milestone.
-- `ROADMAP` is three zones; the integrity checks compare the **zone**, not the file.
-- Rite must never write to `~/.claude`. The probe script does, which is exactly why it lives
-  in `claude-run` and not in this repo.
+- `as_of` moves only on real re-verification. It moved on ROADMAP this session because
+  `current_state` was re-derived from the filesystem; it did **not** move on DECISIONS or
+  CONCERNS, where entries were merely appended.
+- Never touch `ai-collab-profile/`, `prompts.db`, `prompts-corpus.jsonl`.
 
-## Known, unresolved
+## Next
 
-- **`claude plugin install` silently dropped `effortLevel: "max"`** from `settings.json` on
-  08-09. Restored. If it recurs after any plugin operation, that is the CLI, not Rite.
-- **The whole repo ships to the install cache** — 604K including this project's LOG.md and
-  `tools/`. Root-as-plugin bought a working checker at that price. No exclusion mechanism found.
-- **~225 tokens always-on, every session**, for four skills. Measured via
-  `claude plugin details rite`. An argument for fewer skills, not yet acted on.
-- `c-unimplementable-tests` is down to **one**: `claims_match_filesystem`, which needs the
-  machine-readable claim surface Costin deferred.
-- Whether `tools/` becomes a declared artifact needs a DECISIONS entry. Inventory frozen at 13.
-
-## Next, after the test
-
-`LICENSE` (rite fails its own standard at stage `shipped` without one) · the three
-unimplemented checker rules · `port-mirror-memory`, which is where `PostToolUse` belongs ·
-then the watchers.
+`LICENSE` — rite fails its own standard at stage `shipped` without one, and the stage is the
+only reason the checker says NA instead of RED. Then the three unimplemented checker rules,
+then `port-mirror-memory`, which is where `PostToolUse` belongs, then the watchers.

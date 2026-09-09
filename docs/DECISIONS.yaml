@@ -820,5 +820,58 @@ decisions:
       - "Shim with no interpreter on PATH: names what is unavailable, names what still works, exits 1, and prints NO install command — grep-checked for apt/brew/winget/pip/curl-pipe patterns."
       - "Handoff detection: written: backdated to 2026-09-01 against a log running to 2026-09-08 produced both the checker RED and the nag. Second run dropped the nag and kept the RED."
     not_verified: "Nothing has been installed. The plugin has never been loaded by the harness."
+    verified_2026_09_08: >
+      not_verified above is now SPENT, and its three open questions are answered by the live
+      session it was waiting for. Recorded here rather than by editing the line, which stands.
+        - "source": "." WORKS. Marketplace loaded, plugin installed as rite@rite.
+        - THE COLLISION DID NOT HAPPEN. Plugin skills are namespaced — /rite:log, /rite:preflight,
+          /rite:handoff, /rite:end — so Costin's own /log and /preflight are untouched and the
+          fallback of renaming Rite's skills is not needed. disable-model-invocation behaves as
+          intended: end and handoff are hidden from the model and still offered to the user.
+        - The claim "SessionStart hook runs end to end and emits valid JSON with
+          additionalContext carrying a real verdict" was TRUE AND USELESS. It emitted valid JSON
+          the harness does not read. Verifying a hook by running it by hand cannot catch this;
+          only a live session can. See d-hook-output-shape-is-a-contract.
+    proposed_by: claude
+    confirmed_by_user: false
+
+  - id: d-hook-output-shape-is-a-contract
+    date: "2026-09-08"
+    title: "A hook's output SHAPE is a contract, pinned by a test; and a local plugin is only as current as its version"
+    context: >
+      Rite's first live SessionStart hook ran, exited 0, emitted valid JSON, was logged by the
+      harness as `success` — and reached nobody. It emitted a top-level `additionalContext`;
+      the harness reads `hookSpecificOutput.additionalContext` and silently ignores anything
+      else. Nothing failed. The previous session had verified the hook by running it by hand
+      and recorded it as working, which it was, uselessly.
+    decision: >
+      The envelope is a contract and is pinned by scripts/test-hook-output.py, which asserts
+      SHAPE and not content. Separately: a version bump in .claude-plugin/plugin.json is a
+      required step of changing Rite, because `claude plugin update` is version-gated.
+    rationale:
+      - >
+        SHAPE, NOT CONTENT: a verdict that is correct and unreadable is worth nothing, and only
+        the shape distinguishes the two. Asserting the text would couple the test to the
+        project's own check results and make it fail for the wrong reasons.
+      - >
+        THROUGH THE SHIM, NOT THE MODULE: the test invokes hooks/rite.sh with a payload on
+        stdin, which is what actually runs, and covers the shim's action dispatch for free.
+      - >
+        IT WAS PROVEN RED BEFORE IT WAS TRUSTED GREEN. Run against the code as it stood, it
+        reports 2 failures and exits 1; after the fix it passes. A gate that has never failed
+        is not known to be a gate — this project's own standing rule, applied to itself.
+      - >
+        THE VERSION BUMP IS NOT HYGIENE: the install cache is a real copy, not a symlink, and
+        `claude plugin update rite` answered "already at the latest version" against edited
+        source. Without a bump, every test runs the previous install. This was discovered only
+        because the fix appeared not to work.
+    consequences:
+      - "Any future hook Rite ships must be covered by the same shape assertion. A hook that is exercised only by hand is not verified, however carefully it is run."
+      - "Editing Rite now has a release step. Whether the checker should enforce it — cache version vs repo version — is open as c-installed-copy-can-be-stale."
+      - "The lesson generalises past hooks: `success` from a third-party harness means it did not crash, not that it did anything. Prefer an observation of the effect over a report of the attempt."
+    verified:
+      - "2 FAILED / exit 1 against the pre-fix code; PASS after. Both directions run this session."
+      - "Plugin updated 0.1.0 -> 0.1.1; install cache now diffs clean against the repo."
+      - "effortLevel: max survived `claude plugin update` — the 08-09 drop happened on `install`, and the two are not the same operation."
     proposed_by: claude
     confirmed_by_user: false

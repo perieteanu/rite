@@ -18,7 +18,7 @@
 # which belongs to project-tracker (d-evolution-out-of-scope).
 ---
 schema_version: "1.0.0"
-as_of: "2026-09-07"
+as_of: "2026-09-08"
 status: current
 
 # ── WRITE-ONCE ───────────────────────────────────────────────────────────────
@@ -41,18 +41,27 @@ inception:
     namespace. Only spec/ plus this project's own Tier 0 + Tier 1 documents.
 
 current_state: >
-  Stage `spec`. BOTH halves are now written and self-gating — the project standard and the
-  session protocol. The project standard: spec/project-standard.yaml
-  is authoritative, spec/PROJECT-STANDARD.md is generated from it, and render-standard.py
-  --check fails on drift (verified both directions on 2026-09-07, and again after the format
-  split). This project carries its own Tier 0 + Tier 1 set, now in docs/ with prose as
-  Markdown and DECISIONS/ROADMAP as YAML (d-docs-dir-and-format-split). The session protocol
-  lives in spec/session-protocol.yaml under the same generate-and-gate treatment.
-  FIRST CODE LANDED 2026-09-08: scripts/riteyaml.py (358 lines) and its differential test.
-  The renderer now runs on it — PyYAML is imported nowhere, and both generated files are
-  byte-identical to the versions PyYAML produced. Verdicts, opt-in participation
-  (.rite.yaml) and tunable freshness windows are specified. Still NO hooks, commands or
-  skills. Not a git repo. No LICENSE. No namespace claimed.
+  Stage `plugin, installed`. Rite is no longer a document about a plugin — it IS one, and it
+  has now run inside a live session. Verified against the filesystem and the harness on
+  2026-09-08, not against another document.
+  BOTH halves are written and self-gating: spec/project-standard.yaml and
+  spec/session-protocol.yaml are authoritative, both spec/*.md are generated, and
+  render-standard.py fails on drift in either.
+  THE CHECKER RUNS: scripts/rite-check.py, 54 checks on this project, 0 RED, 0 YELLOW, 8 NA,
+  46 GREEN, covering 49 of 57 declared tests. scripts/riteyaml.py parses the YAML with no
+  PyYAML anywhere; scripts/test-riteyaml.py is its differential test against PyYAML as oracle.
+  THE PLUGIN IS INSTALLED AND EXERCISED: repo root is the plugin, installed as rite@rite at
+  version 0.1.1, four skills reachable as /rite:log /rite:preflight /rite:handoff /rite:end.
+  The feared collision with Costin's own /log and /preflight did NOT happen — plugin skills
+  are namespaced, so nothing of his is shadowed.
+  The SessionStart hook's first live run FAILED SILENTLY and was fixed the same session: it
+  emitted a top-level additionalContext, which the harness ignores while logging the hook as
+  success. Now nested under hookSpecificOutput and pinned by scripts/test-hook-output.py.
+  This is a git repo, 10 commits.
+  STILL MISSING: LICENSE, which rite's own standard requires at stage `shipped` and which the
+  checker reports NA rather than RED only because the stage has not been raised. No
+  status.json, so checker-implementation is not closed. No PostToolUse and none of the eight
+  watchers. Nothing published; no namespace claimed.
 
 milestones:
   # APPEND-ONLY. One entry per closed near_term item. Never rewrite an entry.

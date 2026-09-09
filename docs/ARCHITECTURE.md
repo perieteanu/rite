@@ -68,9 +68,13 @@ Built, as of 2026-09-08:
 
 ```
 scripts/
+  rite-check.py      THE CHECKER. Reads spec/project-standard.yaml and runs the completion
+                     tests. 54 checks on this project; 49 of 57 declared tests implemented.
   riteyaml.py        Stdlib-only parser for the YAML subset this project uses. 358 lines.
                      REFUSES rather than guesses on anything outside the subset.
   test-riteyaml.py   Differential test against PyYAML as ORACLE, not dependency.
+  test-hook-output.py  Contract test: the SessionStart hook's stdout must nest its verdict
+                     under hookSpecificOutput. Asserts SHAPE, not content — see below.
 .rite.yaml           The opt-in marker. Presence is the signal; empty would be valid.
 ```
 
@@ -100,6 +104,17 @@ Still planned, not built:
 hooks/            PostToolUse — belongs to port-mirror-memory (see below)
 scripts/          preflight.py port — port-preflight
 ```
+
+**The hook's output shape is a contract, not a detail.** The harness reads
+`hookSpecificOutput.additionalContext`; a top-level `additionalContext` is ignored while the
+hook is still logged as `success`. On 2026-09-08 Rite's first live SessionStart did exactly
+that — ran, exited 0, emitted valid JSON, reached nobody. `scripts/test-hook-output.py` pins
+the shape so it cannot silently regress. See `d-hook-output-shape-is-a-contract`.
+
+**A local-path plugin is only as current as its last version bump.** The install cache is a
+real copy of the repo, and `claude plugin update` is version-gated: editing a source file
+changes nothing until `.claude-plugin/plugin.json` gets a new version. What runs is the last
+installed version, never the working tree.
 
 **`PostToolUse` is deliberately absent.** The obvious implementation calls
 `~/.claude/scripts/claude-mirror-memory.py`, which is Costin's script, not Rite's — a plugin
