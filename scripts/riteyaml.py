@@ -56,8 +56,11 @@ _KEY = re.compile(
 )
 
 
+_FLOAT = re.compile(r"^[-+]?(?:\d+\.\d*|\.\d+|\d+(?=[eE]))(?:[eE][-+]?\d+)?$")
+
+
 def _flow_balanced(s: str) -> bool:
-    """True when every '[' in s is closed, ignoring brackets inside quotes."""
+    """True when every '[' and '{' in s is closed, ignoring brackets inside quotes."""
     depth, quote = 0, None
     for c in s:
         if quote:
@@ -65,9 +68,9 @@ def _flow_balanced(s: str) -> bool:
                 quote = None
         elif c in "\"'":
             quote = c
-        elif c == "[":
+        elif c in "[{":
             depth += 1
-        elif c == "]":
+        elif c in "]}":
             depth -= 1
     return depth <= 0
 
@@ -128,8 +131,25 @@ def _scalar(raw: str, filename: str, lineno: int, line: str):
         )
     if _INT.match(s):
         return int(s)
+    if _FLOAT.match(s):
+        return float(s)
     if s.startswith("{"):
-        raise RiteYamlError("flow mappings ({...}) are not supported", filename, lineno, line)
+        if not s.endswith("}"):
+            raise RiteYamlError("unterminated flow mapping", filename, lineno, line)
+        inner = s[1:-1].strip()
+        if not inner:
+            return {}
+        out = {}
+        for part in _split_flow(inner):
+            try:
+                k, v = _split_kv(part)
+            except ValueError:
+                raise RiteYamlError(
+                    f"flow mapping entry {part!r} has no ':' — a set is not a mapping",
+                    filename, lineno, line,
+                ) from None
+            out[_scalar(k, filename, lineno, line)] = _scalar(v, filename, lineno, line)
+        return out
     if s.startswith("["):
         if not s.endswith("]"):
             raise RiteYamlError("unterminated flow sequence", filename, lineno, line)
@@ -141,8 +161,11 @@ def _scalar(raw: str, filename: str, lineno: int, line: str):
 
 
 def _split_flow(s: str) -> list[str]:
-    """Split a flow sequence body on commas that are not inside quotes."""
-    parts, buf, quote = [], [], None
+    """Split a flow body on commas at depth 0, outside quotes.
+
+    Depth-aware so `{a: [1, 2], b: 3}` yields two parts, not three.
+    """
+    parts, buf, quote, depth = [], [], None, 0
     for c in s:
         if quote:
             buf.append(c)
@@ -151,13 +174,40 @@ def _split_flow(s: str) -> list[str]:
         elif c in "\"'":
             quote = c
             buf.append(c)
-        elif c == ",":
+        elif c in "[{":
+            depth += 1
+            buf.append(c)
+        elif c in "]}":
+            depth -= 1
+            buf.append(c)
+        elif c == "," and depth == 0:
             parts.append("".join(buf))
             buf = []
         else:
             buf.append(c)
     parts.append("".join(buf))
     return [p.strip() for p in parts if p.strip()]
+
+
+def _split_kv(s: str) -> tuple[str, str]:
+    """Split one flow-mapping entry on its first depth-0, unquoted colon."""
+    quote, depth = None, 0
+    for n, c in enumerate(s):
+        if quote:
+            if c == quote:
+                quote = None
+        elif c in "\"'":
+            quote = c
+        elif c in "[{":
+            depth += 1
+        elif c in "]}":
+            depth -= 1
+        elif c == ":" and depth == 0:
+            return s[:n].strip(), s[n + 1:].strip()
+    raise ValueError(s)
+
+
+_BLOCK_HEADER = re.compile(r"^([>|])([-+]?)$")
 
 
 class _Reader:
@@ -189,19 +239,47 @@ class _Reader:
         for rx, why in _REFUSE:
             if rx.search(probe):
                 raise RiteYamlError(why, self.filename, lineno, line)
-        if re.search(r":\s*\|[-+]?\s*$", probe):
-            raise RiteYamlError(
-                "block literals (|) are not supported — this project uses folded (>) only",
-                self.filename, lineno, line,
-            )
-        if re.search(r":\s*>[-+]\s*$", probe):
-            raise RiteYamlError(
-                "folded chomping indicators (>- / >+) are not supported — plain > only",
-                self.filename, lineno, line,
-            )
 
-    # -- folded scalars ------------------------------------------------------
-    def _folded(self, parent_indent: int) -> str:
+    # -- block scalars -------------------------------------------------------
+    @staticmethod
+    def _chomp(body: str, trailing_blanks: int, chomp: str) -> str:
+        """Apply the chomping indicator to an already-assembled block scalar.
+
+        clip (default): exactly one trailing newline. strip (-): none.
+        keep (+): the trailing blank lines are content and are preserved.
+        """
+        if not body:
+            return "" if chomp == "-" else body
+        if chomp == "-":
+            return body[:-1] if body.endswith("\n") else body
+        if chomp == "+":
+            return body + "\n" * trailing_blanks
+        return body
+
+    def _literal(self, parent_indent: int, chomp: str = "") -> str:
+        """Read a '|' block. Newlines are content: every line break is preserved."""
+        lines: list[str | None] = []
+        while self.i < len(self.raw):
+            line = self.raw[self.i]
+            if not line.strip():
+                lines.append(None)
+                self.i += 1
+                continue
+            if self._indent(line) <= parent_indent:
+                break
+            lines.append(line)
+            self.i += 1
+        trailing = 0
+        while lines and lines[-1] is None:
+            lines.pop()
+            trailing += 1
+        if not lines:
+            return ""
+        base = min(self._indent(x) for x in lines if x is not None)
+        body = "\n".join("" if x is None else x[base:].rstrip("\r") for x in lines) + "\n"
+        return self._chomp(body, trailing, chomp)
+
+    def _folded(self, parent_indent: int, chomp: str = "") -> str:
         """Read a '>' block. Clip chomping: exactly one trailing newline if non-empty."""
         lines: list[tuple[int, str]] = []
         while self.i < len(self.raw):
@@ -215,23 +293,56 @@ class _Reader:
                 break
             lines.append((ind, line.strip()))
             self.i += 1
+        trailing = 0
         while lines and lines[-1][0] == -1:
             lines.pop()
+            trailing += 1
         if not lines:
             return ""
         base = min(ind for ind, _ in lines if ind >= 0)
-        out, prev_more = "", False
-        for n, (ind, text) in enumerate(lines):
+        out, prev_more, blanks, started = "", False, 0, False
+        for ind, text in lines:
             if ind == -1:
-                out += "\n"
-                prev_more = False
+                blanks += 1
                 continue
             more = ind > base
-            if n and not out.endswith("\n"):
-                out += "\n" if (more or prev_more) else " "
+            if started:
+                # A blank line contributes one newline; a more-indented line adds its own,
+                # because the break before it is literal rather than folded. With no blank,
+                # a break folds to a space unless either side is more-indented.
+                if blanks:
+                    out += "\n" * blanks + ("\n" if (more or prev_more) else "")
+                else:
+                    out += "\n" if (more or prev_more) else " "
             out += (" " * (ind - base) + text) if more else text
-            prev_more = more
-        return out + "\n"
+            prev_more, blanks, started = more, 0, True
+        return self._chomp(out + "\n", trailing, chomp)
+
+    def _continue_plain(self, first: str, own_indent: int) -> str:
+        """Absorb continuation lines of an unquoted multi-line scalar.
+
+            - Make cartridge replacement a 20-minute task, not an
+              event that shuts off water for the whole family.
+
+        YAML folds those into one string. A continuation is more indented than the line that
+        started the scalar, is not itself a `key:`, and is not a sequence entry — anything
+        else ends the scalar. Quoted and flow values are excluded by the caller.
+        """
+        parts = [first]
+        while self.i < len(self.raw):
+            line = self.raw[self.i]
+            if not line.strip():
+                break
+            if self._indent(line) <= own_indent:
+                break
+            body = _strip_comment(line.strip())
+            if not body or body.startswith("- ") or body == "-" or _KEY.match(body):
+                break
+            if _BLOCK_HEADER.match(body):
+                break
+            parts.append(body)
+            self.i += 1
+        return " ".join(parts)
 
     def _gather_flow(self, first: str) -> str:
         """Join continuation lines until a flow sequence's brackets balance.
@@ -245,7 +356,7 @@ class _Reader:
         start = self.i
         while not _flow_balanced(text):
             if self.i >= len(self.raw):
-                raise RiteYamlError("unterminated flow sequence",
+                raise RiteYamlError("unterminated flow collection",
                                     self.filename, start, first)
             text += " " + _strip_comment(self.raw[self.i].strip())
             self.i += 1
@@ -266,8 +377,8 @@ class _Reader:
         if self._indent(line) < indent:
             return None
         body = _strip_comment(line.strip())
-        if body.startswith("["):
-            # A flow sequence standing alone as a block value, possibly wrapped.
+        if body[:1] in ("[", "{"):
+            # A flow collection standing alone as a block value, possibly wrapped.
             lineno = self.i + 1
             self.i += 1
             return _scalar(self._gather_flow(body), self.filename, lineno, line)
@@ -294,6 +405,11 @@ class _Reader:
             if not rest:
                 items.append(self._block(indent + 1))
                 continue
+            if rest[:1] in ("[", "{"):
+                # "- {a: 1}" / "- [1, 2]" — a flow collection as the item itself. This must be
+                # tested BEFORE _KEY, which otherwise reads `{a` as a key and `1}` as a value.
+                items.append(_scalar(self._gather_flow(rest), self.filename, lineno, line))
+                continue
             m = _KEY.match(rest)
             if m:
                 # "- key: value" — a mapping whose first key sits on the dash line.
@@ -301,9 +417,14 @@ class _Reader:
                 self.raw[self.i] = " " * (ind + 2) + rest
                 items.append(self._map(ind + 2))
                 continue
-            if rest in (">",):
-                items.append(self._folded(ind))
+            hdr = _BLOCK_HEADER.match(rest)
+            if hdr:
+                style, chomp = hdr.group(1), hdr.group(2)
+                reader = self._literal if style == "|" else self._folded
+                items.append(reader(ind, chomp))
                 continue
+            if rest[:1] not in ('"', "'"):
+                rest = self._continue_plain(rest, ind)
             items.append(_scalar(rest, self.filename, lineno, line))
         return items
 
@@ -333,15 +454,38 @@ class _Reader:
             self.i += 1
             if val is None or val == "":
                 nxt = self._peek_indent()
-                out[key] = self._block(nxt) if nxt is not None and nxt > indent else None
-            elif val.strip() == ">":
-                out[key] = self._folded(indent)
+                # A block sequence is allowed to sit at its key's own indentation:
+                #   steps:
+                #   - id: presets
+                # Requiring nxt > indent read that as an empty value and dropped the list.
+                same_indent_seq = (nxt == indent and self._peek_is_item())
+                out[key] = (self._block(nxt)
+                            if nxt is not None and (nxt > indent or same_indent_seq)
+                            else None)
+            elif _BLOCK_HEADER.match(val.strip()):
+                hdr = _BLOCK_HEADER.match(val.strip())
+                style, chomp = hdr.group(1), hdr.group(2)
+                reader = self._literal if style == "|" else self._folded
+                out[key] = reader(indent, chomp)
             else:
                 v = val.strip()
-                if v.startswith("[") and not _flow_balanced(v):
-                    v = self._gather_flow(v)
+                if v[:1] in ("[", "{"):
+                    if not _flow_balanced(v):
+                        v = self._gather_flow(v)
+                elif v[:1] not in ('"', "'"):
+                    v = self._continue_plain(v, ind)
                 out[key] = _scalar(v, self.filename, lineno, line)
         return out
+
+    def _peek_is_item(self) -> bool:
+        """Is the next meaningful line a sequence entry?"""
+        j = self.i
+        while j < len(self.raw):
+            t = self.raw[j].strip()
+            if t and not t.startswith("#") and t not in ("---", "..."):
+                return t.startswith("- ") or t == "-"
+            j += 1
+        return False
 
     def _peek_indent(self):
         j = self.i

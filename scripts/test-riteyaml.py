@@ -45,17 +45,39 @@ FRONTMATTER_FILES = [
     "HANDOFF.md",
 ]
 
+# Constructs the parser must SUPPORT, each proven against PyYAML rather than against a
+# hand-written expectation. Block literals, flow mappings and chomping indicators were all in
+# MUST_REFUSE until 2026-09-09, when the first run against outside projects showed real files
+# using them: hwprivacy's ROADMAP and DECISIONS use `|`, plumbing's ROADMAP and ARCHITECTURE
+# use `{...}`. The original subset was measured on this repo alone — a sample of one, treated
+# as a population. See c-yaml-subset-too-narrow-for-the-wild.
+MUST_SUPPORT = {
+    "block literal": "text: |\n  line one\n  line two\n",
+    "block literal, strip": "text: |-\n  no trailing newline\n",
+    "block literal, keep": "text: |+\n  keep the blanks\n\n\n",
+    "block literal, blank line inside": "text: |\n  first\n\n  third\n",
+    "block literal, deeper indent kept": "text: |\n  outer\n    inner\n",
+    "block literal in a sequence": "s:\n  - |\n    one\n  - |\n    two\n",
+    "folded, strip": "text: >-\n  folded and\n  stripped\n",
+    "folded, keep": "text: >+\n  folded, kept\n\n",
+    "flow mapping": "a: {b: 1}\n",
+    "flow mapping, empty": "a: {}\n",
+    "flow mapping, quoted value with comma": 'a: {b: "x, y", c: 2}\n',
+    "flow mapping, nested": "a: {b: [1, 2], c: {d: 3}}\n",
+    "flow mapping in a sequence": "s:\n  - {a: 1}\n  - {b: 2}\n",
+    "flow mapping, colon inside a quoted value": 'a: {b: "k: v"}\n',
+}
+
 # Constructs the parser must REFUSE, not guess at. Each must raise RiteYamlError.
 MUST_REFUSE = {
     "anchor": "base: &defaults\n  a: 1\n",
     "alias": "a: 1\nb: *defaults\n",
     "tag": "when: !!timestamp 2026-09-08\n",
-    "block literal": "text: |\n  a literal block\n",
     "merge key": "a:\n  <<: *base\n  b: 2\n",
     "complex key": "? [a, b]\n: value\n",
-    "flow mapping": "a: {b: 1}\n",
-    "chomping indicator": "text: >-\n  folded, stripped\n",
     "ambiguous boolean": "enabled: yes\n",
+    "flow mapping that is really a set": "a: {b, c}\n",
+    "unterminated flow mapping": "a: {b: 1\n",
 }
 
 
@@ -130,6 +152,22 @@ def main() -> int:
             failures.append(f"{rel} front matter: {len(diffs)} difference(s)")
             failures.extend("    " + d for d in diffs[:8])
 
+    # The support half. Each construct is compared against the ORACLE, never against a
+    # hand-written expectation — the point is that we match PyYAML, not that we match a guess.
+    supported = 0
+    for name, snippet in MUST_SUPPORT.items():
+        expected = yaml.safe_load(snippet)
+        try:
+            got = riteyaml.load(snippet, f"<{name}>")
+        except riteyaml.RiteYamlError as e:
+            failures.append(f"refused {name}, which is inside the subset -> {e}")
+            continue
+        diffs = list(differences(expected, got))
+        supported += 1
+        if diffs:
+            failures.append(f"{name}: {len(diffs)} difference(s) from PyYAML")
+            failures.extend("    " + d for d in diffs[:4])
+
     # The refusal half. A parser that silently accepts what it cannot represent is the
     # failure mode this whole design exists to avoid, so not-refusing is a test failure.
     refused = 0
@@ -147,8 +185,8 @@ def main() -> int:
             print(" ", f)
         return 1
 
-    print(f"PASS  {checked} document(s) parsed identically to PyYAML; "
-          f"{refused}/{len(MUST_REFUSE)} out-of-subset constructs refused")
+    print(f"PASS  {checked} document(s) + {supported}/{len(MUST_SUPPORT)} in-subset constructs "
+          f"parsed identically to PyYAML; {refused}/{len(MUST_REFUSE)} out-of-subset refused")
     return 0
 
 
