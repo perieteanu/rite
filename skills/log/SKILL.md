@@ -47,6 +47,15 @@ written up to that point survives.
 6. Append to the end of `LOG.md`. Never insert, never reorder, never edit an existing line.
    If a past entry turns out wrong, append a new `[fix]` entry correcting it and say so.
 
+   **Never pass the entry text through a shell.** Use the file-writing tool, or a here-doc with
+   a quoted delimiter — never `echo`, `printf` or an interpolated string. A log entry is prose
+   *about code*, so it is the content most likely to contain backticks, `$`, quotes and
+   newlines: precisely what a shell expands. This is not hypothetical. On 2026-09-09 two
+   entries in this project's own log were written through an unquoted helper and bash silently
+   executed every backtick, deleting the words inside — leaving `drops it on , not on .` The
+   corruption is invisible in the command that produced it and permanent in an append-only
+   file.
+
 ## Don't
 
 - **Don't invent a timestamp.** An invented one is indistinguishable from a real one
