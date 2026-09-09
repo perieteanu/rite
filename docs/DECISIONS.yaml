@@ -997,3 +997,39 @@ decisions:
     proposed_by: claude
     confirmed_by_user: true
 
+  - id: d-single-harness-on-purpose
+    date: "2026-09-09"
+    title: "Rite targets Claude Code and no other harness — the constraint IS the product"
+    context: >
+      Held from the start and NEVER WRITTEN DOWN, which surfaced only when a competitor's design
+      turned on it. Reading spscream/ai-floppy (c-prior-art-ai-floppy) showed a plugin that
+      supports Claude Code and Cursor, ships no hooks at all, and says why in its own spec:
+      "Cursor's hooks are not drop-in — camelCase event names, permission in place of
+      permissionDecision, a flat output shape accepted beside the nested one, and some events
+      absent entirely."
+    decision: >
+      Claude Code only. Not Cursor, not a generic coding-agent abstraction, not a portable
+      subset. Recorded as a MISSION non-goal.
+    rationale:
+      - >
+        THE CAPABILITY IS THE PRODUCT. What Rite sells is a check that fires whether or not you
+        remember to run it. That requires a harness that runs a SessionStart hook and reads
+        hookSpecificOutput.additionalContext. Cross-harness support means shipping only what
+        the harnesses share, and this capability is not in the intersection — demonstrated, not
+        assumed: the one plugin that took that route ended up with zero hooks.
+      - >
+        THE TRADE IS VISIBLE IN THE COMPETITOR. Their breadth cost them the mechanism; taking
+        their route would cost Rite the same thing, in exchange for reach into an editor the
+        author does not use. That is trading the only structural advantage for adoption, which
+        d-goal-is-credibility already says is not the goal.
+      - >
+        AN UNWRITTEN ASSUMPTION IS NOT A DECISION. This was obvious to its author and invisible
+        to everyone else, including to the next session. It is exactly the class of thing this
+        project exists to convert into something a cold reader can find.
+    consequences:
+      - "Rite may use any Claude Code hook event without checking portability to another agent."
+      - "A future request for Cursor or Copilot support is answered by this entry, not re-argued."
+      - "Cross-platform still means OS — Linux, macOS, Windows — which is unchanged and still enforced. It never meant cross-harness, and the two were easy to confuse while only one was written down."
+    chosen_by_user: true
+    proposed_by: user
+
