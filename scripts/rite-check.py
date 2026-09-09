@@ -52,6 +52,8 @@ class Ctx:
 
     def __init__(self, root: Path, spec: dict):
         self.root, self.spec = root, spec
+        self.unreadable: dict[str, str] = {}
+        self.marker_error: str | None = None
         self.marker = self._load_marker()
         self.is_git = (root / ".git").is_dir()
         self.today = dt.date.today()
@@ -65,7 +67,11 @@ class Ctx:
             return None
         try:
             return riteyaml.load(p.read_text(encoding="utf-8"), str(p)) or {}
-        except riteyaml.RiteYamlError:
+        except riteyaml.RiteYamlError as e:
+            # An unreadable marker silently dropped every threshold and override. Record it:
+            # running on defaults while the project believes its overrides apply is worse
+            # than not running at all.
+            self.marker_error = str(e).split(": ", 1)[-1].splitlines()[0]
             return {}
 
     def read(self, rel: str) -> str | None:
@@ -610,6 +616,33 @@ def _required_from_stage(ctx, art, test):
     return (GREEN, "present") if ctx.exists_exactly(art["path"]) else (RED, f"required from stage {want}")
 
 
+def parse_failure(ctx, rel: str) -> str | None:
+    """Why `rel` cannot be parsed, or None if it can. Absence is NOT a failure.
+
+    This is the distinction c-na-conflates-absent-with-unparseable existed for. "File absent
+    or unparseable" covered two opposite situations under one benign-looking verdict: a file
+    the project never wrote, and a file Rite cannot read. The first is often fine. The second
+    means the checker is failing while looking calm — and on 2026-09-09 it hid four real
+    parser refusals across two projects, nine NA lines deep.
+    """
+    text = ctx.read(rel)
+    if text is None:
+        return None  # absent — a different question, answered by the exists tests
+    body = text
+    if rel.endswith(".md"):
+        m = _FM.match(text)
+        if not m:
+            return None  # no front matter is a populated-test concern, not a parse failure
+        body = m.group(1)
+    elif not rel.endswith((".yaml", ".yml")):
+        return None
+    try:
+        riteyaml.load(body, rel)
+    except riteyaml.RiteYamlError as e:
+        return str(e).split(": ", 1)[-1].strip()
+    return None
+
+
 def _load_yaml(ctx, art):
     text = ctx.read(art["path"])
     if text is None:
@@ -649,6 +682,27 @@ def check(root: Path, spec: dict) -> tuple[list[Finding], dict]:
         present = ctx.exists_exactly(art["path"])
         # Tier 2/3 are optional: absent is NA, never a failure.
         optional_absent = tier >= 2 and not present
+
+        # A present file that cannot be parsed is a RED in its own right, reported ONCE.
+        # Its remaining tests are not run, and say so in one line rather than as a cascade
+        # of NAs that each look like an optional file quietly missing.
+        broken = parse_failure(ctx, art["path"]) if present else None
+        if broken:
+            findings.append(Finding(RED, "project", "integrity", "parseable",
+                                    art["path"], broken))
+            skipped = 0
+            for test in art.get("tests") or []:
+                declared += 1
+                if test.get("rule") in RULES:
+                    implemented += 1
+                if test.get("rule") not in ("optional",):
+                    skipped += 1
+            if skipped:
+                findings.append(Finding(NA, "project", "exists", "checks_not_run",
+                                        art["path"],
+                                        f"{skipped} further checks not run — the file could "
+                                        f"not be parsed, so nothing about it is known"))
+            continue
 
         for test in art.get("tests") or []:
             declared += 1
@@ -697,6 +751,12 @@ def report(root: Path, findings: list[Finding], meta: dict) -> int:
 
     print(f"rite — {root.name}")
     print()
+    if ctx.marker_error:
+        print(f"  {RED:6} project  integrity  {'.rite.yaml':30}  unparseable — "
+              f"{ctx.marker_error}")
+        print(f"  {'':6} {'':8} {'':10} {'':30}  every threshold and override in it was "
+              f"ignored; defaults were used")
+        print()
     for f in findings:
         if f.severity == GREEN:
             continue
