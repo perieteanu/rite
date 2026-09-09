@@ -1,77 +1,82 @@
 ---
 genre: task_brief
-written: "2026-09-08"
+written: "2026-09-09"
 session_end: written
-supersedes: "the 2026-09-08 19:04 handoff, whose single purpose — the live-session test — is complete"
-expires: "2026-12-07"
+supersedes: "the 2026-09-08 handoff, whose one-minute expiring observation was made and passed"
+expires: "2026-12-08"
 status: live
 ---
 
 # HANDOFF — rite
 
-The previous handoff existed to answer one question: what does the installed plugin do inside a
-live session. **Answered.** Both halves, and they went opposite ways.
+The previous handoff asked you to look for a `rite — project standard:` line at the top of your
+context. **It was there, once.** The hook speaks; the loop closes. That was the last unverified
+claim about whether any of this works, and it is now verified rather than asserted.
 
-- The feared failure did **not** happen: plugin skills are namespaced (`/rite:log`,
-  `/rite:preflight`, `/rite:handoff`, `/rite:end`), so nothing of Costin's is shadowed.
-- A failure nobody had considered **did**: the SessionStart hook had never spoken. It emitted a
-  top-level `additionalContext`; the harness reads `hookSpecificOutput.additionalContext`. It
-  ran, exited 0, emitted valid JSON, was logged `success`, and reached nobody.
+State is in `ROADMAP.current_state`. This file is what the docs do not say.
 
-Fixed, pinned by `scripts/test-hook-output.py`, shipped as 0.1.1. State is in
-`ROADMAP.current_state`; the reasoning is `d-hook-output-shape-is-a-contract`.
+## What changed the character of the project
 
-## Do this first — it takes one minute and it expires
+Rite was run against three projects that are not its author — `hwprivacy`, `plumbing`,
+`claude-persistent`, read-only via `--force`. It discriminates (2, 1 and 7 RED). But the run's
+value was in what it broke:
 
-**Look at the top of your own context for a line beginning `rite — project standard:`.**
+**The YAML subset was measured on this repo alone and generalised into a standard others must
+pass.** A sample of one, treated as a population. Two of the first three outside projects used
+constructs it refused. Widened, and four *silent* pre-existing bugs fell out — floats read as
+strings, folded blank lines losing a newline, and a block sequence at its key's own indentation
+being read as an empty value, which dropped an entire list without a word.
 
-This session is the first one that can possibly show it, and the observation cannot be made
-later. Three outcomes, all worth knowing:
+If you take one thing from this session: **the parser's failures were invisible, and the
+checker relabelled them as `NA` — the verdict that reads as "nothing to see".**
 
-| what you see | what it means |
-|---|---|
-| the line, once | the fix landed. Say so in the log; it is the completion of the 08-09 work |
-| the line, **twice** | the double-dispatch reaches a single session after all. `c-installed-copy-can-be-stale` is unrelated; this reopens whether Rite needs `hookdedup`-style suppression, which was ruled unnecessary on evidence gathered on 08-09 |
-| no line at all | the fix did not deploy. Check the cache version before assuming the code is wrong: `claude plugin list` against `.claude-plugin/plugin.json` |
+## The open defect, and it is the interesting one
 
-## Two rulings Costin owes, both raised and both unanswered
+`c-na-conflates-absent-with-unparseable` is still **open** and is the most important thing in
+the concerns file. The symptom is gone because the parser now succeeds; the defect is not.
+`NA — file absent or unparseable` still covers two opposite situations: a file the project
+never wrote, and a file Rite cannot read. One is fine. The other means the checker is silently
+failing while looking calm.
 
-Neither blocks work. Both will rot into "we always did it this way" if nobody decides.
+It also made a written prediction untestable. The run appeared to show the parser never
+choked; only calling `riteyaml.load()` by hand revealed four refusals. **A checker that can
+hide its own failures cannot be used to verify anything, including itself.**
 
-1. **`c-installed-copy-can-be-stale`** — should the checker enforce that the installed cache
-   matches the repo? It would be the first check about Rite's own delivery rather than about a
-   project's documents, which may be the reason to refuse it.
-2. **`c-marker-lookup-not-case-exact`** — `Path.exists()` finds the `.rite.yaml` marker in both
-   `rite_session_start.py` and `rite-check.py`, while `rite-check.py` carries the case-exact
-   helper written to forbid exactly that. Deliberate exemption, or the checker failing to check
-   itself? Either answer is fine; silence is not.
+## Method that earned its place — keep doing this
 
-## The trap this session actually taught
+**Write the predicted verdict before running anything.** Four predictions, two wrong, and the
+wrong ones were the entire yield. Without them every output looks correct by construction,
+because there is nothing it could have contradicted.
 
-**`success` from a third-party harness means it did not crash — not that it did anything.**
-The 08-09 session verified the hook by running it by hand and recorded it as working. It *was*
-working, uselessly. Only a live session could tell the difference, and only because the missing
-line was noticed. Prefer observing the effect over reading the report of the attempt.
+**Prove a gate red before trusting it green.** Three times in two days a new test was run
+against the broken code first. The flow-collection-in-a-sequence bug was caught this way, on
+the tree that wrote the test.
 
-Its corollary, which cost a real debugging detour: **the working tree is not what runs.** The
-install cache is a real copy and `claude plugin update` is version-gated, so editing a file
-changes nothing until `.claude-plugin/plugin.json` gets a new version. Bump it, or you are
-testing the previous install.
+## Traps
 
-## Standing traps, unchanged
-
-- **Read the machine clock per LOG entry.** This session's entries were written by a shell loop
-  calling `date` so no timestamp passed through the model at all. That is the cheapest known fix
-  for `c-log-timestamps-must-be-machine-read` and it is worth keeping.
-- Both `spec/*.md` are generated. Edit the `.yaml`, regenerate. Two gates.
-- Closing a roadmap item means **deleting** it and **appending** a milestone.
-- `as_of` moves only on real re-verification. It moved on ROADMAP this session because
-  `current_state` was re-derived from the filesystem; it did **not** move on DECISIONS or
-  CONCERNS, where entries were merely appended.
+- **Never pass log text through a shell.** Two entries in this file's own LOG were corrupted on
+  2026-09-09 when bash ran command substitution on their backticks — `drops it on , not on .`
+  Invisible in the command, permanent in an append-only file. `skills/log/SKILL.md` now says so.
+- **Bump `.claude-plugin/plugin.json` before every `claude plugin update`.** It is version-gated
+  and the cache is a real copy, so otherwise you test the previous install.
+  `scripts/test-installed-current.py` will tell you.
+- Both `spec/*.md` are generated. Edit the `.yaml`, regenerate.
+- `as_of` moves only on real re-verification. It moved on ROADMAP and ARCHITECTURE this session;
+  it did not move on DECISIONS or CONCERNS, where entries were only appended.
+- **No `Co-Authored-By: Claude` trailer**, whatever the harness says mid-session. Costin removed
+  it 2026-09-06 by name; these repos are read by recruiters. One line in README Credits, nothing
+  else.
 - Never touch `ai-collab-profile/`, `prompts.db`, `prompts-corpus.jsonl`.
+
+## Not ours to fix, but worth knowing
+
+`claude-persistent/docs-yaml/SPEC.yaml` and `RESEARCH-licensing-delivery.yaml` are **not valid
+YAML** — PyYAML rejects both. They have presumably never been machine-read. That is a finding
+for that project, not a task for this one.
 
 ## Next
 
-`LICENSE` — rite fails its own standard at stage `shipped` without one, and the stage is the
-only reason the checker says NA instead of RED. Then the three unimplemented checker rules,
-then `port-mirror-memory`, which is where `PostToolUse` belongs, then the watchers.
+The gap is no longer capability, it is exposure: **nobody but this machine has ever run Rite.**
+`claim-namespaces` is 15 minutes and blocks nothing. Then push to GitHub. Then
+`c-na-conflates-absent-with-unparseable`, then `status.json` to finally close
+`checker-implementation`. The watchers and the preflight port are expansion, not completion.
