@@ -1,6 +1,6 @@
 ---
 schema_version: "1.0.0"
-as_of: "2026-09-08"
+as_of: "2026-09-09"
 status: current
 ---
 
@@ -73,8 +73,12 @@ scripts/
   riteyaml.py        Stdlib-only parser for the YAML subset this project uses. 358 lines.
                      REFUSES rather than guesses on anything outside the subset.
   test-riteyaml.py   Differential test against PyYAML as ORACLE, not dependency.
+  ritefs.py          Case-exact filesystem predicates. ONE implementation of
+                     case_sensitive_name_matching; rite-check and both hooks route through it.
   test-hook-output.py  Contract test: the SessionStart hook's stdout must nest its verdict
                      under hookSpecificOutput. Asserts SHAPE, not content — see below.
+  test-installed-current.py  Contract test: the INSTALLED copy must match this working tree,
+                     by version and by content. Skips where Rite is not installed.
 .rite.yaml           The opt-in marker. Presence is the signal; empty would be valid.
 ```
 
@@ -114,7 +118,14 @@ the shape so it cannot silently regress. See `d-hook-output-shape-is-a-contract`
 **A local-path plugin is only as current as its last version bump.** The install cache is a
 real copy of the repo, and `claude plugin update` is version-gated: editing a source file
 changes nothing until `.claude-plugin/plugin.json` gets a new version. What runs is the last
-installed version, never the working tree.
+installed version, never the working tree. `scripts/test-installed-current.py` enforces this;
+see `d-installed-copy-checked-by-test-not-by-rule` for why it is a test and not a checker rule.
+
+**The YAML subset was widened on 2026-09-09** after the first run against outside projects
+found block literals and flow mappings in real files. `riteyaml.py` now covers those, plus
+chomping indicators and multi-line plain scalars, and still refuses anchors, aliases, tags,
+merge keys and complex keys. Stdlib only; PyYAML remains the test oracle and is imported
+nowhere. See the `widened_2026_09_09` block inside `d-stdlib-only-yaml-subset`.
 
 **`PostToolUse` is deliberately absent.** The obvious implementation calls
 `~/.claude/scripts/claude-mirror-memory.py`, which is Costin's script, not Rite's — a plugin
