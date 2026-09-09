@@ -1158,3 +1158,75 @@ decisions:
     chosen_by_user: true
     proposed_by: claude
 
+  - id: d-publish-main-in-full-no-export
+    date: "2026-09-09"
+    title: "The repository is published whole; the curated export is dropped before being built"
+    context: >
+      The ask was a dedicated folder holding curated COPIES of the publishable files, kept
+      fresh by a sync script that would eventually also publish, carrying only "the right
+      amount of the history of this plugin making".
+    decision: >
+      No export folder, no sync script, no second copy. `main` is published in full — LOG.md,
+      docs/, HANDOFF.md and all. What the end user gets as a clean starting point is a
+      `template/` directory of seed files shipped INSIDE the public repo, which is
+      setup-hook-scaffolding.
+    rationale:
+      - >
+        THE PREMISE WAS FALSE. The design assumed the development record could be kept back
+        while the plugin was published. GitHub visibility is per-REPOSITORY, never per-branch:
+        a public repo has every branch public, there is no private branch and no hidden
+        worktree. Two separate repositories is the only split that exists, and that is two
+        things to keep in sync — the drift problem this project exists to attack.
+      - >
+        AND THE USER THEN REMOVED THE REASON. Costin chose to publish main in full anyway, on
+        the grounds that it is everything a developer would want to see. Once nothing is being
+        hidden, an export is not a filter — it is a second copy of the same files with no job.
+      - >
+        WHAT SURVIVES IS BETTER AND ALREADY PLANNED. A seed set — seeded docs/, a genre:none
+        HANDOFF, an empty-but-valid LOG — is a PRODUCT FEATURE rather than a release mechanism,
+        and it was already on the roadmap as setup-hook-scaffolding, never connected to this.
+        Built once, it serves both.
+      - >
+        The publishable/private distinction would also have needed its own completion test, or
+        it becomes exactly the kind of discipline that fails quietly. Not building it removes
+        that obligation rather than deferring it.
+    consequences:
+      - "Publishing means publishing the full LOG, including the 2026-09-09 entry about truncating scripts/rite-check.py to zero bytes. Kept deliberately: negative findings staying in is what MISSION claims, and the log is where that claim is either true or empty."
+      - "Root-as-plugin already copies the whole repo into the install cache, so the install and the publish now show the same thing. One surface, not two."
+      - "No `.export/`, no orphan branch, no worktree, no push refspec guard. None of it is needed."
+    chosen_by_user: true
+    proposed_by: user
+
+  - id: d-stage-gates-the-standard
+    date: "2026-09-09"
+    title: "`stage` becomes the gating axis: a day-one project is not shown a screen of RED"
+    context: >
+      Raised by Costin on being told what a fresh install would report: "i did not imagine that
+      immediately after install plugin will start and report all red. it should be some flag
+      defined that the project just started". A real design fault — a tool that opens by
+      listing everything you have not done yet gets uninstalled the next day.
+    decision: >
+      The flag already exists and was doing almost nothing: `stage:` in .rite.yaml, vocabulary
+      [idea, spec, build, polish, shipped, maintain, archived]. It becomes the axis that gates
+      what the standard requires. A scaffolded project starts at `idea` and is asked almost
+      nothing; requirements switch on as the stage advances.
+    rationale:
+      - >
+        NOTHING EXPIRES AND NOTHING NAGS. A grace PERIOD would be a clock, and a clock that runs
+        out produces a warning nobody asked for — the gate that gets switched off. A stage
+        changes when the human says the project changed, which is a real act rather than a chore
+        to remember.
+      - >
+        IT GIVES stage A JOB. On 2026-09-09 it was noted that stage had exactly one consumer,
+        the LICENSE check, and that a concept kept alive by a single caller is usually
+        under-used or should be inlined. This is the answer: under-used.
+      - >
+        A DAY-ONE PROJECT HAS NOTHING TO BE STALE AGAINST. The freshness tier compares docs to
+        source mtime; at stage `idea` there is often no source. Gating by stage removes a class
+        of degenerate verdicts rather than tuning thresholds around them.
+    consequences:
+      - "Which requirement switches on at which stage is NOT yet specified. That is the work, and it belongs with setup-hook-scaffolding so the seed set and the gating are designed against each other."
+      - "d-drop-claims-match-stage stands: this is about what the standard REQUIRES at a stage, not about inferring a project's actual stage from its prose."
+    chosen_by_user: true
+    proposed_by: user
+
