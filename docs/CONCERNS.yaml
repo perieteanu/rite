@@ -19,55 +19,6 @@ status: current
 
 concerns:
 
-  - id: c-unimplementable-tests
-    title: "Six declared completion tests cannot run under the project's own no-AI constraint"
-    status: open
-    severity: high
-    opened: "2026-09-07"
-    blocks: [checker-implementation]
-    what: >
-      The standard declares 48 tests. The exists/populated ones are trivial — every template
-      repo can do those. The 16 fresh/integrity tests are the entire differentiator, and six
-      of them are not implementable as written under MISSION's settled constraint
-      ("no AI inference at check time; every check reproducible by plain Python"):
-      claims_match_stage (needs the project's actual stage; "falls back to inference" never
-      says inference from WHAT), claims_match_filesystem (requires extracting "not built yet"
-      claims from prose — the api.pdf test, and the highest-value one in the standard),
-      append_only_preserved x2 (needs a previous revision; rite is not a git repo and
-      dependencies lists git as OPTIONAL, so an integrity test rests on an optional
-      dependency), not_expired (required_frontmatter permits "YYYY-MM-DD OR a condition", and
-      a condition is not evaluable), source_plans_all_copied (already open as
-      c-plan-attribution).
-    why_it_matters: >
-      Every one of the six is a fresh or integrity test. The unimplementable tier is exactly
-      the differentiated tier — which means the part that is easy to ship is the part nobody
-      needs, and the part that justifies the project is the part that does not run yet.
-    proposal:
-      - "Declare a machine-readable claim surface — a `not_built_yet:` / `stage:` key the checker reads instead of prose."
-      - "Require git outright and stop calling it optional."
-      - "Mark them `manual:` in the spec so the checker reports '6 declared, not automatable' rather than passing silently."
-    do_not: "Leave them declared and unimplemented. A standard whose own checks do not run is the thing this project argues against."
-    user_ruling: "Postponed 2026-09-07 — 'too early'. Reopen before checker-implementation starts."
-    reduced_2026_09_08: >
-      SIX became TWO, and none of it required reopening the postponed decision — the reductions
-      arrived as side effects of other work.
-        - append_only_preserved (LOG) and (DECISIONS): RESOLVED by `git init`. Demonstrated,
-          not asserted — appending reports GREEN, rewriting an existing line reports RED.
-        - source_plans_all_copied: a route exists — copy-on-creation via FileChanged closes
-          c-plan-attribution, because that problem is only hard retroactively.
-        - not_expired: RESOLVED by narrowing the spec to match practice. `expires` is now
-          always a DATE; a condition may accompany it in prose but is never the sole value.
-          The old rule was looser than anybody's actual behaviour.
-      REMAINING TWO:
-        - claims_match_stage — RULED 2026-09-08: dropped, not solved. See
-          d-drop-claims-match-stage. Its motivating failure belongs to claims_match_filesystem,
-          so this is a consolidation rather than lost coverage.
-        - claims_match_filesystem — still needs the machine-readable claim surface deferred on
-          2026-09-08. The highest-value test in the standard, and it bit twice on 2026-09-08
-          alone: three must_be_current claims went false the moment scripts/ appeared, and a
-          careless global replace rewrote a reference to plumbing's real directory. Both were
-          caught by hand.
-
   - id: c-plan-attribution
     title: "A plan in ~/.claude/plans has no project attribution"
     status: open
@@ -211,6 +162,20 @@ concerns:
       which renders text only and has no hover.
 
 retired_ids:
+  - id: c-unimplementable-tests
+    retired: "2026-09-09"
+    how: settled
+    outcome: d-claim-surface
+    why: >
+      Opened 2026-09-07 with SIX tests that could not run under MISSION's no-inference
+      constraint. It reached ZERO. Two were resolved by `git init`, one by narrowing the spec
+      to match practice, one by a route that closes c-plan-attribution, one was dropped as
+      redundant (d-drop-claims-match-stage), and the last — claims_match_filesystem, the
+      highest-value test in the standard — is implemented as of today via the declared claim
+      surface. The concern was right that the unimplementable tier was the differentiated tier.
+      What it could not have known is that the rule was also declared on the WRONG ARTIFACT:
+      CLAUDE.md alone, catching none of the four failures that motivated the work.
+
   - id: c-prior-art-ai-floppy
     retired: "2026-09-09"
     how: dropped

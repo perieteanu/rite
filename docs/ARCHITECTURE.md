@@ -2,6 +2,24 @@
 schema_version: "1.0.0"
 as_of: "2026-09-09"
 status: current
+# The file tree below is a claim about the repository, and this is the falsifiable half of it.
+# ARCHITECTURE is must_be_current and rotted hardest: on 2026-09-08 it omitted the checker
+# entirely, and on 2026-09-09 it still called the session-start script "planned", said it
+# writes status.json, and said it reads an /end stamp file that had been REJECTED.
+claims:
+  absent:
+    - scripts/preflight.py
+    - scripts/status.json
+    - .github/workflows
+  present:
+    - scripts/rite-check.py
+    - scripts/riteyaml.py
+    - scripts/ritefs.py
+    - scripts/rite_session_start.py
+    - scripts/rite_session_end.py
+    - hooks/hooks.json
+    - hooks/rite.sh
+    - hooks/rite.ps1
 ---
 
 # ARCHITECTURE — rite

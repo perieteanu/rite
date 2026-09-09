@@ -600,6 +600,101 @@ def _no_prov(ctx, art, test):
     return GREEN, "verbatim, no header"
 
 
+# ── the declared claim surface ──────────────────────────────────────────────
+# The one place in this checker where configuration comes from the ARTIFACT BEING CHECKED
+# rather than from the standard. Every other rule reads test["value"] or art["structure"];
+# these read a claims block out of the document itself, because the claims a project makes
+# about its own tree are the project's to state, not the standard's to know.
+#
+# This is what unparks claims_match_filesystem. MISSION forbids inference at check time, so
+# prose cannot be read — and prose is where the rot lives. A path is the smallest thing in a
+# document that a human will write and a machine can falsify.
+#
+# LIMIT, stated rather than hidden: path-shaped claims only. "session_start writes status.json"
+# is a claim about BEHAVIOUR and passes untouched. Three of the four real failures of
+# 2026-09-08/09 were path-shaped; the fourth was not.
+#
+# TWO LOCATIONS, and not as a compromise. The provenance header is required only in the docs
+# directory (provenance_header.required_in), so README.md and CLAUDE.md deliberately carry
+# none — and YAML front matter at the top of a README is rendered by the forge on the
+# repository's landing page, degrading the file this standard itself calls the highest-value
+# one in the repo. A root-level Markdown file therefore declares claims in an HTML comment,
+# which renders as nothing. Same parser, same shape, one extra place to look.
+_CLAIM_DIRECTIONS = ("absent", "present")
+_CLAIMS_COMMENT = re.compile(r"<!--\s*rite:claims\s*\n(.*?)-->", re.S)
+
+
+def _claims_block(ctx, art):
+    """(claims, error) — the mapping or None, plus why a block present but unusable is bad."""
+    meta = _meta(ctx, art)
+    if isinstance(meta, dict) and meta.get("claims") is not None:
+        return meta.get("claims"), None
+    text = ctx.read(art["path"])
+    if text is None or not art["path"].endswith(".md"):
+        return None, None
+    m = _CLAIMS_COMMENT.search(text)
+    if not m:
+        return None, None
+    try:
+        return riteyaml.load(m.group(1), art["path"] + " (rite:claims)"), None
+    except riteyaml.RiteYamlError as e:
+        return None, f"the rite:claims comment does not parse — {str(e).split(': ', 1)[-1]}"
+
+
+@rule("claims_declared")
+def _claims_declared(ctx, art, test):
+    if ctx.read(art["path"]) is None:
+        return NA, "file absent"
+    block, err = _claims_block(ctx, art)
+    if err:
+        return YELLOW, err
+    if block is None:
+        return YELLOW, ("no claims declared — this document asserts nothing that can be "
+                        "falsified against the tree")
+    return GREEN, "declares claims"
+
+
+@rule("claims_match_filesystem")
+def _claims_match_filesystem(ctx, art, test):
+    if ctx.read(art["path"]) is None:
+        return NA, "file absent"
+    claims, err = _claims_block(ctx, art)
+    if err:
+        return RED, err
+    if claims is None:
+        # Nothing to verify. The NUDGE to declare something is claims_declared's job, at a
+        # different level and a different severity; one verdict cannot answer two questions.
+        return NA, "no claims declared — nothing to verify"
+
+    # A malformed block is RED, never skipped. A claim surface that silently does nothing is
+    # the exact defect this rule exists to remove, reintroduced one layer down.
+    if not isinstance(claims, dict):
+        return RED, f"claims must be a mapping of {'/'.join(_CLAIM_DIRECTIONS)}, got a scalar"
+    unknown = [k for k in claims if k not in _CLAIM_DIRECTIONS]
+    if unknown:
+        return RED, (f"unknown claim direction(s): {', '.join(map(str, unknown))} — "
+                     f"expected {' and/or '.join(_CLAIM_DIRECTIONS)}")
+    for direction in _CLAIM_DIRECTIONS:
+        val = claims.get(direction)
+        if val is not None and not (isinstance(val, list)
+                                    and all(isinstance(x, str) for x in val)):
+            return RED, f"claims.{direction} must be a list of paths"
+
+    broken = []
+    for direction in _CLAIM_DIRECTIONS:
+        want_present = direction == "present"
+        for rel in claims.get(direction) or []:
+            # exists_exactly, never Path.exists: a claim passing on macOS and failing on Linux
+            # is one repo with two verdicts. d-one-implementation-of-a-portability-rule.
+            if ctx.exists_exactly(rel) is not want_present:
+                broken.append(f"{rel} claimed {direction} but is "
+                              f"{'absent' if want_present else 'present'}")
+    if broken:
+        return RED, "; ".join(broken)
+    n = sum(len(claims.get(d) or []) for d in _CLAIM_DIRECTIONS)
+    return GREEN, f"{n} claim(s) hold"
+
+
 @rule("required_from_stage")
 def _required_from_stage(ctx, art, test):
     stage = (ctx.marker or {}).get("stage")

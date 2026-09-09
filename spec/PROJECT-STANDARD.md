@@ -297,7 +297,8 @@ _Rejected alternative: A .gitattributes with eol=lf. Correct, conventional, and 
 | exists | `file_present` | — |
 | populated | `required_sections` | `['What this is']` |
 | populated | `min_lines` | `15` |
-| fresh | `claims_match_filesystem` | Any "not built yet" / "no code" claim must be false-checkable against the tree. This is the api.pdf doc-rot class: a claim that reads perfectly and is flatly wrong. |
+| populated | `claims_declared` | This document declares a `claims:` block. A core document that asserts nothing falsifiable about the tree is not wrong — it is unfalsifiable, which is worse, because it cannot be caught being wrong either. |
+| integrity | `claims_match_filesystem` | Every path in `claims.absent` is absent and every path in `claims.present` is present. This is the api.pdf doc-rot class: a claim that reads perfectly and is flatly wrong. INTEGRITY rather than fresh — a document that is confidently wrong is not merely stale, and the level is what decides whether the verdict is loud. LIMIT: path-shaped claims only. A claim about BEHAVIOUR ("it writes status.json") passes untouched. |
 
 ### `HANDOFF.md`
 
@@ -371,6 +372,8 @@ session_end: written | updated | carried_forward | none — the outcome the clos
 | exists | `file_present` | — |
 | populated | `min_lines` | `8` |
 | populated | `no_placeholders` | `TODO`, `FIXME`, `<fill`, `XXX`, `Lorem ipsum` |
+| populated | `claims_declared` | — |
+| integrity | `claims_match_filesystem` | — |
 
 ### `docs/ARCHITECTURE.md`
 
@@ -399,6 +402,8 @@ _Schema strictness: loose._
 | populated | `min_content_sections` | `3` — At least three H2 sections beyond the title. This replaces a required-key list, which cannot span a Rust codebase and a plumbing schematic. |
 | fresh | `as_of_present` | — |
 | fresh | `as_of_within_days_of_activity` | `90` — Measured against source mtime, never against another document. |
+| populated | `claims_declared` | — |
+| integrity | `claims_match_filesystem` | The must_be_current artifact, and the one that rotted hardest. On 2026-09-08 it omitted the checker entirely; on 2026-09-09 it still called the session-start script "planned", said it writes status.json, and said it reads an /end stamp file that d-end-outcome-recorded-in-handoff had REJECTED — a rejected design documented as live, beside working code. |
 
 ### `docs/CONVENTIONS.md`
 
@@ -511,6 +516,8 @@ _Schema strictness: loose._
 | integrity | `deleted_ids_appear_in_milestones` | Every near_term `id` present in the previous revision and absent from this one must appear as a `milestones` entry. This is what makes deletion safe rather than lossy — the item is not erased, it is promoted. |
 | integrity | `milestones_append_only` | The append-only half of a mixed file. Existing entries stay byte-identical. |
 | integrity | `no_done_markers` | A near_term item carrying done/completed/finished status is a rewrite-only file being used as an append-only one. Delete it and log it instead. |
+| populated | `claims_declared` | — |
+| integrity | `claims_match_filesystem` | ROADMAP owns `current_state`, so it owns the project's most consequential claim about its own tree — and on 2026-09-09 that claim read "Still NO hooks, commands or skills. Not a git repo." against a running plugin in a repo with ten commits. The claims block is what makes the sentence testable; the sentence itself stays prose. |
 
 ### `LICENSE`
 

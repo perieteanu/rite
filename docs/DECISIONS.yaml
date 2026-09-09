@@ -1104,3 +1104,57 @@ decisions:
     chosen_by_user: true
     proposed_by: claude
 
+  - id: d-claim-surface
+    date: "2026-09-09"
+    title: "Documents declare machine-checkable claims; claims_match_filesystem becomes real, and RED"
+    context: >
+      claims_match_filesystem was the last test parked in c-unimplementable-tests and the
+      highest-value one in the standard. It exists for the api.pdf doc-rot class: a claim that
+      reads perfectly and is flatly wrong. It bit FOUR times in two days — ARCHITECTURE,
+      .rite.yaml with CONCERNS, ROADMAP.current_state, README — every instance caught by a
+      human noticing, which is the mechanism this project exists to argue does not work.
+    decision: >
+      A document declares a `claims:` mapping of `absent:` and `present:` path lists. Two
+      rules read it: claims_declared (level populated, YELLOW) fires when a core document
+      declares nothing; claims_match_filesystem (level integrity, RED) fires when a declared
+      claim is false, and NA when there is nothing to verify. Declared on readme, claude_md,
+      architecture and roadmap.
+    rationale:
+      - >
+        THE SCOPE WAS AS WRONG AS THE IMPLEMENTATION, and that was the find that reshaped the
+        work. The rule was declared on CLAUDE.md ALONE. Not one of the four failures was in
+        CLAUDE.md, so a fully implemented rule would have caught NONE of them. The README
+        artifact even carried a comment saying "claims_match_filesystem covers it" while never
+        declaring the rule — a consolidation recorded as done and never performed.
+      - >
+        PROSE IS NOT PARSED, DELIBERATELY. The obvious design — read paths out of a "not built"
+        section — was tried against the real documents and rejected: ARCHITECTURE's own
+        not-built block lists `hooks/` and `scripts/`, both of which EXIST, with the annotation
+        naming what is missing inside them. That rule fires a false positive on day one, and a
+        check that cries wolf is switched off within a week.
+      - >
+        TWO RULES BECAUSE SEVERITY COMES FROM THE LEVEL. The engine overrides a rule's returned
+        severity with LEVEL_SEVERITY, so one rule cannot answer YELLOW for "nothing declared"
+        and RED for "a declaration is false". Splitting them is what the existing machinery
+        already supports, and it separates two genuinely different questions.
+      - >
+        INTEGRITY, NOT FRESH. The rule sat at level fresh, which caps it at YELLOW. A document
+        that is confidently wrong is not merely stale, and the level is the only thing that
+        decides whether the verdict is loud.
+      - >
+        WHY IT DOES NOT SIMPLY MOVE THE ROT: prose is vague and unfalsifiable ("no plugin"); a
+        path is not. The discipline it creates is one sentence long — when you write that
+        something does not exist, name it.
+    consequences:
+      - "First rule whose configuration comes from the ARTIFACT BEING CHECKED rather than from the standard. Every other rule reads test['value'] or art['structure']. Deliberate: the claims a project makes about its own tree are the project's to state."
+      - "TWO LOCATIONS. The provenance header is required only in the docs directory, so README.md and CLAUDE.md carry none — and YAML front matter atop a README is rendered by the forge on the landing page, degrading the file the standard itself calls the highest-value one in the repo. Root-level Markdown therefore uses an HTML comment, `<!-- rite:claims ... -->`, which renders as nothing. Same parser, same shape."
+      - "LIMIT, written into the spec rather than left to be discovered: path-shaped claims only. ARCHITECTURE's 'writes status.json' is a claim about BEHAVIOUR and passes untouched. Three of the four failures were path-shaped; the fourth was not."
+      - "The other 11 projects gain YELLOW from claims_declared and nothing else. Verified: RED and GREEN counts on hwprivacy, plumbing and claude-persistent are unchanged."
+      - "Coverage 49/57 -> 57/64. Version 0.3.0: a new rule in the standard is not a patch."
+    verified:
+      - "Proven red before green: all 10 new assertions failed against the pre-change checker."
+      - "A planted lie fires: `absent: [scripts/rite-check.py]` in README produced RED naming the path and the direction."
+      - "THE RETROSPECTIVE TEST. The tree at 71edd82 was extracted, README's own sentence — 'No plugin, no hooks, no slash commands' — transcribed into a claims block, and today's checker run against it: RED naming .claude-plugin/plugin.json, hooks/hooks.json and skills/end/SKILL.md. It catches the failure that motivated it."
+    chosen_by_user: true
+    proposed_by: claude
+
