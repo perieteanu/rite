@@ -210,6 +210,55 @@ concerns:
       the viewer earlier than d-plugin-is-the-product assumed) or a plugin-native statusLine,
       which renders text only and has no hover.
 
+  - id: c-na-conflates-absent-with-unparseable
+    title: "NA reports 'file absent or unparseable' — two opposite situations under one benign verdict"
+    status: open
+    severity: high
+    opened: "2026-09-09"
+    blocks: [validate-against-real-projects]
+    what: >
+      hwprivacy/docs-yaml/ROADMAP.yaml exists and carries 187+ lines of real content. The
+      checker reported it NINE times as "file absent or unparseable" — NA, the verdict that
+      reads as nothing-to-see. A reader concludes the project has no roadmap; the truth is that
+      Rite cannot read theirs.
+    why_it_matters: >
+      It is the checker being confidently wrong in the direction that hides its own failure. A
+      project that conforms BETTER than its score suggests is worse than a false RED: a RED gets
+      investigated, an NA gets skimmed past. It also made a written prediction untestable — the
+      run appeared to show the parser never choked, and only a direct call to riteyaml.load()
+      revealed four refusals.
+    proposal:
+      - "Split the verdict: ABSENT is NA; UNPARSEABLE is RED, or at minimum YELLOW, and names the construct and line."
+      - "Collapse the cascade: one unparseable file produced nine NA lines for a single cause. Report the cause once."
+    do_not: "Leave a parser refusal wearing the same label as an optional missing file."
+
+  - id: c-yaml-subset-too-narrow-for-the-wild
+    title: "The YAML subset refuses real project files — block literals and flow mappings are both in use"
+    status: open
+    severity: high
+    opened: "2026-09-09"
+    what: >
+      d-stdlib-only-yaml-subset rests on a measurement: this project uses no anchors, aliases,
+      tags, flow mappings, block literals or merge keys. True of rite. FALSE of two of the first
+      three outside projects ever tested, on 2026-09-09:
+        - hwprivacy docs-yaml/ROADMAP.yaml:187 and docs-yaml/DECISIONS.yaml:179 — block literals (|)
+        - plumbing docs-yaml/ROADMAP.yaml:11 and docs-yaml/ARCHITECTURE.yaml:107 — flow mappings ({...})
+      The parser refusing rather than guessing is correct and stays. The question is the subset.
+    why_it_matters: >
+      The measurement was taken on the author's own repo and generalised to a standard other
+      projects must pass. That is the same error as verifying a doc against another doc — a
+      sample of one, treated as a population. Every project Rite cannot parse is a project Rite
+      cannot check, and it currently says so in the quietest possible way (see
+      c-na-conflates-absent-with-unparseable).
+    proposal:
+      - "Widen the subset to block literals (|) and flow mappings ({...}). Both are common, both are unambiguous to parse, and neither needs the machinery that anchors and merge keys would drag in."
+      - "Or hold the subset and make the refusal LOUD, so a project learns immediately that its files are unreadable and why."
+      - "Do NOT reintroduce PyYAML — the stdlib-only decision is unaffected either way."
+    what_would_close_this: >
+      A ruling on whether the subset grows. If it does, the differential test against PyYAML
+      must be extended with the new constructs FIRST — that test is the correctness claim.
+
+
 retired_ids:
   - id: c-installed-copy-can-be-stale
     retired: "2026-09-09"
