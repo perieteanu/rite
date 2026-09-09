@@ -139,31 +139,51 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
 
 ## Explicitly NOT built yet
 
-No plugin, no `hooks/`, no `commands/`, no `skills/`, no port of `preflight.py` /
-`claude-mirror-memory.py` / `hookdedup.py`, no git repo, no LICENSE, no packaging, no
-namespace claimed. The session-protocol spec now exists; **nothing that implements it does.**
+**This section was rewritten on 2026-09-09, and what it used to say is the reason the
+`claims:` block below exists.** It read: *"No plugin, no `hooks/`, no `commands/`, no
+`skills/`, … no git repo, no LICENSE, no packaging, no namespace claimed … nothing that
+implements it does."* Every clause was false, some for two days, in the file whose whole job
+is to stop an agent producing plausible-but-wrong output. Correction paragraphs had been
+appended beneath it rather than the false paragraph being deleted, so the document contradicted
+itself and the first thing a reader met was the lie.
 
-**The plugin exists as of 2026-09-08** — `.claude-plugin/`, four skills, `hooks/`, and both
-launcher shims. Not yet installed or tested against the harness. `PostToolUse` is deliberately
-absent; see ARCHITECTURE.
+What is genuinely not built, as of 2026-09-09:
 
-**`scripts/` is no longer empty.** As of 2026-09-08 it holds `riteyaml.py` — the stdlib-only
-YAML subset parser — and `test-riteyaml.py`, its differential test against PyYAML. The
-renderer runs on it and **PyYAML is imported nowhere in this project**. Run
-`python3 scripts/test-riteyaml.py` after touching either file; it skips with exit 2 if PyYAML
-is absent, because the oracle is not a dependency.
+- **No CI.** Six gates exist and nothing runs them but a human or Claude, by hand.
+- **No `PostToolUse` hook**, and none of the eight watchers. It belongs to `port-mirror-memory`.
+- **No port of `preflight.py` / `claude-mirror-memory.py` / `hookdedup.py`**, and no
+  `checks.yaml` — `port-preflight` has not started.
+- **Nothing published.** `github.com/perieteanu/rite` is claimed but private and empty.
+- **Seven declared tests unimplemented**, of which `mirror_not_stale` and
+  `source_plans_all_copied` are the ones that matter.
 
-**No `status.json`.** The SessionStart verdict, written by a script, spanning all three sides
-preflight tags — machine, project, claude. Configured by `checks.yaml`. Its *project* section
-is the measured counterpart to what `ROADMAP.current_state` claims. Ships with its producer,
-not before it: an artifact whose producer does not exist is the same error as a test that
-cannot run. Fixed in shape when it
-lands — tier 3, `free_replace`, generated, never hand-edited, regenerable from scratch so
-deleting it is always safe, and it **must** carry its measurement time. That is the one file in
-the standard where a clock is mandatory rather than forbidden, because it is a measurement
-rather than a document.
+**`status.json` is DROPPED, not pending** — `d-status-json-dropped-not-deferred`. Every
+candidate consumer is unbuilt and the verdict it was to carry already reaches the model live.
+Its shape is preserved in that decision as a sketch, not a commitment.
 
-Only `spec/` exists, plus this project's own Tier 0 + Tier 1 documents.
+<!-- rite:claims
+# The machine-checkable half of the section above. Prose may say whatever it needs to; these
+# lines fail the day they stop being true. Add a path here whenever you write a sentence
+# claiming something does not exist — that is the whole discipline.
+absent:
+  - .github/workflows
+  - commands
+  - checks.yaml
+  - scripts/preflight.py
+  - scripts/claude-mirror-memory.py
+  - scripts/status.json
+present:
+  - scripts/rite-check.py
+  - scripts/riteyaml.py
+  - scripts/ritefs.py
+  - hooks/hooks.json
+  - hooks/rite.ps1
+  - skills/end/SKILL.md
+  - .claude-plugin/plugin.json
+  - .claude-plugin/marketplace.json
+  - LICENSE
+-->
+
 
 Note the distinction, because the two lists are easy to confuse: this section is **not built
 yet** — planned, will exist. `ROADMAP.deferred_deliberately` is **yes, later**; MISSION

@@ -651,6 +651,16 @@ artifacts:
       # FILESYSTEM, not about a stage field. claims_match_filesystem covers it. The test was
       # specified as a stage comparison and justified by a filesystem example; removing it is
       # a consolidation, not a loss of coverage. See d-drop-claims-match-stage.
+      #
+      # ... and that consolidation was never finished. The note above said
+      # "claims_match_filesystem covers it" while README did not DECLARE the rule — it was
+      # declared on CLAUDE.md alone. On 2026-09-09 README asserted "No plugin, no hooks, no
+      # slash commands, no packaging" over a running, installed plugin, and nothing in the
+      # standard could have caught it. Declared here 2026-09-09, see d-claim-surface.
+      - level: populated
+        rule: claims_declared
+      - level: integrity
+        rule: claims_match_filesystem
 
   - id: claude_md
     path: "CLAUDE.md"
@@ -685,11 +695,21 @@ artifacts:
       - level: populated
         rule: min_lines
         value: 15
-      - level: fresh
+      - level: populated
+        rule: claims_declared
+        means: >
+          This document declares a `claims:` block. A core document that asserts nothing
+          falsifiable about the tree is not wrong — it is unfalsifiable, which is worse,
+          because it cannot be caught being wrong either.
+      - level: integrity
         rule: claims_match_filesystem
         means: >
-          Any "not built yet" / "no code" claim must be false-checkable against the tree.
-          This is the api.pdf doc-rot class: a claim that reads perfectly and is flatly wrong.
+          Every path in `claims.absent` is absent and every path in `claims.present` is
+          present. This is the api.pdf doc-rot class: a claim that reads perfectly and is
+          flatly wrong. INTEGRITY rather than fresh — a document that is confidently wrong is
+          not merely stale, and the level is what decides whether the verdict is loud.
+          LIMIT: path-shaped claims only. A claim about BEHAVIOUR ("it writes status.json")
+          passes untouched.
 
   - id: log
     path: "LOG.md"
@@ -804,6 +824,16 @@ artifacts:
         rule: as_of_within_days_of_activity
         value: 90
         means: "Measured against source mtime, never against another document."
+      - level: populated
+        rule: claims_declared
+      - level: integrity
+        rule: claims_match_filesystem
+        means: >
+          The must_be_current artifact, and the one that rotted hardest. On 2026-09-08 it
+          omitted the checker entirely; on 2026-09-09 it still called the session-start script
+          "planned", said it writes status.json, and said it reads an /end stamp file that
+          d-end-outcome-recorded-in-handoff had REJECTED — a rejected design documented as
+          live, beside working code.
 
   - id: conventions
     path: "docs/CONVENTIONS.md"
@@ -1022,6 +1052,15 @@ artifacts:
         means: >
           A near_term item carrying done/completed/finished status is a rewrite-only file
           being used as an append-only one. Delete it and log it instead.
+      - level: populated
+        rule: claims_declared
+      - level: integrity
+        rule: claims_match_filesystem
+        means: >
+          ROADMAP owns `current_state`, so it owns the project's most consequential claim about
+          its own tree — and on 2026-09-09 that claim read "Still NO hooks, commands or skills.
+          Not a git repo." against a running plugin in a repo with ten commits. The claims block
+          is what makes the sentence testable; the sentence itself stays prose.
 
   - id: handoff
     path: "HANDOFF.md"

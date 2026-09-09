@@ -21,6 +21,24 @@ schema_version: "1.0.0"
 as_of: "2026-09-09"
 status: current
 
+# current_state below is the project's most consequential claim about its own tree, and on
+# 2026-09-09 it read "Still NO hooks, commands or skills. Not a git repo." against a running
+# plugin in a repo with ten commits. The prose stays prose; these are the parts of it that
+# fail on their own the day they stop being true.
+claims:
+  absent:
+    - .github/workflows
+    - scripts/preflight.py
+    - scripts/status.json
+    - checks.yaml
+  present:
+    - .git
+    - LICENSE
+    - scripts/rite-check.py
+    - hooks/hooks.json
+    - skills/end/SKILL.md
+    - .claude-plugin/plugin.json
+
 # ── WRITE-ONCE ───────────────────────────────────────────────────────────────
 # What this project set out to do, as first agreed. Set once, never edited. This is the only
 # baseline that makes drift measurable: current_state is rewritten as reality moves, so
@@ -43,14 +61,18 @@ inception:
 current_state: >
   Stage `build`, declared in .rite.yaml. Verified against the filesystem and the harness on
   2026-09-09.
-  Rite is an installed, running plugin at version 0.2.0 — rite@rite, four skills reachable as
+  Rite is an installed, running plugin at version 0.3.0 — rite@rite, four skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.
-  FIVE GATES RUN: standard, protocol, riteyaml differential, hook output shape, and installed-
-  copy currency. rite-check.py reports 54 checks on this project, 47 GREEN, covering 49 of 57
-  declared tests.
+  SIX GATES RUN: standard, protocol, riteyaml differential, hook output shape, checker verdicts,
+  and installed-copy currency. rite-check.py reports 61 checks on this project, 0 RED, 56 GREEN,
+  covering 57 of 64 declared tests.
+  DOCUMENTS NOW DECLARE MACHINE-CHECKABLE CLAIMS. README, CLAUDE.md, ARCHITECTURE and this file
+  carry `claims:` blocks of absent/present paths, checked on every run — d-claim-surface. That
+  implemented claims_match_filesystem, the last test parked in c-unimplementable-tests, which is
+  retired at zero.
   THE STANDARD HAS BEEN RUN ON PROJECTS THAT ARE NOT ITS AUTHOR — hwprivacy, plumbing and
   claude-persistent, read-only via --force — and it discriminates: 2, 1 and 7 RED respectively.
   That run rewrote the YAML subset. riteyaml now handles block literals, chomping, flow
@@ -58,12 +80,16 @@ current_state: >
   projects parse identically to PyYAML, where before 4 were refused and 3 parsed wrongly.
   Still stdlib only; PyYAML is imported nowhere.
   LICENSE exists, MIT, carrying no provenance header.
-  This is a git repo, 16 commits, nothing pushed anywhere.
+  This is a git repo, 24 commits, nothing pushed anywhere.
   near_term is EMPTY as of 2026-09-09 — every queued item closed, none invented to replace them.
-  STILL MISSING: eight declared tests unimplemented, of which claims_match_filesystem is the one
-  that keeps biting. No PostToolUse and none of the eight watchers. No CI. The namespace
-  github.com/perieteanu/rite is claimed but PRIVATE and empty — nothing is published, so no one
-  but this machine has ever run Rite.
+  STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
+  source_plans_all_copied. No PostToolUse and none of the eight watchers. No CI — six gates
+  exist and nothing runs them but a human. The namespace github.com/perieteanu/rite is claimed
+  but PRIVATE and empty, so no one but this machine has ever run Rite.
+  NOTE, because this paragraph is the standing example: the claims block above passed GREEN
+  while every NUMBER in this text was stale. That is the declared limit of claims_match_filesystem
+  working as specified — it checks paths, not counts — and it is why the block supplements the
+  prose rather than replacing the discipline of rewriting it.
 
 milestones:
   # APPEND-ONLY. One entry per closed near_term item. Never rewrite an entry.
@@ -228,13 +254,6 @@ long_term:
     why: "Quality-gated, and a far better CV line than a self-hosted repo."
 
 deferred_deliberately:
-  - what: "Machine-readable doc claims, to unpark claims_match_filesystem"
-    why: >
-      Proposed 2026-09-08 and NOT taken. claims_match_filesystem is stuck in
-      c-unimplementable-tests because it must read prose; a declared claim list would make it
-      trivial and would unpark the highest-value test in the standard. Not chosen because it
-      changes the document format and deserves its own decision. Recorded so the route is not
-      lost — it attacks that concern from a direction nothing else does.
   - what: "Stale-on-touch — flag docs whose as_of predates a source change"
     why: >
       Proposed 2026-09-08 and NOT taken. It would repair the degeneracy in
