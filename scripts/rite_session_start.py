@@ -5,8 +5,10 @@ Reports, never enforces. `phases.start` declares must_not: block, prompt, or re-
 with side effects. Gating belongs to an explicitly invoked checker, not to a hook nobody asked
 for.
 
-Reads the hook payload on stdin, emits JSON with `additionalContext` on stdout. That field is
-the channel that reaches Claude; `systemMessage` does nothing under entrypoint=claude-vscode.
+Reads the hook payload on stdin, emits JSON on stdout with the context nested under
+`hookSpecificOutput.additionalContext` — see emit() for why the nesting is load-bearing.
+That field is the channel that reaches Claude; `systemMessage` does nothing under
+entrypoint=claude-vscode.
 
 Three things:
   1. the project-standard verdict, from rite-check
@@ -39,9 +41,22 @@ _FM = re.compile(r"^---\s*\n(.*?)\n---\s*(\n|$)", re.S)
 
 
 def emit(context: str | None) -> None:
-    """One JSON object on stdout. Silence is a valid, common answer."""
+    """One JSON object on stdout. Silence is a valid, common answer.
+
+    The NESTING is load-bearing, not decoration. The harness reads
+    `hookSpecificOutput.additionalContext` and ignores a top-level `additionalContext` —
+    logging the hook as `success` either way. A bare key therefore exits 0, emits valid
+    JSON, and reaches nobody: the exact failure class this project exists to catch.
+    Verified 2026-09-08 against the 2.1.263 extension log, where the two working hooks
+    each logged `provided additionalContext (N chars)` and this one did not.
+
+    scripts/test-hook-output.py asserts the shape. Do not flatten it.
+    """
     if context:
-        json.dump({"additionalContext": context}, sys.stdout)
+        json.dump({"hookSpecificOutput": {
+            "hookEventName": "SessionStart",
+            "additionalContext": context,
+        }}, sys.stdout)
     sys.stdout.write("\n")
 
 
