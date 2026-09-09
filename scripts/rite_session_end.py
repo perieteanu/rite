@@ -17,6 +17,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import ritefs  # noqa: E402
 
 
 def mirror_memory(root: Path) -> None:
@@ -52,7 +54,7 @@ def main() -> int:
     except ValueError:
         payload = {}
     root = Path(payload.get("cwd") or os.getcwd()).resolve()
-    if not (root / ".rite.yaml").exists():
+    if not ritefs.marker_present(root):
         return 0
     mirror_memory(root)
     copy_plans(root)

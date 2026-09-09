@@ -15,3 +15,11 @@
 # standard_version is deliberately absent: how a project declares which version of the
 # standard it targets is still open (c-standard-version-policy). Writing a value here would
 # pre-empt that decision rather than record it.
+
+# The project's own stage, from [idea, spec, build, polish, shipped, maintain, archived].
+# It is the ONLY remaining consumer of a stage value (d-drop-claims-match-stage removed the
+# other), and it gates exactly one thing: LICENSE becomes REQUIRED at `shipped`.
+# `build` is the honest value — the plugin runs and is installed, but nothing is published and
+# no namespace is claimed. Declaring `shipped` to turn the LICENSE check green would be lying
+# to our own checker, which is the failure mode this project exists to prevent.
+stage: build
