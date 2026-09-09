@@ -35,6 +35,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import riteyaml  # noqa: E402
+import ritefs  # noqa: E402
 
 _LOG_TS = re.compile(r"^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})(?::(\d{2}))?\s\|")
 _FM = re.compile(r"^---\s*\n(.*?)\n---\s*(\n|$)", re.S)
@@ -137,7 +138,7 @@ def main() -> int:
     root = Path(payload.get("cwd") or os.getcwd()).resolve()
 
     # Opt-in. Silent where not invited.
-    if not (root / ".rite.yaml").exists():
+    if not ritefs.marker_present(root):
         emit(None)
         return 0
 

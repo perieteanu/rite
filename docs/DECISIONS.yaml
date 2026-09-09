@@ -875,3 +875,64 @@ decisions:
       - "effortLevel: max survived `claude plugin update` — the 08-09 drop happened on `install`, and the two are not the same operation."
     proposed_by: claude
     confirmed_by_user: false
+
+  - id: d-one-implementation-of-a-portability-rule
+    date: "2026-09-09"
+    title: "Case-exact lookup moves to scripts/ritefs.py; every marker test routes through it"
+    context: >
+      rite-check.py carried exists_exactly(), written specifically because macOS and Windows
+      are case-insensitive and a repo must not get two verdicts on two platforms. It was then
+      not used by the checker's own opt-in test, nor by either hook — all three found the
+      .rite.yaml marker with Path.exists(). Raised as c-marker-lookup-not-case-exact.
+    decision: >
+      It is a bug, not an exemption. The predicate moves to scripts/ritefs.py as the single
+      implementation; rite-check.py delegates to it, and rite_session_start, rite_session_end
+      and rite-check all find the marker via ritefs.marker_present().
+    rationale:
+      - >
+        The exemption argument — the marker is the author's file, so its spelling is their
+        problem — fails on the standard's own terms. Opt-in decides whether ANY checking
+        happens; getting it platform-dependent means a project is checked on Linux and
+        invisible on a Mac. That is the exact outcome case_sensitive_name_matching exists to
+        forbid, at the one point where it matters most.
+      - >
+        A rule implemented in one file and ignored in three is not a rule. The fix is not to
+        copy the helper around but to leave one implementation with no second place to drift to.
+    consequences:
+      - "scripts/ritefs.py is a new module, stdlib only, no new dependency."
+      - "A project carrying .Rite.yaml no longer opts in anywhere, consistently."
+    proposed_by: claude
+    confirmed_by_user: true
+
+  - id: d-installed-copy-checked-by-test-not-by-rule
+    date: "2026-09-09"
+    title: "Cache-vs-working-tree drift is a TEST of Rite, not a rule of the standard"
+    context: >
+      c-installed-copy-can-be-stale: the install cache is a real copy and `claude plugin update`
+      is version-gated, so editing source changes nothing until the version is bumped. It cost a
+      real debugging detour on 2026-09-08.
+    decision: >
+      scripts/test-installed-current.py checks it: version match plus a content diff of the
+      executable surface (scripts, skills, hooks, .claude-plugin). It skips with exit 2 where
+      Rite is not installed. It is NOT a rite-check.py rule.
+    rationale:
+      - >
+        WHY A CHECK AT ALL: the alternative was documenting the version bump as a release step
+        in CONVENTIONS. That is a rule with no completion test, which is the precise thing this
+        project exists to replace. Writing it down would have been the comfortable wrong answer.
+      - >
+        WHY NOT IN rite-check.py: the checker's subject is a PROJECT's conformance to the
+        standard, and no other consumer of the standard ships a plugin. A delivery check there
+        would make the checker partly about Rite itself, which nobody else can use.
+      - >
+        CONTENT AS WELL AS VERSION: an equal version with unequal bytes is the worse failure,
+        because it looks current. Documents are excluded — a stale LOG.md in the cache is untidy,
+        not broken, and failing on it would train people to ignore the test.
+    verified:
+      - "Written against a dirty tree and FAILED immediately with 5 real findings — the ritefs refactor was not installed. Bumped 0.1.1 -> 0.1.2, updated, PASS."
+      - "effortLevel: max survived a second `claude plugin update`, consistent with the 08-09 finding that only `install` dropped it."
+    consequences:
+      - "Editing Rite now has an enforced release step: bump, update, and the test says so if you forget."
+    proposed_by: claude
+    confirmed_by_user: true
+

@@ -31,6 +31,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import riteyaml  # noqa: E402
+import ritefs  # noqa: E402
 
 SPEC_PATH = HERE.parent / "spec" / "project-standard.yaml"
 
@@ -81,11 +82,7 @@ class Ctx:
         there and fail on Linux — the same repo, two verdicts. See portability
         `case_sensitive_name_matching`.
         """
-        p = self.root / rel
-        parent = p.parent
-        if not parent.is_dir():
-            return False
-        return p.name in {c.name for c in parent.iterdir()}
+        return ritefs.exists_exactly(self.root / rel)
 
     def resolve(self, rel: str) -> tuple[str, str | None]:
         """Find an artifact, honouring superseded conventions.
@@ -726,7 +723,7 @@ def main(argv: list[str]) -> int:
     args = [a for a in argv[1:] if not a.startswith("--")]
     force = "--force" in argv
     root = Path(args[0]).resolve() if args else Path.cwd()
-    if not (root / ".rite.yaml").exists() and not force:
+    if not ritefs.marker_present(root) and not force:
         # Opt-in. Silent where not invited — see participation in the spec.
         # --force answers "what would this project score if it opted in?", which is the
         # only way to evaluate before adopting. It reads; it never writes.

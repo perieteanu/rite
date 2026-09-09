@@ -210,56 +210,23 @@ concerns:
       the viewer earlier than d-plugin-is-the-product assumed) or a plugin-native statusLine,
       which renders text only and has no hover.
 
-  - id: c-installed-copy-can-be-stale
-    title: "What runs is the last installed version, not the working tree — and nothing checks that"
-    status: open
-    severity: medium
-    opened: "2026-09-08"
-    what: >
-      The install cache is a real copy of the repo, and `claude plugin update` is version-gated.
-      Editing scripts/ or skills/ changes nothing until .claude-plugin/plugin.json carries a new
-      version. Discovered 2026-09-08 only because a fix appeared not to work: the source was
-      correct, the cache still held the bug, and `update` reported "already at the latest
-      version (0.1.0)" without complaint.
-    why_it_matters: >
-      It is this project's own thesis pointed at its build: a developer edits a file, runs the
-      thing, sees the old behaviour, and has no signal explaining why. Worse for Rite than for
-      most plugins, because Rite's whole claim is that unchecked state drifts — and here the
-      drift is between the repo and the copy of itself that is actually executing.
-    proposal:
-      - "A check that fails: installed cache version vs .claude-plugin/plugin.json, reported as a project-side finding at SessionStart."
-      - "Or a check that fails harder: diff the cache against the repo, so an equal version with unequal content is caught too."
-      - "Or accept it as a developer-only concern and document the bump as a release step in CONVENTIONS, since it cannot affect a user who only ever installs."
-    what_would_close_this: >
-      A ruling on whether the checker enforces this at all. It is the first check that would be
-      about Rite's own delivery rather than about a project's documents, which may be the reason
-      to keep it out.
-    raised_with_user: "2026-09-08, unanswered at session end."
-
-  - id: c-marker-lookup-not-case-exact
-    title: "The .rite.yaml opt-in marker is found with Path.exists(), which the standard forbids"
-    status: open
-    severity: low
-    opened: "2026-09-08"
-    what: >
-      scripts/rite_session_start.py and scripts/rite-check.py both test for the marker with
-      Path.exists(). rite-check.py itself carries the case-exact helper written precisely to
-      forbid that, because macOS and Windows are case-insensitive: a project carrying
-      `.Rite.yaml` would opt in on those platforms and be invisible on Linux — same repo, two
-      verdicts.
-    why_it_matters: >
-      Low impact, high embarrassment. It is the portability rule the spec calls load-bearing,
-      broken in the one file that decides whether any checking happens at all. If it is a
-      deliberate exemption it should be written down; if it is an oversight, the checker is
-      failing to check itself.
-    proposal:
-      - "Route the marker lookup through the existing case-exact helper, and say so in the spec's portability section."
-      - "Or state the exemption explicitly: the marker is authored by the project, not by the standard, so its spelling is the author's problem."
-    do_not: "Leave it undecided and unremarked. Either answer is defensible; silence is what the project argues against."
-    raised_with_user: "2026-09-08, unanswered at session end."
-
-
 retired_ids:
+  - id: c-installed-copy-can-be-stale
+    retired: "2026-09-09"
+    how: settled
+    outcome: d-installed-copy-checked-by-test-not-by-rule
+    why: >
+      Opened and settled within a day. Ruled by the user 2026-09-09. The answer was a check
+      that fails (scripts/test-installed-current.py), not a documented release step — the
+      documented-step option was rejected as a rule with no completion test.
+  - id: c-marker-lookup-not-case-exact
+    retired: "2026-09-09"
+    how: settled
+    outcome: d-one-implementation-of-a-portability-rule
+    why: >
+      Opened and settled within a day. Ruled by the user 2026-09-09: a bug, not an exemption.
+      The predicate now has one implementation in scripts/ritefs.py and three consumers.
+
   - id: c-vendor-pyyaml
     retired: "2026-09-07"
     how: settled
