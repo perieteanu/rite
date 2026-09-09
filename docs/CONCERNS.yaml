@@ -241,6 +241,37 @@ concerns:
       A ruling on positioning, written into MISSION or DECISIONS, after reading the other
       project. Not a comparison table — a sentence about what Rite is FOR that stays true with
       ai-floppy in the world.
+    read_2026_09_09: >
+      READ. The comfortable read was wrong and the differentiator survives only in a narrower
+      form.
+      THEY SHIP REAL CHECKS. wrap-guard.sh refuses a commit that stages files this session did
+      not write, 21 shell tests, 5 CI workflows. "Almost nobody ships the check that fails" is
+      not true of them, and saying so would be false.
+      THE DIFFERENCE IS WHERE ENFORCEMENT SITS. floppy ships NO HOOKS — verified: no file
+      matching hook anywhere, no hooks key in plugin.json. Every guard runs inside a ritual
+      someone remembered to start. Rite's SessionStart fires whether or not anyone remembers,
+      and its check is cross-session: the NEXT session says the last one did not close.
+      THEY KNOW, AND ARGUED THE OTHER WAY. A spec in their repo dated 2026-09-09 names the gap
+      exactly — a SessionStart hook "is the only thing that would close the dependency ...
+      because it fires whether or not the human runs start" — and defers it on cost: "it would
+      cost those tokens in every session of every consumer, forever, to cover the case where
+      the rite was skipped." That is a serious attack on Rite's central bet, and the honest
+      response is to answer it, not to ignore it.
+      WHY THEY CANNOT TAKE THE HOOK ROUTE, in their words: "Cursor's hooks are not drop-in —
+      camelCase event names, permission in place of permissionDecision, a flat output shape,
+      some events absent entirely." Breadth costs depth, confirmed from their side.
+      DIFFERENT PRODUCTS UNDER ONE RITUAL. floppy puts exactly ONE file into a consumer repo
+      and is about that repo's memory. Rite defines a 13-artifact standard and scores FOREIGN
+      projects with --force. Nothing in floppy does that.
+      WHERE RITE IS BEHIND, PLAINLY: they are 0.21.0 and published, Rite is 0.2.1 and private;
+      21 tests and 5 CI workflows against 6 gates and no CI; a docs site and Russian
+      translations.
+    proposed_positioning: >
+      NOT "we enforce and they document" — false. The defensible sentence is that Rite's check
+      runs WHEN YOU DID NOT ASK IT TO, and that it is a standard other projects are scored
+      against rather than one project's memory. The token cost is the price of that, and their
+      spec is right that it is certain while the failure it covers is not. Rite should say so
+      rather than pretend the trade does not exist.
 
 
 retired_ids:
