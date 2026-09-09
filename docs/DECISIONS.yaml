@@ -1033,3 +1033,35 @@ decisions:
     chosen_by_user: true
     proposed_by: user
 
+  - id: d-audience-is-the-author-not-a-market
+    date: "2026-09-09"
+    title: "Rite is built for its author, for people who already think this way, and as a portfolio artifact"
+    context: >
+      A prior-art find (spscream/ai-floppy) was surfaced as a competitive concern at high
+      severity, with a proposed positioning sentence to defend the differentiator. The user
+      rejected the framing outright.
+    decision: >
+      Rite has no market to defend. It is built for its author, for people who already think
+      this way or want to, and as a portfolio artifact. Prior art, overlap and similar projects
+      are NOT concerns and do not get concern entries.
+    rationale:
+      - >
+        It is the operative form of d-goal-is-credibility, which already ruled out mass
+        adoption. Credibility comes from one clear idea honestly executed with the negative
+        findings left in — none of which is affected by someone else building something
+        adjacent.
+      - >
+        A tool built to be used by its author every day has a completion test its author feels
+        directly. A tool built to win a comparison starts optimising for the comparison, and
+        the first casualty is the honest README that d-goal-is-credibility depends on.
+      - >
+        Concern entries are for things that require a decision. "Someone else built something
+        similar" requires none, so filing it as a concern was a category error — it manufactured
+        an obligation to respond where none exists.
+    consequences:
+      - "Do NOT open concerns for prior art, competitors or overlap. If a specific TECHNIQUE in another project is worth borrowing, that is a roadmap item on its own merits, named for the technique, never for the project it came from."
+      - "The README needs no comparison section, no positioning paragraph, and no differentiator claim aimed at anyone."
+      - "Technical facts learned from reading another project stay in LOG as facts. The ai-floppy reading is kept on that basis, including its unverified PreCompact lead."
+    chosen_by_user: true
+    proposed_by: user
+
