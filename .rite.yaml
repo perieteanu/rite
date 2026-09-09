@@ -5,10 +5,12 @@
 # degeneracy in them surfaces here first, on the project that can fix them — rather than
 # being tuned away locally and discovered by a stranger.
 #
-# In particular: `as_of_within_days_of_activity` is measured against SOURCE mtime, and this
-# project is currently documents-only, so its docs are compared against themselves and pass
-# trivially. That is c-freshness-thresholds-are-guesses, and widening the window here would
-# hide the very defect this file is meant to expose.
+# In particular: `as_of_within_days_of_activity` is measured against SOURCE mtime. This was
+# written while the project was documents-only, when its docs were compared against themselves
+# and passed trivially. scripts/ now holds real source (2026-09-08), so that specific
+# degeneracy no longer bites HERE — but it is unfixed and still bites any documents-only
+# project, which is c-freshness-thresholds-are-guesses. No override is taken, so whatever the
+# defaults get wrong surfaces on this project rather than being tuned away locally.
 ---
 # standard_version is deliberately absent: how a project declares which version of the
 # standard it targets is still open (c-standard-version-policy). Writing a value here would
