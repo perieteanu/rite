@@ -210,6 +210,39 @@ concerns:
       the viewer earlier than d-plugin-is-the-product assumed) or a plugin-native statusLine,
       which renders text only and has no hover.
 
+  - id: c-prior-art-ai-floppy
+    title: "Close prior art exists and pre-dates this project — spscream/ai-floppy"
+    status: open
+    severity: high
+    opened: "2026-09-09"
+    what: >
+      Found while checking the namespace, not while looking for competitors.
+      github.com/spscream/ai-floppy, created 2026-08-24 and pushed the same day this was
+      written: "Session ritual for coding agents: durable git-committed memory, a start rite, a
+      wrap rite, and the guards that keep them honest. Claude Code + Cursor plugin." Shell, 0
+      stars, but carrying skills/, scripts/, tests/, docs/, a CHANGELOG, a LICENSE, a site/ and
+      a .cursor-plugin/ — a more finished delivery than Rite has.
+    why_it_matters: >
+      It lands directly on the sentence this project rests on. CLAUDE.md says "templates are
+      free and everyone has one; almost nobody ships THE CHECK THAT FAILS when you do not
+      follow it." ai-floppy's own description claims guards that keep the ritual honest. If
+      that claim holds, the differentiator is not unique, and d-goal-is-credibility needs to be
+      argued on execution rather than on novelty.
+      It also pre-dates rite's first line by two weeks, so "nobody had done this" is no longer
+      available as a framing, in a README or in an interview.
+    do_not: >
+      Do NOT assume it is inferior because it is Shell and has no stars. That is the comfortable
+      read. Read the repository before deciding anything.
+    proposal:
+      - "Read ai-floppy properly: does it ship a check that FAILS, or a ritual that is documented and hoped for? That single question decides whether it is a competitor or a confirmation."
+      - "If it does: state the difference honestly in the README rather than ignoring it. Stdlib-only Python vs Shell, a written project standard, and a checker that scores foreign projects are real distinctions if they survive contact."
+      - "If it does not: the finding still stands as evidence the problem is real enough for two people to attack it independently, which is worth more in an interview than being alone."
+    what_would_close_this: >
+      A ruling on positioning, written into MISSION or DECISIONS, after reading the other
+      project. Not a comparison table — a sentence about what Rite is FOR that stays true with
+      ai-floppy in the world.
+
+
 retired_ids:
   - id: c-na-conflates-absent-with-unparseable
     retired: "2026-09-09"

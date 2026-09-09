@@ -122,6 +122,20 @@ milestones:
       c-na-conflates-absent-with-unparseable and c-yaml-subset-too-narrow-for-the-wild, both
       high. Nothing was written outside rite; --force scores a project without a marker.
 
+  - id: claim-namespaces
+    what: "github.com/perieteanu/rite claimed; the plugin name confirmed free"
+    closed: "2026-09-09"
+    log_ref: "09-09-2026 22:4x"
+    note: >
+      Created PRIVATE — the namespace is reserved account-wide regardless of visibility, and
+      publishing was deliberately not done. `rite` is absent from all 292 plugins in
+      anthropics/claude-plugins-official.
+      The search found something more useful than the answer: spscream/ai-floppy, created
+      2026-08-24 and still active, is "Session ritual for coding agents: durable git-committed
+      memory, a start rite, a wrap rite, and the guards that keep them honest." Not a name
+      collision, but close prior art on the CONCEPT, and it pre-dates this project's first line.
+      Opened c-prior-art-ai-floppy.
+
 near_term:
   label: "Next 1-3 sessions"
   candidates:
@@ -140,11 +154,6 @@ near_term:
       mode: execute
       est_minutes: 120
       depends_on: [session-protocol-spec]
-    - id: claim-namespaces
-      what: "Check and claim github.com/perieteanu/rite; confirm no existing Claude plugin uses the name"
-      why: "Free, permanent, and blocks nothing else until it is done. Cheap insurance against a rename."
-      mode: execute
-      est_minutes: 15
 
 mid_term:
   # ── the continuous layer (accepted 2026-09-08; see d-continuous-watcher-layer) ──
