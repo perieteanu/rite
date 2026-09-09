@@ -957,3 +957,43 @@ decisions:
     proposed_by: claude
     confirmed_by_user: true
 
+  - id: d-unparseable-is-red-absent-is-na
+    date: "2026-09-09"
+    title: "A file Rite cannot parse is RED and names the construct; a file the project never wrote stays NA"
+    context: >
+      c-na-conflates-absent-with-unparseable. Until today both reported
+      "NA — file absent or unparseable". NA reads as nothing-to-see, so the checker stayed calm
+      while knowing nothing. On 2026-09-09 it buried four real parser refusals across two
+      projects, nine NA lines deep, and made a written prediction untestable: the run appeared
+      to prove the parser never choked, and only calling riteyaml.load() by hand showed
+      otherwise.
+    decision: >
+      parse_failure() is the single place that asks whether a PRESENT artifact can be read. A
+      failure emits one RED naming the offending construct and line, the artifact's remaining
+      tests are not run, and a single line states how many were skipped. Absence is untouched
+      and still answered by the exists tests. An unparseable .rite.yaml is reported too, rather
+      than silently falling back to defaults.
+    rationale:
+      - >
+        THE TWO FACTS ARE ABOUT DIFFERENT SUBJECTS. Absent is a fact about the project, and
+        often fine. Unparseable is a fact about RITE — it means the checker cannot do its job —
+        and a tool must never report its own blindness in the same register as someone else's
+        optional missing file.
+      - >
+        ONE CAUSE, ONE FINDING. Nine NA lines for a single unreadable file is noise that
+        trains people to skim. The cascade is replaced by one RED plus one accounting line, so
+        the skipped checks are stated rather than vanishing.
+      - >
+        THE MARKER MATTERS MOST. A .rite.yaml that fails to parse silently dropped every
+        threshold and override. Running on defaults while the project believes its overrides
+        apply is worse than not running: the verdict is wrong AND confident.
+    verified:
+      - "Proven red before trusted green: 3 failures against the pre-fix checker, PASS after."
+      - "scripts/test-checker-verdicts.py — the checker's FIRST test. It had none."
+      - "No change to rite (0 RED) or to hwprivacy / plumbing / claude-persistent, whose declared artifacts all parse. The fix fires only where something is genuinely unreadable."
+    consequences:
+      - "A project whose ROADMAP Rite cannot read now fails loudly instead of scoring well by omission."
+      - "`parseable` is a precondition rather than a declared test, so it is reported without being in the spec's test list. If that proves confusing, declaring it is the fix — but the artifact inventory stays frozen at 13 either way."
+    proposed_by: claude
+    confirmed_by_user: true
+

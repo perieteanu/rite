@@ -210,29 +210,16 @@ concerns:
       the viewer earlier than d-plugin-is-the-product assumed) or a plugin-native statusLine,
       which renders text only and has no hover.
 
-  - id: c-na-conflates-absent-with-unparseable
-    title: "NA reports 'file absent or unparseable' — two opposite situations under one benign verdict"
-    status: open
-    severity: high
-    opened: "2026-09-09"
-    blocks: [validate-against-real-projects]
-    what: >
-      hwprivacy/docs-yaml/ROADMAP.yaml exists and carries 187+ lines of real content. The
-      checker reported it NINE times as "file absent or unparseable" — NA, the verdict that
-      reads as nothing-to-see. A reader concludes the project has no roadmap; the truth is that
-      Rite cannot read theirs.
-    why_it_matters: >
-      It is the checker being confidently wrong in the direction that hides its own failure. A
-      project that conforms BETTER than its score suggests is worse than a false RED: a RED gets
-      investigated, an NA gets skimmed past. It also made a written prediction untestable — the
-      run appeared to show the parser never choked, and only a direct call to riteyaml.load()
-      revealed four refusals.
-    proposal:
-      - "Split the verdict: ABSENT is NA; UNPARSEABLE is RED, or at minimum YELLOW, and names the construct and line."
-      - "Collapse the cascade: one unparseable file produced nine NA lines for a single cause. Report the cause once."
-    do_not: "Leave a parser refusal wearing the same label as an optional missing file."
-
 retired_ids:
+  - id: c-na-conflates-absent-with-unparseable
+    retired: "2026-09-09"
+    how: settled
+    outcome: d-unparseable-is-red-absent-is-na
+    why: >
+      Opened and settled the same day, by the user's ruling. The symptom had already gone when
+      the widened parser stopped refusing real files — which is exactly why it was worth fixing
+      anyway: a defect whose symptom disappears is the kind that comes back silently.
+
   - id: c-yaml-subset-too-narrow-for-the-wild
     retired: "2026-09-09"
     how: settled
