@@ -59,9 +59,11 @@ current_state: >
   Still stdlib only; PyYAML is imported nowhere.
   LICENSE exists, MIT, carrying no provenance header.
   This is a git repo, 16 commits, nothing pushed anywhere.
-  STILL MISSING: status.json, so checker-implementation is not closed. Eight declared tests
-  unimplemented. No PostToolUse and none of the eight watchers. No namespace claimed, nothing
-  published, so no one but this machine has ever run it.
+  near_term is EMPTY as of 2026-09-09 — every queued item closed, none invented to replace them.
+  STILL MISSING: eight declared tests unimplemented, of which claims_match_filesystem is the one
+  that keeps biting. No PostToolUse and none of the eight watchers. No CI. The namespace
+  github.com/perieteanu/rite is claimed but PRIVATE and empty — nothing is published, so no one
+  but this machine has ever run Rite.
 
 milestones:
   # APPEND-ONLY. One entry per closed near_term item. Never rewrite an entry.
@@ -136,24 +138,29 @@ milestones:
       collision, but close prior art on the CONCEPT, and it pre-dates this project's first line.
       Opened c-prior-art-ai-floppy.
 
+  - id: checker-implementation
+    what: "The checker: reads project-standard.yaml, runs the completion tests, scores any project"
+    closed: "2026-09-09"
+    log_ref: "08-09-2026 18:28:28 / 09-09-2026 22:3x"
+    note: >
+      scripts/rite-check.py, 49 of 57 declared tests implemented, with scripts/riteyaml.py
+      underneath it and scripts/test-checker-verdicts.py over it. Run against four projects, and
+      it discriminates: rite 0 RED, hwprivacy 2, plumbing 1, claude-persistent 7.
+      CLOSED WITHOUT ITS SECOND DELIVERABLE, deliberately. status.json was dropped from the item
+      rather than built — see d-status-json-dropped-not-deferred. d-artifact-inventory already
+      recorded it as "necessity asserted, not established" on 2026-09-07, and nothing established
+      it in the two days since. The verdict it was to carry already reaches the model live
+      through the SessionStart hook.
+      This empties near_term, which is a statement rather than an omission: the next move is a
+      decision about direction, not a queued task.
+
 near_term:
   label: "Next 1-3 sessions"
-  candidates:
-    - id: checker-implementation
-      what: "Implement the checker that reads project-standard.yaml and runs the completion tests"
-      deliverables:
-        - "the checker itself"
-        - >
-          status.json — its measured output: what is actually on disk, against what
-          current_state claims. NOT a separate roadmap item and NOT a concern; it is part of
-          this one, because it cannot exist before its producer. Tier 3, free_replace,
-          generated, must carry its measurement time.
-      why: >
-        The standard is currently a document making claims about checks that do not exist.
-        Until the checker runs, Rite is a template — which is precisely what it argues against.
-      mode: execute
-      est_minutes: 120
-      depends_on: [session-protocol-spec]
+  # EMPTY ON PURPOSE as of 2026-09-09, not through neglect. Every item that was queued is
+  # closed and in milestones. What remains in mid_term is real work, but none of it is the
+  # obvious next thing — choosing among it is a decision, and an item invented to keep this
+  # list non-empty would be a task invented to look busy.
+  candidates: []
 
 mid_term:
   # ── the continuous layer (accepted 2026-09-08; see d-continuous-watcher-layer) ──
