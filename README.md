@@ -8,9 +8,10 @@ problem is on. At the end you need what happened to survive the session that pro
 Rite defines both, and defines what a project must carry so a cold agent can pick it up
 without re-deriving it.
 
-**Status:** `spec` — both halves are written, the project standard
-([`spec/PROJECT-STANDARD.md`](spec/PROJECT-STANDARD.md)) and the session protocol
-([`spec/SESSION-PROTOCOL.md`](spec/SESSION-PROTOCOL.md)); no plugin code yet.
+**Status:** `build` — an installed, running Claude Code plugin. Both halves are specified
+([`spec/PROJECT-STANDARD.md`](spec/PROJECT-STANDARD.md),
+[`spec/SESSION-PROTOCOL.md`](spec/SESSION-PROTOCOL.md)), the checker runs, and the
+start-of-session verdict reaches the model. Not published anywhere yet.
 
 ## Why
 
@@ -32,6 +33,10 @@ declares a test, and the next session tells you which ones you skipped.
 | [`spec/session-protocol.yaml`](spec/session-protocol.yaml) | The protocol, machine form. Authoritative. |
 | [`spec/SESSION-PROTOCOL.md`](spec/SESSION-PROTOCOL.md) | The same thing, readable. **Generated.** |
 | [`spec/render-standard.py`](spec/render-standard.py) | Generates both, and fails when either drifts. |
+| [`scripts/rite-check.py`](scripts/rite-check.py) | The checker. Runs the standard's completion tests against a project. |
+| [`scripts/riteyaml.py`](scripts/riteyaml.py) | Stdlib-only YAML subset parser. Refuses rather than guesses. |
+| [`skills/`](skills/) | `/rite:log` `/rite:end` `/rite:handoff` `/rite:preflight` |
+| [`hooks/`](hooks/) | `SessionStart` verdict, `SessionEnd` mechanical close. |
 
 The spec is applied to itself on day one: the Markdown is generated from the YAML, and
 `--check` fails if anyone edits it by hand. A standard that cannot catch its own drift has no
@@ -49,10 +54,25 @@ python3 spec/render-standard.py --protocol --check   # fail if it drifted
 **Python 3.** That is the whole list — there is nothing to `pip install`. On Windows the
 command is `py` or `python`, not `python3`.
 
+## What it costs you
+
+Approximate, and worth checking rather than trusting — the numbers move whenever a skill's
+description changes:
+
+```
+Always-on:  ~225 tok   added to every session, for four skill descriptions
+On invoke:  ~0.9-1.2k  each time a skill actually runs
+Hooks:      0          harness-only; they never enter the model's context
+```
+
+Reproduce it yourself with `claude plugin details rite`. That command is the honest answer;
+the block above is a snapshot of it, and snapshots go stale.
+
 ## Not here yet
 
-No plugin, no hooks, no slash commands, no packaging. The protocol is specified; nothing
-implements it.
+No published release and no namespace claimed — nobody but its author has run it. `status.json`
+is unbuilt, eight of the standard's declared tests are not implemented, and the continuous
+watcher layer does not exist.
 See [`docs/ROADMAP.yaml`](docs/ROADMAP.yaml).
 
 ## Credits
