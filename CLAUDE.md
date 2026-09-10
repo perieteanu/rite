@@ -177,9 +177,8 @@ What is genuinely not built, as of 2026-09-10:
 - **CI runs the gates declared in `.github/gates.yaml`, and not all of them on a runner.**
   The count is deliberately NOT repeated here — it went 9 to 13 in one day and falsified four
   documents each time (`c-gate-count-restated-in-prose`). Read the file.
-  `.github/workflows/gates.yml`
-  fires on every push. `test-riteyaml.py` skips there (PyYAML is its oracle and CI does not
-  install it) and `test-installed-current.py` always skips (a runner has no installed plugin).
+  `.github/workflows/gates.yml` fires on every push. WHICH gates skip on a runner is declared
+  per gate as `skip_means`, and is not enumerated here for the same reason the count is not.
   The runner reports that coverage instead of showing an unqualified green — a skip is never
   folded into a pass. It runs on **ubuntu, macos and windows** with `fail-fast: false`.
 - **None of the eight watchers.** The `PostToolUse` hook itself now exists — added 2026-09-10
@@ -193,8 +192,9 @@ What is genuinely not built, as of 2026-09-10:
   `LOG.md`, per `d-publish-main-in-full-no-export`. This bullet said "Nothing published" until
   that commit. What is still true: **nobody but this machine has run Rite**, so every claim
   about how it behaves elsewhere rests on CI, not on a user.
-- **Seven declared tests unimplemented**, of which `mirror_not_stale` and
-  `source_plans_all_copied` are the ones that matter.
+- **One declared rule unimplemented**: `deleted_ids_appear_in_milestones`. This bullet said
+  "seven ... of which mirror_not_stale and source_plans_all_copied are the ones that matter";
+  both of those were implemented on 2026-09-10 with the copier port.
 
 **`status.json` is DROPPED, not pending** — `d-status-json-dropped-not-deferred`. Every
 candidate consumer is unbuilt and the verdict it was to carry already reaches the model live.

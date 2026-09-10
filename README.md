@@ -147,8 +147,11 @@ correctness claim rests on a differential test against PyYAML rather than on a d
 - **The freshness windows are guesses** — 60 days for a roadmap, 90 for architecture — never
   calibrated against a real corpus. They are overridable per project, and an override is always
   reported alongside the default rather than applied silently.
-- **Seven of the standard's declared tests are unimplemented**, and the report says so on every
-  run instead of quietly scoring what it can.
+- **One of the standard's declared rules is unimplemented** — `deleted_ids_appear_in_milestones`
+  — and the report says so on every run instead of quietly scoring what it can. The coverage
+  line reads `61 of 66` because its denominator counts test INSTANCES and includes four
+  `optional` markers, which are not rules awaiting implementation
+  (`c-coverage-counts-optional-as-unimplemented`).
 - The `preflight.py` port and the continuous watcher layer do not exist.
 
 Full list, including what is deliberately deferred and what will never be built:
