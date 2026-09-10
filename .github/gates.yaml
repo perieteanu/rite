@@ -49,5 +49,11 @@ gates:
       this gate ALWAYS skips in CI and is enforced only on a developer machine.
 
   - id: self-check
-    command: [scripts/rite-check.py]
+    command: [scripts/rite-check.py, --exclude-scope=session]
     what: "rite passes its own standard — 0 RED, every declared claim checked against the tree"
+    # session-scoped tests are excluded HERE and nowhere else. Their verdict depends on whether
+    # the session running right now has closed, which is unanswerable in a pipeline: the
+    # protocol says log as work happens, so the first entry of any session turns
+    # written_not_older_than_newest_log_entry RED until /end. That check is live at
+    # SessionStart, where the question is "did the LAST session close?" and has an answer.
+    # The exclusion is reported as NA on every run, never silently dropped.

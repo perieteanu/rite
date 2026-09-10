@@ -63,7 +63,7 @@ inception:
 current_state: >
   Stage `build`, declared in .rite.yaml. Verified against the filesystem and the harness on
   2026-09-09.
-  Rite is an installed, running plugin at version 0.3.0 — rite@rite, four skills reachable as
+  Rite is an installed, running plugin at version 0.4.0 — rite@rite, four skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -78,6 +78,12 @@ current_state: >
   plugin, which a runner never has. The runner reports "5 of 7 gates ran" and names the two,
   rather than showing an unqualified green. Ubuntu only, so the three severity:correctness
   portability rules are STILL enforced by nothing — ci-portability-matrix in mid_term.
+  CI RUNS THE SELF-CHECK WITH --exclude-scope=session, because one test asks whether the
+  session running right now has closed and is therefore RED by design for the whole working
+  life of any session that logs as it works. Excluded is reported as NA, never dropped, and
+  SessionStart still runs it at full strength. That exchange also surfaced the sharper fact,
+  now in the protocol's honest_limits: EVERY implemented completion test is an end-of-session
+  test, and nothing in the standard checks anything mid-session.
   DOCUMENTS NOW DECLARE MACHINE-CHECKABLE CLAIMS. README, CLAUDE.md, ARCHITECTURE and this file
   carry `claims:` blocks of absent/present paths, checked on every run — d-claim-surface. That
   implemented claims_match_filesystem, the last test parked in c-unimplementable-tests, which is

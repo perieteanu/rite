@@ -333,7 +333,7 @@ session_end: written | updated | carried_forward | none — the outcome the clos
 | populated | `required_frontmatter_present` | — |
 | fresh | `not_expired` | status:spent or a past `expires` date must fail, loudly, and name the file. |
 | integrity | `session_end_decision_recorded` | The last session closed with one of the four outcomes, declared in this file's own front matter as `session_end`. NO separate stamp file: the outcome is recorded here, by user ruling on 2026-09-07, specifically to avoid inventing a file for it. |
-| integrity | `written_not_older_than_newest_log_entry` | This is what makes the previous test real without a stamp. A session that worked and then closed without touching the handoff leaves `written:` older than the newest LOG.md entry — detectable from two files that already exist. "Nobody thought about it" and "someone decided none was needed" are no longer indistinguishable: the first leaves a stale date, the second leaves a current one saying so. |
+| integrity | `written_not_older_than_newest_log_entry` | **session-scoped.** This is what makes the previous test real without a stamp. A session that worked and then closed without touching the handoff leaves `written:` older than the newest LOG.md entry — detectable from two files that already exist. "Nobody thought about it" and "someone decided none was needed" are no longer indistinguishable: the first leaves a stale date, the second leaves a current one saying so. |
 
 ### `LOG.md`
 

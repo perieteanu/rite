@@ -4,7 +4,14 @@
 Reads spec/project-standard.yaml (the authority) and executes the tests each artifact
 declares. Stdlib only; YAML via scripts/riteyaml.py.
 
-    python3 scripts/rite-check.py [PROJECT_DIR]
+    python3 scripts/rite-check.py [PROJECT_DIR] [--force] [--exclude-scope=SCOPE]
+
+--exclude-scope=SCOPE skips every test the standard declares with that `scope:`, reporting
+each as NA naming the exclusion rather than dropping it. CI passes --exclude-scope=session,
+because a session-scoped test asks whether the session running RIGHT NOW has closed — true
+only after /end, so it is RED by design for the whole working life of a session and belongs
+at SessionStart, not in a pipeline. It is a caller's statement about WHERE a check runs, and
+deliberately not settable in .rite.yaml: a project must not switch off a scope for itself.
 
 PARTICIPATION IS OPT-IN. Without a .rite.yaml marker the project is not checked and nothing
 is printed — see `participation` in the spec. Rite is silent where it was not invited.
@@ -50,8 +57,11 @@ class Finding:
 class Ctx:
     """Everything a rule needs to know, gathered once."""
 
-    def __init__(self, root: Path, spec: dict):
+    def __init__(self, root: Path, spec: dict, excluded_scopes: set[str] | None = None):
         self.root, self.spec = root, spec
+        # Caller-level, never project-level: a project must not be able to switch off a scope
+        # for itself in .rite.yaml. Excluding is a statement about where the check is RUN.
+        self.excluded_scopes = excluded_scopes or set()
         self.unreadable: dict[str, str] = {}
         self.marker_error: str | None = None
         self.marker = self._load_marker()
@@ -762,8 +772,9 @@ def _meta(ctx, art):
 
 
 # ── engine ──────────────────────────────────────────────────────────────────
-def check(root: Path, spec: dict) -> tuple[list[Finding], dict]:
-    ctx = Ctx(root, spec)
+def check(root: Path, spec: dict,
+          excluded_scopes: set[str] | None = None) -> tuple[list[Finding], dict]:
+    ctx = Ctx(root, spec, excluded_scopes)
     findings: list[Finding] = []
     declared = implemented = 0
 
@@ -813,6 +824,14 @@ def check(root: Path, spec: dict) -> tuple[list[Finding], dict]:
             if rule_name in ctx.disabled:
                 findings.append(Finding(NA, "project", level, rule_name, art["path"],
                                         "disabled in .rite.yaml"))
+                continue
+            # A caller may exclude a whole scope — CI excludes `session`, whose verdict
+            # depends on whether the session running right now has closed. Reported, never
+            # silent: a check that vanished and a check that passed must not look alike.
+            if test.get("scope") and test["scope"] in ctx.excluded_scopes:
+                findings.append(Finding(NA, "project", level, rule_name, art["path"],
+                                        f"{test['scope']}-scoped — excluded by "
+                                        f"--exclude-scope={test['scope']}"))
                 continue
             if rule_name in ("optional",):
                 continue
@@ -877,6 +896,13 @@ def report(root: Path, findings: list[Finding], meta: dict) -> int:
 def main(argv: list[str]) -> int:
     args = [a for a in argv[1:] if not a.startswith("--")]
     force = "--force" in argv
+    # `--exclude-scope=session`, not `--exclude-scope session`: the joined form keeps the
+    # value out of the positional list, which is how the project directory is found.
+    excluded_scopes = {
+        a.split("=", 1)[1].strip()
+        for a in argv[1:]
+        if a.startswith("--exclude-scope=") and a.split("=", 1)[1].strip()
+    }
     root = Path(args[0]).resolve() if args else Path.cwd()
     if not ritefs.marker_present(root) and not force:
         # Opt-in. Silent where not invited — see participation in the spec.
@@ -888,7 +914,7 @@ def main(argv: list[str]) -> int:
     except riteyaml.RiteYamlError as exc:
         print(f"FAIL  cannot read the standard: {exc}", file=sys.stderr)
         return 1
-    findings, meta = check(root, spec)
+    findings, meta = check(root, spec, excluded_scopes)
     return report(root, findings, meta)
 
 
