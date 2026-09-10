@@ -174,10 +174,10 @@ What is genuinely not built, as of 2026-09-10:
 - **No `PostToolUse` hook**, and none of the eight watchers. It belongs to `port-mirror-memory`.
 - **No port of `preflight.py` / `claude-mirror-memory.py` / `hookdedup.py`**, and no
   `checks.yaml` — `port-preflight` has not started.
-- **Nothing published.** `github.com/perieteanu/rite` is PRIVATE. It is no longer empty —
-  `main` was pushed on 2026-09-10 so that CI would have somewhere to run. A private push is
-  not publishing; `d-publish-main-in-full-no-export` governs the public one and it has not
-  happened.
+- **Published 2026-09-10.** `github.com/perieteanu/rite` is PUBLIC, `main` in full including
+  `LOG.md`, per `d-publish-main-in-full-no-export`. This bullet said "Nothing published" until
+  that commit. What is still true: **nobody but this machine has run Rite**, so every claim
+  about how it behaves elsewhere rests on CI, not on a user.
 - **Seven declared tests unimplemented**, of which `mirror_not_stale` and
   `source_plans_all_copied` are the ones that matter.
 

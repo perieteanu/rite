@@ -8,9 +8,9 @@ problem is on. At the end you need what happened to survive the session that pro
 defines both, and defines what a project must carry so a cold agent can pick it up without
 re-deriving it.
 
-**Status:** `build`. An installed, running Claude Code plugin, tested on Linux, macOS and
-Windows. **Not published yet** — the repository is private, so nobody but its author has run
-this. Treat the install instructions below as what will work, not as what you can do today.
+**Status:** `shipped`. An installed, running Claude Code plugin, tested on Linux, macOS and
+Windows, published 2026-09-10. It has been used daily by its author since 2026-09-07 and by
+nobody else, so treat the install instructions below as working but barely travelled.
 
 ## The problem
 
