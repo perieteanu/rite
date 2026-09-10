@@ -233,26 +233,64 @@ milestones:
       an unqualified green.
 
 near_term:
-  label: "Next 1-3 sessions"
-  # EMPTY ON PURPOSE as of 2026-09-09, not through neglect. Every item that was queued is
-  # closed and in milestones. What remains in mid_term is real work, but none of it is the
-  # obvious next thing — choosing among it is a decision, and an item invented to keep this
-  # list non-empty would be a task invented to look busy.
-  candidates: []
+  label: "The ordered path from PRIVATE to PUBLIC"
+  # Filled 2026-09-10, having been empty on purpose since 2026-09-09. It is not a queue of
+  # whatever came to hand: it is the sequence that decides what a stranger meets, ordered by
+  # WHAT BREAKS WHEN SOMEONE WHO IS NOT THE AUTHOR ARRIVES, not by effort. Publishing itself is
+  # one setting on a repository; everything above it is what makes that setting defensible.
+  # Order chosen by Costin 2026-09-10, matrix before scaffolding.
+  candidates:
+    - id: ci-portability-matrix
+      what: "Add macos-latest and windows-latest to the CI matrix"
+      why: >
+        MOVED FROM mid_term AND PUT FIRST, by Costin's call. The only machine that has ever run
+        Rite is Linux. The spec declares targets [linux, macos, windows] and three rules at
+        severity:correctness, and nothing tests any of them —
+        case_sensitive_name_matching says outright that a repo carrying readme.md PASSES on
+        macOS and FAILS on Linux, the same repo scoring two verdicts. Publish before this and
+        the person who discovers that is a stranger on a Mac, running a standard whose entire
+        value is canonical names.
+      cost: "a strategy.matrix block and one line of runs-on. run-gates.py already needs nothing."
+      expect: "RED on the first run. ritefs.py exists BECAUSE that class of bug is real; finding more is the point, not a setback."
+      de_risks: "every item below it, which is the argument for going first"
+
+    - id: setup-hook-scaffolding
+      what: "A template/ seed set plus first-run scaffolding, gated by `stage`"
+      why: >
+        MOVED FROM mid_term. The pivot the HANDOFF names and the piece two decisions rest on:
+        d-publish-main-in-full-no-export dropped the curated export and left this as the only
+        thing giving an end user a clean start, and d-stage-gates-the-standard exists because a
+        fresh install today opens on a screen of RED, which gets the plugin uninstalled by day
+        two. Nobody should be invited to install Rite before this exists.
+      deliverables:
+        - "template/ — seeded docs/, a genre:none HANDOFF, an empty-but-valid LOG. Each must be the VALID SMALLEST INSTANCE: it has to pass rite-check, because the first thing anyone runs is the checker on Rite itself."
+        - "the stage->requirement mapping, WHICH IS STILL NOT SPECIFIED. This is the real work and the reason the item is not small."
+        - "a command that copies the seed set into a project"
+
+    - id: readme-for-a-stranger
+      what: "Rewrite README for someone who is not us"
+      why: >
+        It currently reads as notes between author and agent — Why / What is here now /
+        Prerequisites / What it costs you / Not here yet — and no line tells a reader how to add
+        the marketplace. The standard calls README the highest-value file in the repo, and it is
+        the only one most visitors will read.
+      note: >
+        d-never-instruct-installation does NOT forbid this, and the misreading is easy enough to
+        be worth writing down. That decision governs what the TOOL says at runtime — it must not
+        tell someone to install Python and break their environment. A README line reading
+        `/plugin marketplace add perieteanu/rite` is not an environment instruction.
+
+    - id: publish-github
+      what: "Flip the repository to public"
+      why: "MOVED FROM mid_term. One setting. Everything above exists to make it defensible."
+      blocked_on:
+        - "c-standard-version-policy — open, marked low, and its own text says it only bites once an external user exists. Publishing manufactures that user. Needs a ruling, not code."
+        - "the `stage` question: .rite.yaml says build, and LICENSE is required_from_stage:shipped, so today the LICENSE check reports NA on the very project that ships it. Decide what stage a published Rite declares."
+      free_upside: "Actions minutes are unmetered on public repositories, so ci-portability-matrix gets cheaper the moment this happens."
 
 mid_term:
-  - id: ci-portability-matrix
-    what: "Add macos-latest and windows-latest to the CI matrix"
-    why: >
-      spec/project-standard.yaml declares targets [linux, macos, windows] and THREE rules at
-      severity:correctness — case_sensitive_name_matching, generated_output_is_lf_only,
-      normalize_before_byte_comparison. Nothing tests any of them. The first says outright that
-      a repo carrying readme.md passes on macOS and fails on Linux, the same repo scoring two
-      verdicts; that is the standard's central promise, asserted and unverified. A rule with no
-      completion test is not a rule, which makes this the most on-thesis gap left in the repo.
-    cost: "a `strategy.matrix` block and one line of `runs-on`. The runner already needs nothing."
-    expect: "RED on the first run. ritefs.py exists BECAUSE that class of bug is real, and finding more is the point."
-    user_note: "deferred 2026-09-10 by Costin, to keep the CI session scoped. Recorded as a gap, not an omission."
+  # ci-portability-matrix, setup-hook-scaffolding and publish-github were MOVED to near_term on
+  # 2026-09-10 as the ordered path to public. They are not listed twice.
 
   # ── the continuous layer (accepted 2026-09-08; see d-continuous-watcher-layer) ──
   - id: watcher-write-discipline
@@ -291,18 +329,6 @@ mid_term:
   - id: watcher-cwd-changed
     what: "Flag a mid-session project switch via CwdChanged"
     why: "Rite assumes one project per session and has never said so. Cheap, and it makes an unstated assumption visible."
-  - id: setup-hook-scaffolding
-    what: "A template/ seed set plus first-run scaffolding, gated by `stage`"
-    why: >
-      PROMOTED 2026-09-09 from a one-line idea to the piece two other decisions now rest on.
-      d-publish-main-in-full-no-export dropped the curated export and left this as the only
-      thing giving an end user a clean starting point; d-stage-gates-the-standard makes `stage`
-      the axis that decides what a young project is asked for. The seed set and the gating must
-      be designed against each other, so they are one item.
-    deliverables:
-      - "template/ — seeded docs/, a genre:none HANDOFF, an empty-but-valid LOG. Each must be the VALID SMALLEST INSTANCE: it has to pass rite-check, because the first thing anyone runs is the checker on Rite itself."
-      - "the stage->requirement mapping, which is not yet specified"
-      - "a command that copies the seed set into a project"
   - id: status-json-as-flag-accumulator
     what: "Give status.json a purpose: hold watcher flags between firings"
     why: "A continuous watcher needs somewhere to accumulate. May be what resolves the deferral in the inventory block."
@@ -316,9 +342,6 @@ mid_term:
     why: "Plans are the identical problem with a different source dir. One tool, not two."
   - id: plugin-packaging
     what: ".claude-plugin/marketplace.json at repo root, plugins/ layout, LICENSE, git init"
-  - id: publish-github
-    what: "Push to GitHub as the first public artifact"
-
 long_term:
   - id: vscode-viewer
     what: "Revive claude-persistent's extension as the optional persistent surface"
