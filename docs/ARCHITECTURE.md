@@ -260,11 +260,20 @@ again when a file changes form.
 Everything Rite does is Python, written once. The single exception is a launcher shim, whose
 only job is to find an interpreter or explain that it cannot.
 
+**`hooks.json` declares `shell: bash` on every entry, and Git Bash is therefore required on
+Windows.** Without it the harness falls back to PowerShell, which cannot run our command
+string — and a hook entry supports no per-platform conditional, so one string must serve every
+platform and no string does. `hooks/rite.ps1` remains as a MANUAL entry point; nothing invokes
+it automatically, and until 2026-09-10 the diagram below claimed otherwise. See
+`d-git-bash-required-on-windows`.
+
 ```
 hook ──► sh -c        (Linux, macOS)          ──┐
-    ──► Git Bash     (Windows, recommended)   ──┤► shim ──► python3/python/py ──► Python
-    ──► PowerShell   (Windows, no Git Bash)   ──┘   │
-                                                   └─ not found ──► "Python 3 required: …", exit 1
+    ──► Git Bash     (Windows, REQUIRED)      ──┴► rite.sh ──► python3/python/py ──► Python
+                                                     │
+                                                     └─ not found ──► "Python 3 required: …", exit 1
+
+    ──► Windows without Git Bash              ──► HOOKS DO NOT RUN
 ```
 
 **Two shims: `.sh` and `.ps1`. Never `.bat`.** Verified against the hooks documentation, not

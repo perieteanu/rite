@@ -49,28 +49,6 @@ concerns:
       Rely on remembering to grep for the number. That was the practice all day and it failed
       three times out of three, in the repository whose thesis is that such practices fail.
 
-  - id: c-rite-ps1-unreachable-in-production
-    title: "hooks/rite.ps1 is exercised by CI and by nothing in production"
-    status: open
-    severity: high
-    opened: "2026-09-10"
-    what: >
-      hooks/hooks.json names `bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh"` for all three events
-      and never references rite.ps1. The .ps1 exists, is a faithful translation, and passed on
-      windows-latest — because CI invokes it DIRECTLY. Nothing else ever does.
-    why_it_matters: >
-      The spec's `coverage` list claims four rows, and the fourth — "Windows without Git for
-      Windows -> PowerShell -> the .ps1 shim" — has no mechanism behind it. Such a user installs
-      Rite and gets no SessionStart verdict at all. Worse than the gap is what the gate did to
-      it: rite.ps1 passing on 2026-09-10 was read as evidence the path works, and a green test
-      over an unreachable code path is the most expensive kind of false assurance. This project
-      already has a name for it — a check that vanished and a check that passed must not look
-      alike — and this is the same error one level up.
-    proposal:
-      - "Find out whether hooks.json can express a per-platform command, or whether Claude Code always runs hook commands through a shell it chooses."
-      - "If it cannot: say so in the spec's coverage list rather than claiming the row, and make CI's invocation of rite.ps1 declare that it tests the shim and not the wiring."
-    do_not: "Leave the coverage list asserting a path no user can reach. Found while correcting the neighbouring `still_unverified` claim, which had gone false for the opposite reason."
-
   - id: c-readme-sample-output-is-a-copy
     title: "The README's sample checker run restates the stage mapping, and nothing regenerates it"
     status: open
@@ -212,6 +190,23 @@ concerns:
       which renders text only and has no hover.
 
 retired_ids:
+  - id: c-rite-ps1-unreachable-in-production
+    retired: "2026-09-10"
+    how: settled
+    outcome: d-git-bash-required-on-windows
+    why: >
+      Opened and settled the same day. The concern asked whether hooks.json can express a
+      per-platform command; the hooks reference answers outright that it cannot, and no single
+      command string serves every platform — `bash X` fails under PowerShell, a bare .sh path
+      fails under PowerShell, a bare .ps1 path fails under sh, and exec form needs one
+      executable name that resolves everywhere, which is the problem the shim exists for.
+      SETTLED BY NARROWING THE CLAIM RATHER THAN WIDENING THE CODE. Git Bash is required on
+      Windows, hooks.json says `shell: bash` outright, and the spec's coverage row that promised
+      a PowerShell path now says hooks do not run there. rite.ps1 stays as a manual entry point.
+      The idea NOT taken, recorded so it is not re-proposed as new: two entries with explicit
+      `shell:` fields. The docs do not say what a hook declaring an unavailable shell does, and
+      building on undocumented behaviour is guessing. Revisit only if that is specified.
+
   - id: c-pattern-paths-are-matched-literally
     retired: "2026-09-10"
     how: settled

@@ -142,6 +142,10 @@ correctness claim rests on a differential test against PyYAML rather than on a d
   practice was followed consistently. Nothing was tested against an alternative and no project
   deliberately went without, so this is a proven practice being distilled, not a validated
   theory.
+- **Windows needs Git for Windows.** The hooks declare `shell: bash`, and without Git Bash the
+  harness has no shell that can run them — a hook entry supports no per-platform conditional,
+  so one command string must serve every platform and none does. Linux and macOS need nothing
+  beyond Python 3.
 - **The freshness windows are guesses** — 60 days for a roadmap, 90 for architecture — never
   calibrated against a real corpus. They are overridable per project, and an override is always
   reported alongside the default rather than applied silently.

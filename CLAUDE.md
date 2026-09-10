@@ -139,6 +139,12 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
 
 - A Claude Code plugin can contain `hooks/`, `commands/`, `skills/`, `agents/`, `scripts/` —
   verified against `anthropics/claude-plugins-official`. One plugin holds the whole product.
+- **A hook entry has NO per-platform conditional** — verified against the hooks reference
+  2026-09-10. Shell form sends the command to `sh -c` on Unix, Git Bash on Windows, or
+  PowerShell when Git Bash is absent; exec form (`args`) skips the shell but needs one
+  executable name that resolves everywhere, which is the problem the shim exists for. Entries
+  also accept `if`, `async`, `once` and `shell`. **Git Bash is required on Windows** —
+  `d-git-bash-required-on-windows`.
 - `SessionEnd` exists as a hook event (verified in the 2.1.263 binary alongside `Stop`,
   `PreCompact`, `SubagentStop`). **But it fires when there are no turns left**, so it can only
   do mechanical work. Judgement work must happen before, via a command.
