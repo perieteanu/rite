@@ -64,7 +64,7 @@ def run_hook(cwd: pathlib.Path) -> str:
         "session_id": "test-hook-output",
     })
     out = subprocess.run(cmd, input=payload, capture_output=True, text=True,
-                         encoding="utf-8", cwd=str(ROOT))
+                         encoding="utf-8", errors="replace", cwd=str(ROOT))
     if out.returncode != 0:
         fail(f"shim exited {out.returncode} for cwd={cwd}: {out.stderr.strip()[:200]}")
     return out.stdout

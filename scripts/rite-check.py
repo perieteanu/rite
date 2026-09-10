@@ -205,8 +205,16 @@ def newest_source_mtime(root: Path) -> dt.date | None:
 def git_show(root: Path, rel: str) -> str | None:
     """The committed version of a file at HEAD, or None if unavailable."""
     try:
+        # encoding is LOAD-BEARING here, not hygiene. git emits the blob's bytes; text=True
+        # alone decodes them with the locale, so on Windows a UTF-8 document comes back as
+        # cp1252 mojibake. It still PARSES — mojibake is valid YAML text — and every scalar
+        # then differs from the same scalar read with encoding="utf-8", so milestones_append_only
+        # reported an existing milestone as CHANGED on a file that had only been appended to.
+        # RED on windows, GREEN on ubuntu and macOS, from one missing argument. Found by CI on
+        # 2026-09-10. See portability `process_output_declares_encoding`.
         out = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{rel}"],
-                             capture_output=True, text=True, timeout=10)
+                             capture_output=True, text=True, timeout=10,
+                             encoding="utf-8", errors="replace")
     except (OSError, subprocess.SubprocessError):
         return None
     return out.stdout if out.returncode == 0 else None
@@ -236,6 +244,7 @@ def git_removed_lines(root: Path, rel: str) -> int | None:
         out = subprocess.run(
             ["git", "-C", str(root), "diff", "-U0", "HEAD", "--", rel],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",
         )
     except (OSError, subprocess.SubprocessError):
         return None
