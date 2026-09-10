@@ -942,6 +942,19 @@ artifacts:
         rule: entries_parse
       - level: integrity
         rule: no_future_timestamps
+        scope: local_clock
+        why_scoped: >
+          LOG timestamps carry NO TIMEZONE — the format is DD-MM-YYYY HH:MM:SS and nothing else
+          — so "is this dated in the future" is only answerable on a machine sharing the
+          writer's clock. CI proved it on the very first push: every runner is UTC, this machine
+          is UTC+3, and 67 perfectly honest entries read as future because their naive local
+          times sat ahead of the runner's naive UTC wall clock. The entries were fine; the
+          comparison was meaningless off-machine.
+          So the check runs at SessionStart and in the PostToolUse watcher, where the reader's
+          clock IS the writer's clock, and CI excludes it by scope — reported as NA naming the
+          exclusion, never silently dropped.
+          Widening the tolerance to cover a timezone offset was rejected: ±14 hours would make
+          the check unable to catch the thing it exists for.
         means: >
           No entry may be dated later than now. An extrapolated timestamp is indistinguishable
           from a machine-read one AFTERWARDS — except when extrapolation overshoots, which is
