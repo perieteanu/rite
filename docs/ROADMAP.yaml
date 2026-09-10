@@ -125,6 +125,19 @@ current_state: >
   whether an artifact is DEMANDED, not whether it is CHECKED when present. The stage decides
   only whether a MISSING LICENSE is RED or NA. Two documents asserted the NA and both were
   wrong; the checker settled it against a stage: shipped copy of the tree.
+  THE COPIERS ARE PORTED — one tool, three sources, scripts/rite_copy.py. The memory mirror is a
+  port rather than a rewrite: its output differs from the global hook's only in the clock, and
+  that hook is deliberately left running beside it until the port is proven. Plan copy and
+  session-script copy join it, because the sources differ and the spine does not.
+  ATTRIBUTION IS AUTHORSHIP, NOT MENTION, and the distinction cost five of thirteen plans before
+  it was drawn. c-plan-attribution is settled — d-attribution-is-authorship-not-mention — after
+  three days as "the only genuinely hard part". It was never hard; the FIRST ANSWER was just
+  wrong in a way nothing looked wrong about.
+  COVERAGE IS 61 OF 66 declared tests, up from 57 of 64. filename_matches_canonical,
+  source_plans_all_copied and mirror_not_stale are implemented, and the first two were
+  UNREACHABLE rather than unwritten until an artifact could declare a path_pattern.
+  THE INVENTORY IS 14, not 13. script_copy was added through the process the freeze exists to
+  force — a DECISIONS entry — rather than around it.
   STILL TRUE AND WORTH SAYING PLAINLY: no one but this machine has run Rite. Publishing changed
   who CAN, not who HAS.
   near_term is EMPTY. All four items of the path from private to public — ci-portability-matrix,
@@ -356,6 +369,32 @@ milestones:
       counted. Both now have gates. The repository went public at eleven gates green rather
       than nine.
 
+  - id: port-mirror-memory
+    what: "One copier for three sources — memory mirror, plan copy, session-script copy"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026"
+    note: >
+      Taken from mid_term rather than near_term, which was empty by design after publishing.
+      The item's own note set the shape — "Plans are the identical problem with a different
+      source dir. One tool, not two." — and a third source joined them: the helper scripts a
+      session writes to its scratchpad, which lives in /tmp and does not survive a reboot.
+      ITS BLOCKER WAS NEVER HARD. c-plan-attribution had sat since 2026-09-07 as "the only
+      genuinely hard part", proposing mtime correlation or content inspection. Session
+      transcripts record a plan as a TOOL INPUT, so authorship is exact and neither was needed.
+      THE FIRST ATTRIBUTOR WAS STILL WRONG, and that is the part worth remembering. Matching the
+      plan's path as a string mis-attributed five of thirteen plans, because the session BUILDING
+      it had run `ls ~/.claude/plans/` and its transcript therefore mentioned every plan on the
+      machine. The act of measuring changed what was measured, and it was caught only because
+      the numbers disagreed with a shell measurement taken twenty minutes earlier.
+      THREE MORE DECLARED TESTS ARE NOW IMPLEMENTED — filename_matches_canonical,
+      source_plans_all_copied and mirror_not_stale — taking coverage from 57 of 64 to 61 of 66,
+      and all three were proved to FAIL before being trusted. Two of them were UNREACHABLE
+      rather than merely unwritten until path_pattern existed, which is why
+      c-pattern-paths-are-matched-literally had to be settled first.
+      The memory port is byte-compatible with the script it replaces: regenerated output differs
+      from the global hook's only in the clock. The global hook is deliberately left running
+      beside it until the port is proven.
+
 near_term:
   label: "EMPTY — the path from private to public is complete"
   # Emptied 2026-09-10, and empty ON PURPOSE rather than by omission. All four items —
@@ -388,9 +427,11 @@ mid_term:
   - id: watcher-plan-copy-on-create
     what: "Copy a plan the moment it appears in ~/.claude/plans, via FileChanged"
     why: >
-      CLOSES c-plan-attribution. That problem is only hard retroactively — a plan copied at
-      creation belongs to the project the session is in. Attribution by timing, not by content
-      inspection.
+      Originally justified as the thing that CLOSES c-plan-attribution, on the premise that the
+      problem "is only hard retroactively". THAT PREMISE IS GONE as of 2026-09-10:
+      d-attribution-is-authorship-not-mention attributes a plan exactly, after the fact, from
+      the transcript that wrote it. This item is now an OPTIMISATION — it buys latency, so a
+      plan is copied even if the session never reaches /rite:end — and nothing depends on it.
     unverified: "that FileChanged watches paths outside the project root"
     user_note: "accepted conditionally — will be tested before it is trusted"
   - id: watcher-unlogged-change
@@ -415,9 +456,6 @@ mid_term:
   - id: port-preflight
     what: "Port preflight.py into Rite as the engine; reduce ~/projects/claude-preflight to a checks.yaml"
     why: "744 proven lines. The generalisation is mostly done — the machine-specific checks are already toggles."
-  - id: port-mirror-memory
-    what: "Port claude-mirror-memory.py; extend the same tool to plan copying"
-    why: "Plans are the identical problem with a different source dir. One tool, not two."
   - id: plugin-packaging
     what: ".claude-plugin/marketplace.json at repo root, plugins/ layout, LICENSE, git init"
 long_term:

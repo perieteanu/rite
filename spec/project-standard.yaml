@@ -467,12 +467,27 @@ portability:
         pass, the decision is reversed rather than the test weakened.
 
     - id: claude_home_slug_derivation
-      severity: open
-      rule: "Deriving a project slug from a path is platform-specific and is not yet solved."
+      severity: documentation
+      rule: >
+        Derive root -> slug and never slug -> root. The first is deterministic and governs every
+        write; the second is lossy and may only name a project in a report.
       why: >
-        Memory directories encode the project path as dashes
-        (-home-perieteanu-projects-rite). On Windows that is a drive letter and backslashes.
-        Unbuilt today; it lands in the port-mirror-memory work.
+        Memory directories encode the project path with every non-alphanumeric character
+        replaced by a dash (-home-perieteanu-projects-rite). On Windows that is a drive letter
+        and backslashes, encoded the same way.
+      resolved_2026_09_10: >
+        This was `severity: open` and "not yet solved", deferred to the port-mirror-memory work
+        — which is where it landed. The answer was not to solve the hard direction but to stop
+        needing it. Encoding is LOSSY: "/", "-" and "." all become "-", so
+        -home-x-public-html-api-perieteanu could decode to several real paths and any decoder
+        would have to guess. rite_copy.py therefore derives root -> slug only, which is exact,
+        and uses slug -> root for nothing but printing a project's name in a report. A wrong
+        name in a report is a cosmetic defect; a wrong directory to write into is data loss.
+        The asymmetry is what makes the unsolved half harmless, and it is why this is now
+        severity: documentation rather than open.
+      legacy_variant: >
+        The encoding drifted between Claude Code versions: older folders preserved "_"
+        (-home-...-public_html-...). Both spellings are tried, primary first.
 
 # ── verdicts and failure semantics (CORE) ────────────────────────────────────
 # What a failing check DOES. Until 2026-09-08 this was undefined, which is a hole in a
@@ -727,6 +742,21 @@ inventory:
         14, and the rejection is recorded so it is not helpfully re-proposed.
 
 # ── artifacts ────────────────────────────────────────────────────────────────
+# `path` is the canonical name and what a finding displays. Where an artifact legitimately has
+# MANY instances under generated names, it also declares `path_pattern`, a glob, and presence is
+# a glob match instead of a literal one.
+#
+# WHY THIS FIELD EXISTS, since a second path key looks like duplication: plan_copy declared
+# path "docs/PLAN-YYYY-MM-DD-<slug>.md" and the checker compared it with exists_exactly — a
+# literal, case-sensitive test. No file can be named YYYY-MM-DD, so plan_copy reported
+# "not present" on every project forever, and filename_matches_canonical — the test whose whole
+# job is to check that a plan copy is NAMED correctly — had never once run against a plan file
+# and could not. Found 2026-09-10 with two real plan copies sitting on disk beside the verdict
+# that said there were none. c-pattern-paths-are-matched-literally.
+#
+# Renaming the artifact to a literal path was the WRONG fix and was rejected: there are
+# legitimately many plan copies per project, and one canonical filename would be a worse lie
+# than the silence it replaced.
 artifacts:
 
   - id: readme
@@ -1300,6 +1330,8 @@ artifacts:
 
   - id: plan_copy
     path: "docs/PLAN-YYYY-MM-DD-<slug>.md"
+    path_pattern: "docs/PLAN-*.md"
+    canonical_name_pattern: "^docs/PLAN-\\d{4}-\\d{2}-\\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\\.md$"
     write_discipline: write_once
     tier: 2
     layer: core
@@ -1327,6 +1359,39 @@ artifacts:
       - level: fresh
         rule: source_plans_all_copied
         means: "A plan in ~/.claude/plans attributable to this project with no copy here fails."
+
+  - id: script_copy
+    path: "docs/session-scripts/<ISO date>/<name>"
+    path_pattern: "docs/session-scripts/*/*"
+    canonical_name_pattern: "^docs/session-scripts/\\d{4}-\\d{2}-\\d{2}/[^/]+$"
+    write_discipline: write_once
+    tier: 3
+    layer: local
+    answers: "How was this change actually made?"
+    audience: both
+    form: text
+    structure:
+      canonical_name: "session-scripts/<ISO date>/<original filename>"
+      source: "/tmp/claude-<uid>/<slug>/<session-uuid>/scratchpad/*.py|*.sh"
+      cardinality: many_files
+      grouped_by_date: >
+        Not flat beside the documents, unlike plan_copy. One session produced twenty helper
+        scripts; a few sessions of that would bury docs/ under machinery and make the documents
+        harder to find, which is the opposite of what docs/ is for.
+      notes: >
+        The throwaway scripts a session writes to do its own work — the ones that performed the
+        edits behind a commit. They live in /tmp, so they do not survive a reboot: late is the
+        same as never, which is why this runs from SessionEnd as well as /rite:end.
+        Attribution is free, unlike plan_copy: the scratchpad path already contains the project
+        slug, so nothing has to be inferred.
+        Deliberately narrow about what counts — *.py and *.sh at the scratchpad root only. The
+        session that built this had a README.md.bak and a shipped-probe/ tree in the same
+        directory, and neither is a script.
+    tests:
+      - level: exists
+        rule: optional
+      - level: populated
+        rule: filename_matches_canonical
 
   - id: concerns
     path: "docs/CONCERNS.yaml"
