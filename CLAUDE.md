@@ -75,7 +75,11 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
   artifact (macOS/Windows are case-insensitive, so `readme.md` passes there and fails on
   Linux — same repo, two verdicts). Generated files write `newline="\n"`. Normalize line
   endings before any byte comparison. Every read/write names `encoding="utf-8"`. Never write
-  `python3` in docs — Windows has `py`. Full list: `portability:` in the spec.
+  `python3` in docs — Windows has `py`. **Every entry point calls `ritefs.use_utf8_stdio()`
+  before printing, and every read of another process names `encoding="utf-8"` AND
+  `errors="replace"`** — Python picks the console codepage for stdout on Windows, so `·` and
+  `—` go out as cp1252 there and a UTF-8 parent dies on byte 0x97. CI proved this on 2026-09-10.
+  Full list: `portability:` in the spec.
 - **Stdlib only. There is no PyYAML dependency and nothing to `pip install`.** YAML is read by
   a subset parser shipped with Rite — measured: the project uses no anchors, aliases, tags,
   flow mappings, block literals or merge keys. The parser **refuses rather than guesses**, and
@@ -153,8 +157,7 @@ What is genuinely not built, as of 2026-09-10:
   fires on every push. `test-riteyaml.py` skips there (PyYAML is its oracle and CI does not
   install it) and `test-installed-current.py` always skips (a runner has no installed plugin).
   The runner reports that coverage instead of showing an unqualified green — a skip is never
-  folded into a pass. **Ubuntu only**, so the three `severity: correctness` portability rules
-  in the spec remain enforced by nothing: `ci-portability-matrix` in ROADMAP `mid_term`.
+  folded into a pass. It runs on **ubuntu, macos and windows** with `fail-fast: false`.
 - **No `PostToolUse` hook**, and none of the eight watchers. It belongs to `port-mirror-memory`.
 - **No port of `preflight.py` / `claude-mirror-memory.py` / `hookdedup.py`**, and no
   `checks.yaml` — `port-preflight` has not started.

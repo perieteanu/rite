@@ -20,6 +20,9 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 
 import riteyaml  # noqa: E402
+import ritefs  # noqa: E402
+
+ritefs.use_utf8_stdio()
 
 try:
     import yaml  # the oracle

@@ -40,6 +40,8 @@ sys.path.insert(0, str(HERE))
 import riteyaml  # noqa: E402
 import ritefs  # noqa: E402
 
+ritefs.use_utf8_stdio()
+
 SPEC_PATH = HERE.parent / "spec" / "project-standard.yaml"
 
 RED, YELLOW, GREEN, NA = "RED", "YELLOW", "GREEN", "NA"

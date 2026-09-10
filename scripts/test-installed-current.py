@@ -27,6 +27,10 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
+import ritefs  # noqa: E402
+
+ritefs.use_utf8_stdio()
 
 # The executable surface. Documents are excluded on purpose: the cache carrying a stale LOG.md
 # is untidy, not broken, and failing on it would train people to ignore this test.

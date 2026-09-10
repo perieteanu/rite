@@ -236,6 +236,7 @@ VS Code and the terminal differ MORE than Windows and macOS do, but not for file
 | `case_sensitive_name_matching` | correctness | NEVER use Path.exists() to test for an artifact. List the directory and compare names exactly, byte for byte. |
 | `generated_output_is_lf_only` | correctness | Every generated file is written with newline="\n". Never the platform default. |
 | `normalize_before_byte_comparison` | correctness | Any test comparing a file against a previous revision normalizes line endings first. Compare content, never encoding of line breaks. |
+| `process_output_declares_encoding` | correctness | Every entry point declares its stdout and stderr as UTF-8 before printing, via ritefs.use_utf8_stdio(). Every read of another process's output names BOTH encoding="utf-8" AND errors="replace". A byte must not mean different things at the two ends of one pipe. |
 | `shell_only_as_a_launcher` | correctness | Shell is permitted in exactly ONE place: a launcher shim that locates Python or explains why it cannot. Nothing else. No checks, no parsing, no logic. |
 | `explicit_utf8_everywhere` | correctness | Every read and write names encoding='utf-8'. Never rely on the platform default. |
 | `python_invocation_differs` | documentation | Never hardcode `python3` in documentation or a hook command. On Windows the name is `py` or `python`; `python3` is not a standard Windows executable. |
@@ -249,6 +250,10 @@ VS Code and the terminal differ MORE than Windows and macOS do, but not for file
 **`normalize_before_byte_comparison`** — VS Code on Windows saves CRLF by default. PyYAML parses \r\n without complaint, so DECISIONS.yaml still loads — but append_only_preserved compares bytes, and every line reads as changed. The integrity test would fail on a file nobody touched.
 
 _Rejected alternative: A .gitattributes with eol=lf. Correct, conventional, and rejected: it is a hand-authored 14th file one hour after the inventory was frozen at 13. Normalizing inside the comparison achieves the same result with no new file, consistent with the ruling that put the /end outcome in HANDOFF rather than a stamp._
+
+**`process_output_declares_encoding`** — The existing rules cover files. This one covers PIPES, and its absence was found on 2026-09-10 by the first CI run that was not on Linux. Python selects the console codepage for stdout on Windows, so a report containing `·` or `—` is emitted as cp1252 there and as UTF-8 on Linux and macOS — one program, three byte streams. run-gates.py captured a child with encoding="utf-8", got cp1252, and a reader thread died with `UnicodeDecodeError: ... byte 0x97`, which is cp1252's em dash. TWO gates reported FAIL for a reason having nothing to do with what they test — the worst kind of red, because it accuses the wrong component.
+
+_Rejected alternative: ASCII-only output. It would need no declaration at all, and it is not available: the messages are read from YAML documents that are full of em dashes, so the text is non-ASCII before any code formats it. The encoding has to be stated, not avoided._
 
 **`shell_only_as_a_launcher`** — The shell is the only executor guaranteed to exist — but it is not portable, because .sh and .bat are two implementations. "Guaranteed present" and "written once" are mutually exclusive, and this rule takes both, by making the guaranteed-but-duplicated part as small as it can possibly be.
 

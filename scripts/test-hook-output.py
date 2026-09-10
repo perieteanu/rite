@@ -24,6 +24,10 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import ritefs  # noqa: E402
+
+ritefs.use_utf8_stdio()
 ROOT = HERE.parent
 MARKER = ".rite.yaml"
 
