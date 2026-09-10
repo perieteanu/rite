@@ -69,10 +69,10 @@ current_state: >
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.
   NINE GATES RUN, AND CI NOW RUNS THEM: standard, protocol, riteyaml differential, hook output
-  shape, checker verdicts, portability rules, installed-copy currency, and rite-check.py against
-  this project itself — that last one was never counted in the list of six this project told
-  itself for three days. rite-check.py reports 61 checks on this project, 0 RED, 56 GREEN,
-  covering 57 of 64 declared tests.
+  shape, checker verdicts, portability rules, scaffold, installed-copy currency, and
+  rite-check.py against this project itself — that last one was never counted in the list of six
+  this project told itself for three days. rite-check.py reports 61 checks on this project,
+  0 RED, 56 GREEN, covering 57 of 64 declared tests.
   STAGE IS NOW THE GATING AXIS OF THE STANDARD — d-stage-is-the-gating-axis. Every artifact
   declares required_from_stage, and a project is not asked for what its stage has not reached:
   idea wants LOG and HANDOFF, spec adds README/CLAUDE.md/MISSION/ROADMAP, build adds
@@ -116,17 +116,16 @@ current_state: >
   is PRIVATE. A private push is not publishing: it exists so CI has somewhere to run, and
   d-publish-main-in-full-no-export governs the public one, which has not happened. No one but
   this machine has run Rite.
-  near_term is THE ORDERED PATH FROM PRIVATE TO PUBLIC and now holds three items:
-  setup-hook-scaffolding, readme-for-a-stranger, publish-github. ci-portability-matrix closed
-  the same day it was queued. Both of publish-github's blockers are settled — a project may
+  near_term is THE ORDERED PATH FROM PRIVATE TO PUBLIC and holds ONE item: publish-github. The
+  other three — ci-portability-matrix, setup-hook-scaffolding, readme-for-a-stranger — were all
+  queued and closed on 2026-09-10. Both of publish-github's blockers are settled: a project may
   declare standard_version and a mismatch is YELLOW rather than honoured
   (d-standard-version-declared-never-honoured), and the stage advances to `shipped` in the same
   commit that flips visibility (d-stage-advances-when-the-repo-goes-public), which is exactly
-  when the LICENSE check should fire.
+  when the LICENSE check should fire. Nothing technical is in the way; the remaining act is
+  Costin's, and the checklist for it is on the item.
   STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
-  source_plans_all_copied. No PostToolUse and none of the eight watchers. The README still reads
-  as notes between author and agent and no line tells a stranger how to add the marketplace —
-  readme-for-a-stranger, and it is the first thing a visitor meets.
+  source_plans_all_copied. No PostToolUse and none of the eight watchers.
   ADOPTING RITE NOW OPENS ON GREEN. /rite:init seeds .rite.yaml, LOG.md and HANDOFF.md from
   template/ and a scaffolded project scores 0 RED, 0 YELLOW, 8 GREEN. It writes nothing beyond
   stage `idea` on purpose: a document nobody has written cannot be seeded honestly, so the
