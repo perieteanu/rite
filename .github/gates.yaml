@@ -45,6 +45,10 @@ gates:
     command: [scripts/test-portability-rules.py]
     what: "modules that print declare UTF-8 stdio; every subprocess.run names encoding and errors"
 
+  - id: scaffold
+    command: [scripts/test-scaffold.py]
+    what: "a scaffolded project opens 0 RED / 0 YELLOW, and the seed never overwrites"
+
   - id: installed-copy
     command: [scripts/test-installed-current.py]
     what: "the installed plugin matches this working tree, by version and by content"

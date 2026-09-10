@@ -35,7 +35,9 @@ declares a test, and the next session tells you which ones you skipped.
 | [`spec/render-standard.py`](spec/render-standard.py) | Generates both, and fails when either drifts. |
 | [`scripts/rite-check.py`](scripts/rite-check.py) | The checker. Runs the standard's completion tests against a project. |
 | [`scripts/riteyaml.py`](scripts/riteyaml.py) | Stdlib-only YAML subset parser. Refuses rather than guesses. |
-| [`skills/`](skills/) | `/rite:log` `/rite:end` `/rite:handoff` `/rite:preflight` |
+| [`scripts/rite_init.py`](scripts/rite_init.py) | Seeds a project to stage `idea` so adopting Rite opens on green. Never overwrites. |
+| [`template/`](template/) | The seed set. Three files, and deliberately not one more. |
+| [`skills/`](skills/) | `/rite:log` `/rite:end` `/rite:handoff` `/rite:preflight` `/rite:init` |
 | [`hooks/`](hooks/) | `SessionStart` verdict, `SessionEnd` mechanical close. |
 
 The spec is applied to itself on day one: the Markdown is generated from the YAML, and
@@ -60,7 +62,7 @@ Approximate, and worth checking rather than trusting — the numbers move whenev
 description changes:
 
 ```
-Always-on:  ~225 tok   added to every session, for four skill descriptions
+Always-on:  ~288 tok   added to every session, for five skill descriptions
 On invoke:  ~0.9-1.2k  each time a skill actually runs
 Hooks:      0          harness-only; they never enter the model's context
 ```
@@ -72,9 +74,8 @@ the block above is a snapshot of it, and snapshots go stale.
 
 No published release — the namespace is claimed but the repository is private, so nobody but
 its author has run this. CI runs the gates on every push across ubuntu, macos and windows —
-though **without PyYAML**, so two of the eight gates skip there and the runner says so rather
-than showing an unqualified green. There is no `template/` seed set, so a project adopting Rite
-on day one still opens on a screen of RED. The `preflight.py` port and the continuous watcher
+though **without PyYAML**, so two of the nine gates skip there and the runner says so rather
+than showing an unqualified green. The `preflight.py` port and the continuous watcher
 layer do not exist, and seven of the standard's declared tests are still unimplemented.
 See [`docs/ROADMAP.yaml`](docs/ROADMAP.yaml).
 

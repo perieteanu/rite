@@ -1452,3 +1452,49 @@ decisions:
     chosen_by_user: true
     proposed_by: claude
 
+  - id: d-scaffold-only-what-can-be-honest
+    date: "2026-09-10"
+    title: "/rite:init seeds a project to stage `idea` and refuses to write documents nobody has written"
+    context: >
+      Stage gating landed the same day and took a day-one project from 9 RED to 2. The last two
+      are LOG.md and HANDOFF.md, which a newcomer still had to hand-write correctly before the
+      tool would stop complaining. setup-hook-scaffolding is the other half.
+    decision: >
+      `/rite:init` writes exactly three files — .rite.yaml at `stage: idea`, LOG.md with one real
+      entry, HANDOFF.md with `genre: none` — and stops. It seeds nothing for `spec` or beyond.
+      It never overwrites, and is safe to re-run.
+    rationale:
+      - >
+        `idea` IS THE ONLY STAGE A MACHINE CAN SATISFY HONESTLY. A log carrying one true entry
+        is a complete log. A `genre: none` handoff is a complete handoff — the standard says so
+        outright: a real answer, the assertion that none is needed, made by someone who
+        considered the question. Both are finished documents, not placeholders.
+      - >
+        EVERY OTHER ARTIFACT FAILS THAT TEST. A seeded MISSION.md that nobody has written is a
+        lie that passes file_present, and the `populated` tests cannot distinguish a filled
+        template from an unfilled one — give it enough headings and it scores. Seeding prose
+        would manufacture the confidently-wrong document this project exists to attack, and
+        would do it at first contact, which is the worst possible moment.
+      - >
+        SO THE REFUSAL IS THE FEATURE. Advancing past `idea` stays a human act, and the checker
+        already names precisely which files it wants. A tool that says "you must write this
+        yourself" is more useful than one that fabricates a document to turn a verdict green.
+      - >
+        THE SEED CONTENT LIVES IN template/, NOT IN STRING LITERALS. It is config a human should
+        be able to read and edit, and hardcoding it in the scaffolder would be exactly the kind
+        of buried value this project forbids.
+    the_templates_cannot_be_literal: >
+      Both seeded files carry load-bearing dates: LOG.md is checked by
+      newest_entry_within_days_of_activity (30) and HANDOFF.md by not_expired. A template with a
+      baked date starts that clock the day it is COMMITTED and ships already stale, so the
+      templates carry substitution tokens read from the machine clock at scaffold time. Note the
+      inversion of the usual trap: generated output must never carry a timestamp, while
+      scaffolded output must — and the difference is when the clock is read.
+    consequences:
+      - "Verified: an empty directory scaffolded and checked reports 0 RED, 0 YELLOW, 8 GREEN."
+      - "template/ is NOT a 14th artifact. d-inventory-frozen-at-13 governs what a PROJECT carries; this is plugin content, in the same family as skills/. Stated here because the freeze exists precisely to stop additions being absorbed without argument."
+      - "scripts/test-scaffold.py is gate 9, and it exists because the roadmap's requirement that each seed be a 'valid smallest instance' was untestable where it was written — template/LOG.md is not at a canonical path, so the checker never looks at it. Scaffolding into a temp directory and checking the RESULT is the form of that claim that can fail."
+      - "It failed immediately and usefully: the first template/LOG.md carried a prose preamble explaining the log format, and entries_parse counted those nine lines as broken entries. Every project Rite scaffolded would have opened on a YELLOW produced by Rite's own seed file. Prose also has no business in an append-only file, where it becomes a header nobody can ever tidy."
+    chosen_by_user: true
+    proposed_by: claude
+
