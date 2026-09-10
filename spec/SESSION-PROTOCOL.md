@@ -31,7 +31,7 @@ _A happy accident, not a design. Recorded as such so nobody later mistakes it fo
 | phase | runs as | needs Python | degrades to |
 |---|---|---|---|
 | **Session start** | `SessionStart hook -> script` | yes | nothing — without Python the user simply gets no verdict; the session proceeds |
-| **During the session** | `PostToolUse hook -> script, plus the agent's own discipline` | no | — |
+| **During the session** | `PostToolUse hook -> script (mirror_memory), the /rite:update command (checkpoint), and the agent's own discipline (log_continuously, clock_per_entry). Until 2026-09-10 it was discipline alone, and honest_limits said so.` | no | — |
 | **Session end — the judgement half** | `/end command -> a Markdown prompt Claude interprets` | no | nothing — this half has no prerequisites and works on any machine Claude Code runs on |
 | **Session end — the mechanical half** | `SessionEnd hook -> script` | yes | skipped, with the loss named at the next session start |
 
@@ -66,6 +66,8 @@ _Rejected: block until acknowledged — highest enforcement, highest chance the 
   - _Why:_ Failed live on 2026-09-07: the clock was read at 22:11 and roughly thirty subsequent entries carried extrapolated times, some AHEAD of real time, discovered only when the clock was re-read at 00:02. An invented timestamp is indistinguishable from a real one afterwards.
   - _Check:_ no LOG entry may carry a timestamp later than the file's own mtime
   - _Tracked as:_ `c-log-timestamps-must-be-machine-read`
+- **`checkpoint`** — Bring the docs back to true mid-session, on demand, WITHOUT ending the session.
+  - _Why:_ Measured on the session that proposed it: ROADMAP.current_state read "Stage `build` ... version 0.8.1" for HOURS while the repository was public and the plugin eleven versions on. /rite:end caught it at the close; nothing could have caught it sooner, because every implemented completion test is an end-of-session test. A long session is not one event, and treating it as one is what lets a document stay false all afternoon.
 
 ### Session end — the judgement half
 
@@ -124,7 +126,7 @@ A protocol with no completion test is not a protocol.
 
 ## Honest limits
 
-- THE START HALF RUNS; THE DURING HALF DOES NOT EXIST. SessionStart fires the hook, its verdict reaches the model's context, and the end half is reachable as /rite:end. But the `during` phase has no enforcement at all: mirror_memory, log_continuously and clock_per_entry are disciplines an agent must remember, which is the exact category this project exists to abolish. They wait on the PostToolUse watcher layer.
+- THE DURING HALF IS HALF-BUILT AS OF 2026-09-10, and this entry used to say it did not exist at all. mirror_memory now runs on a PostToolUse hook, and checkpoint is reachable as /rite:update. What remains discipline an agent must remember is log_continuously and clock_per_entry — the exact category this project exists to abolish, still waiting on the watcher layer. Two of four is progress, not completion.
 - EVERY IMPLEMENTED COMPLETION TEST IS AN END-OF-SESSION TEST. All five key off HANDOFF.md or off LOG.md's relationship to it. Nothing checks anything mid-session, so a session can run for hours doing everything wrong and the standard stays green until it closes. Found on 2026-09-10 when CI — which runs mid-session by nature — went red on written_not_older_than_newest_log_entry for a session that was simply still open.
 - Four of the five tests are implementable with no revision history and no new artifact, which is deliberate: this protocol was designed so its own checks would not join the six already parked in c-unimplementable-tests.
 - RESOLVED 2026-09-08. The nag-once mechanism needed somewhere to record that a report was delivered; HANDOFF front matter was the obvious place and the wrong one, because that file is write_once and freezes at session end. It lives in ${CLAUDE_PLUGIN_DATA} instead — the plugin's own storage, which ARCHITECTURE's never_mutate_claude_home already names as its one declared exception. Not a project artifact, so the inventory stays frozen at 13. Verified: the nag prose appears on the first run and not the second, while the checker's RED for the same condition correctly persists — a finding and a nag are different things.

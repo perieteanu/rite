@@ -74,8 +74,8 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin at version 0.12.0 — rite@rite, five skills reachable as
-  /rite:log /rite:preflight /rite:handoff /rite:end /rite:init, and a SessionStart hook whose verdict line
+  Rite is an installed, running plugin at version 0.15.0 — rite@rite, six skills reachable as
+  /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.

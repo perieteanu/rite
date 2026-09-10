@@ -21,8 +21,12 @@ Only the user invokes this. Claude never decides that a session is over.
    findings, corrections, decisions taken in conversation but never written down. Where an
    entry turned out to be wrong, **append a dated correction**; never rewrite it.
 
-2. **Bring the docs back to true.** For each, check the claim against the filesystem or the
-   host, never against another document:
+2. **Bring the docs back to true**, then **say how much you had to correct** — one line, into
+   the log. That line is the only verification `/rite:update` has: if checkpoints kept the docs
+   true this step finds little, and if it rewrites `current_state` they lapsed. Report the
+   magnitude; never score it. Any pass/fail threshold would be a guessed number.
+
+   For each, check the claim against the filesystem or the host, never against another document:
    - `docs/ROADMAP.yaml` `current_state` — it owns the project's stated state.
    - `docs/ARCHITECTURE.md` — declared must-be-current. If the shape changed this session,
      it is rewritten this session, not at the next audit.
