@@ -109,8 +109,8 @@ Participation is opt-in and Rite is silent where it was not invited: no `.rite.y
 ## What it costs you
 
 ```
-Always-on:  ~288 tok   added to every session, for five skill descriptions
-On invoke:  ~0.9-1.2k  each time a skill actually runs
+Always-on:  ~354 tok   added to every session, for six skill descriptions
+On invoke:  ~0.8-1.6k  each time a skill actually runs
 Hooks:      0          harness-only; they never enter the model's context
 ```
 

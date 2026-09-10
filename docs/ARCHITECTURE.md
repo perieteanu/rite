@@ -193,7 +193,7 @@ template/            THE SEED SET — .rite.yaml, LOG.md, HANDOFF.md, carrying {
                      frozen inventory covers what a PROJECT carries, and this is plugin
                      content, like skills/. Seed CONTENT lives here rather than in string
                      literals because it is config a human should be able to edit.
-skills/              /rite:log /rite:end /rite:handoff /rite:preflight /rite:init
+skills/              /rite:log /rite:end /rite:handoff /rite:preflight /rite:init /rite:update
   log/SKILL.md         both-invocable — Claude logs as work happens
   end/SKILL.md         disable-model-invocation: Claude never ends a session
   handoff/SKILL.md     disable-model-invocation
