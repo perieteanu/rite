@@ -145,7 +145,8 @@ current_state: >
   2026-09-10. That is a statement rather than an omission: the next move is a decision about
   direction, not a queued task.
   STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
-  source_plans_all_copied. No PostToolUse and none of the eight watchers.
+  source_plans_all_copied. None of the eight watchers — the PostToolUse hook exists but does
+  one job, refreshing the memory mirror.
   ADOPTING RITE NOW OPENS ON GREEN. /rite:init seeds .rite.yaml, LOG.md and HANDOFF.md from
   template/ and a scaffolded project scores 0 RED, 0 YELLOW, 8 GREEN. It writes nothing beyond
   stage `idea` on purpose: a document nobody has written cannot be seeded honestly, so the

@@ -12,43 +12,40 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import rite_copy  # noqa: E402
 import ritefs  # noqa: E402
 
 ritefs.use_utf8_stdio()
 
 
-def mirror_memory(root: Path) -> None:
-    """Reuse the existing mirror. A second implementation is drift, not robustness."""
-    script = Path.home() / ".claude/scripts/claude-mirror-memory.py"
-    if not script.is_file():
-        return
-    try:
-        subprocess.run([sys.executable, str(script), "--project", str(root)],
-                       capture_output=True, text=True, timeout=20,
-                       encoding="utf-8", errors="replace")
-    except (OSError, subprocess.SubprocessError):
-        pass
+def copy_everything(root: Path) -> None:
+    """Mirror memory, copy plans, copy this session's scratchpad scripts.
 
+    IN-PROCESS, not a subprocess. Until 2026-09-10 this shelled out to
+    ~/.claude/scripts/claude-mirror-memory.py, which was the right call while that script was
+    the only implementation — "a second implementation is drift, not robustness". It is no
+    longer the only one: rite_copy.py is the port, so calling it directly removes both the
+    subprocess and the dependency on a file outside the plugin.
 
-def copy_plans(root: Path) -> None:
-    """Copy plans out of ~/.claude/plans into docs/PLAN-<date>-<slug>.md.
+    THE SCRIPTS ARE THE URGENT ONE. Plans and memory live under ~/.claude and survive; the
+    scratchpad is under /tmp and does not survive a reboot. For those, late is the same as
+    never, which is why this runs here — SessionEnd fires whether or not anyone remembers to
+    type /rite:end.
 
-    NOT IMPLEMENTED. Attribution is the blocker: plan files carry harness-generated names with
-    no project in them (cheeky-seeking-clock.md), so a plan cannot be matched to a project
-    retrospectively with any confidence. Copying the wrong plan into a project is worse than
-    copying none — it would be a document that reads as a record and is false.
-
-    The route that works is copy-on-CREATION via a FileChanged watcher, where the project is
-    simply the one the session is in. Tracked as c-plan-attribution; deliberately left undone
-    here rather than guessed at.
+    Silent and total: SessionEnd has no turns left, so nothing printed here reaches anyone, and
+    one copier failing must not stop the next two.
     """
-    return
+    for action in (rite_copy.mirror_memory, rite_copy.copy_plans, rite_copy.copy_scripts):
+        try:
+            action(root, False)
+        except Exception:
+            # A hook that raises is a hook that breaks the session it was meant to serve.
+            continue
 
 
 def main() -> int:
@@ -59,8 +56,7 @@ def main() -> int:
     root = Path(payload.get("cwd") or os.getcwd()).resolve()
     if not ritefs.marker_present(root):
         return 0
-    mirror_memory(root)
-    copy_plans(root)
+    copy_everything(root)
     return 0
 
 

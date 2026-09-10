@@ -182,7 +182,7 @@ scripts/
 Still planned, not built:
 
 ```
-hooks/            PostToolUse — belongs to port-mirror-memory (see below)
+hooks/            SubagentStop, PreCompact, FileChanged — the unbuilt watcher layer
 scripts/          preflight.py port — port-preflight
 ```
 
@@ -204,11 +204,21 @@ chomping indicators and multi-line plain scalars, and still refuses anchors, ali
 merge keys and complex keys. Stdlib only; PyYAML remains the test oracle and is imported
 nowhere. See the `widened_2026_09_09` block inside `d-stdlib-only-yaml-subset`.
 
-**`PostToolUse` is deliberately absent.** The obvious implementation calls
-`~/.claude/scripts/claude-mirror-memory.py`, which is Costin's script, not Rite's — a plugin
-hook depending on a file only one machine has is broken by design for everyone else, and on
-this machine it would double-fire against the entry already in `settings.json`. It lands with
-`port-mirror-memory`.
+**`PostToolUse` exists as of 2026-09-10**, and the objection that kept it absent is gone
+rather than overruled. It was absent because the obvious implementation called
+`~/.claude/scripts/claude-mirror-memory.py` — Costin's script, not Rite's, so a plugin hook
+depending on a file only one machine has, which would also double-fire against the entry in
+`settings.json`. Both halves are now false: `scripts/rite_copy.py` is the port, and the
+`settings.json` entry was retired in the same commit that added this hook.
+
+It refreshes the memory mirror and **nothing else**, gated on the written path being a memory
+file. A full refresh costs ~66ms and `PostToolUse` fires on every `Write` and `Edit`; paying
+that on every edit to catch the few that touch a memory would be a tax on the whole session,
+and a hook that makes editing feel slow is a hook the user removes.
+
+It exists because `SessionEnd` copying could not cover the mid-session case. The mirror is read
+from the workspace *while work happens*, so a mirror that is only correct after the session
+ends is wrong for exactly as long as anyone would want to read it.
 
 **`/next` is deliberately absent.** It writes to `next-steps.yaml`, which belongs to
 project-tracker — `d-project-tracker-stays-separate` and the standing don't-claim rule both

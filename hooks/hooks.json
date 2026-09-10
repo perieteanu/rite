@@ -1,5 +1,5 @@
 {
-  "description": "rite — session protocol: verdict at start, mirror during, mechanical close at end",
+  "description": "rite \u2014 session protocol: verdict at start, mirror kept current during, mechanical copy at end",
   "hooks": {
     "SessionStart": [
       {
@@ -30,6 +30,18 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" session-end",
             "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" copy --hook",
+            "timeout": 10
           }
         ]
       }
