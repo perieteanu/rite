@@ -153,7 +153,7 @@ itself and the first thing a reader met was the lie.
 
 What is genuinely not built, as of 2026-09-10:
 
-- **CI runs SEVEN gates, but only five of them on a runner.** `.github/workflows/gates.yml`
+- **CI runs EIGHT gates, but only six of them on a runner.** `.github/workflows/gates.yml`
   fires on every push. `test-riteyaml.py` skips there (PyYAML is its oracle and CI does not
   install it) and `test-installed-current.py` always skips (a runner has no installed plugin).
   The runner reports that coverage instead of showing an unqualified green — a skip is never
