@@ -169,6 +169,7 @@ showing an unqualified green:
 | `verdicts` | unparseable is RED, absent stays NA, and a false claim is caught | runs |
 | `portability-rules` | UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no hardcoded python3 | runs |
 | `stage-table` | no document restates the stage mapping outside a rite:generated block | runs |
+| `preflight-port-parity` | the ported session POST still agrees with preflight.py on status and side | **skips** |
 | `mirror-port-parity` | rite's memory mirror still renders identically to the script it ported | **skips** |
 | `copy-attribution` | a plan is attributed by authorship — a Write or ExitPlanMode naming it — never by mention | runs |
 | `scaffold` | a scaffolded project opens 0 RED / 0 YELLOW, and the seed never overwrites | runs |

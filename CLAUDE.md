@@ -184,10 +184,12 @@ What is genuinely not built, as of 2026-09-10:
 - **None of the eight watchers.** The `PostToolUse` hook itself now exists — added 2026-09-10
   with the copier port — but it does one job, refreshing the memory mirror when a memory file
   is written. `watcher-write-discipline` and the other seven are unbuilt.
-- **No port of `preflight.py` or `hookdedup.py`**, and no `checks.yaml` — `port-preflight` has
-  not started. `claude-mirror-memory.py` IS ported, as `scripts/rite_copy.py`, alongside plan
-  and session-script copying; the global hook in `~/.claude/settings.json` is deliberately
-  still running beside it until the port is proven.
+- **Both ports are done.** `claude-mirror-memory.py` is `scripts/rite_copy.py`; `preflight.py`
+  and `hookdedup.py` are `scripts/rite_preflight.py` and `scripts/ritededup.py`, with config at
+  `${CLAUDE_PLUGIN_DATA}/checks.yaml`. Costin's originals deliberately keep running beside
+  both until the ports are proven, and a parity gate guards each pair. **Do not restore
+  `mirror_drift`, `last_log_age` or `tracker_registered`** — each is superseded or out of
+  scope, with the reason recorded beside the registry.
 - **Published 2026-09-10.** `github.com/perieteanu/rite` is PUBLIC, `main` in full including
   `LOG.md`, per `d-publish-main-in-full-no-export`. This bullet said "Nothing published" until
   that commit. What is still true: **nobody but this machine has run Rite**, so every claim

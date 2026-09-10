@@ -1,0 +1,65 @@
+# rite — session POST configuration. Human-visible; edit freely.
+#
+# WHERE THIS LIVES: ${CLAUDE_PLUGIN_DATA}/checks.yaml. It configures the machine and the agent,
+# not a repository, so there is deliberately no per-project copy — and it is NOT one of the
+# standard's artifacts. The inventory stays at 14.
+#
+# Every value here is optional. Delete this whole file and the shipped defaults still run.
+
+# ── thresholds ──────────────────────────────────────────────────────────────
+thresholds:
+  disk_warn_pct: 85        # YELLOW at or above this %used on a watched mount
+  disk_crit_pct: 95        # RED at or above
+  # The VS Code extension has been observed dispatching one SessionStart TWICE, ~47ms apart
+  # with the same session_id, so the verdict was injected twice. A repeat inside this many
+  # seconds is suppressed. 0 disables. Fail-open by design: when in doubt it emits, because a
+  # duplicated line is far cheaper than a silently missing verdict.
+  hook_dedup_window_s: 20
+
+# Mounts the disk check inspects, via `df -P`. Missing mounts are skipped silently, and a
+# platform without df reports NA rather than failing.
+disk_mounts:
+  - /
+
+# What makes a directory "look like a project", for the context_files check. These were
+# hardcoded in a helper before the port; they are a list, and a list belongs in config.
+project_markers: [CLAUDE.md, .git, README.md, package.json, pyproject.toml]
+
+# ── per-check toggles ───────────────────────────────────────────────────────
+# Omit a check to leave it ENABLED. Set false to switch it off. A check's tier is intrinsic and
+# is not settable here: `full`-tier checks touch the network and never run at session start.
+checks:
+  parallel_claude: true    # another interactive session that could clobber the same files
+  context_files: true      # the files that SHOULD load into context exist and are non-empty
+  settings_valid: true     # settings.json parses, and its hook command paths resolve
+  git_status: true
+  disk: true
+  thinking_level: true
+  context_window: true
+  caveats: true
+  mcp_reachable: true      # full tier
+  google_auth: true        # full tier
+  remote_reachable: true   # full tier
+
+  # ── your own checks ───────────────────────────────────────────────────────
+  # A check with a `command:` runs an external program instead of engine code. This is how a
+  # check that reads another project's files — or anything you would never publish — stays out
+  # of the engine entirely while still running every session.
+  #
+  #   my_check:
+  #     command: ~/bin/something.py     # first token is the program; the rest are arguments
+  #     side: project                   # claude | project | machine
+  #     timeout: 5
+  #
+  # THE EXIT CODE IS THE VERDICT:  0 GREEN · 1 YELLOW · 2 RED · 3 NA
+  # The first line of stdout is the headline; the rest is detail. A missing command, a timeout,
+  # or any other exit code is YELLOW naming the check — never a crash, and never silence.
+
+# ── static machine caveats ──────────────────────────────────────────────────
+# One-line reminders of known environment quirks. Report-only: they never move the verdict.
+caveats: []
+
+# ── remote reachability (full tier only) ────────────────────────────────────
+# If the session's cwd is at or under `prefix`, run `cmd` relative to it. Exit 0 is GREEN,
+# anything else RED. No match is NA.
+remotes: []

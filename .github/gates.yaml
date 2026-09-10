@@ -68,6 +68,16 @@ gates:
     # DECISIONS.yaml and ROADMAP's milestones are append-only records of what was true then,
     # and a gate that fails on a file nobody may legally edit is a gate that gets switched off.
 
+  - id: preflight-port-parity
+    command: [scripts/test-preflight-port-parity.py]
+    what: "the ported session POST still agrees with preflight.py on status and side"
+    skip_short: "a runner has no copy of preflight.py"
+    skip_means: >
+      ~/projects/claude-preflight/preflight.py is not on this machine. A CI runner never had it,
+      and this is the END STATE: the original is Costin's fallback while Rite is on trial, and
+      when he retires it this gate skips forever. DELETE IT THEN — a gate that can no longer
+      fail is not a gate.
+
   - id: mirror-port-parity
     command: [scripts/test-mirror-port-parity.py]
     what: "rite's memory mirror still renders identically to the script it ported"

@@ -1797,3 +1797,47 @@ decisions:
       to say two of four rather than none.
     chosen_by_user: true
     proposed_by: claude
+
+  - id: d-preflight-ported-engine-and-command-checks
+    date: "2026-09-10"
+    title: "The session POST is Rite's engine; personal checks live in config as `command:` entries"
+    context: >
+      d-preflight-is-config-not-fork settled the shape on 2026-09-07 and waited three days:
+      "Rite is the upstream engine. Costin's preflight shrinks to his own checks.yaml plus
+      checks too personal to publish."
+    decision: >
+      scripts/rite_preflight.py is a PORT of preflight.py — check bodies carried verbatim where
+      behaviour is unchanged. It ships ELEVEN checks. Config lives at
+      ${CLAUDE_PLUGIN_DATA}/checks.yaml and is not a project artifact. A check whose config
+      carries `command:` runs an external program, its exit code mapping 0/1/2/3 to
+      GREEN/YELLOW/RED/NA. SessionStart emits ONE verdict covering the POST and the project
+      standard, guarded by a ported dedup.
+    rationale:
+      - >
+        A PORT, NOT A REIMPLEMENTATION. 748 lines proven over months are worth more than tidier
+        code, so the transformation was surgical: swap the parser, name every encoding, guard
+        the platform-specific bits, drop what is superseded. Parity is a gate, not a claim.
+      - >
+        `command:` IS WHAT MAKES THE 2026-09-07 DECISION EXECUTABLE. Without it, tracker_registered
+        forces project-tracker's file format into the published engine, which
+        d-project-tracker-stays-separate forbids. With it, anything too personal to publish
+        lives in the user's config and the engine never learns about it. It is also the only
+        extension point a stranger gets.
+      - >
+        THREE CHECKS ARE NOT PORTED, and restoring them is a regression: mirror_drift is
+        superseded by mirror_not_stale, which reads a sync stamp through a predicate shared with
+        the copier rather than comparing mtimes; last_log_age by
+        newest_entry_within_days_of_activity; tracker_registered belongs in config.
+      - >
+        ONE VERDICT, NOT TWO. Costin has had one line from preflight and one from Rite,
+        describing one session. The port folds them, and carries hookdedup — which guarded only
+        the two hooks in settings.json and never covered Rite's own.
+    corrections_forced_during_the_work:
+      - "The AST gate caught a subprocess.run arriving without encoding/errors. The port was written against a rule the original predates, and the rule did its job."
+      - >
+        The POST was briefly made to run regardless of the .rite.yaml marker. The hook-shape gate
+        rejected it inside a minute and the gate was right — `participation` is not negotiable by
+        a port. Reverted and raised as c-session-post-is-gated-by-participation.
+      - "Cutting the three unported checks by span also removed a helper that a KEPT check used. The engine still ran: the per-check exception guard reported it as a YELLOW naming the missing name, which is exactly the failure mode that guard exists for."
+    chosen_by_user: true
+    proposed_by: claude

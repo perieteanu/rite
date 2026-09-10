@@ -777,11 +777,18 @@ inventory:
       status: "deferred — necessity not yet agreed"
       note: "Discussed 2026-09-07 and NOT added. The need is asserted, not established."
     - id: checks_yaml
-      what: "Config driving the checks, inherited in shape from claude-preflight"
-      status: "deferred — purpose not yet clear"
+      what: "Config driving the session POST, inherited in shape from claude-preflight"
+      status: "RESOLVED 2026-09-10 — exists, and is NOT an artifact"
       note: >
-        d-preflight-is-config-not-fork says preflight BECOMES this file, so it will exist. What
-        it must contain for a stranger, versus for this machine, is unsettled.
+        The deferral asked what it must contain for a stranger versus for this machine.
+        Answered by building it. It lives at ${CLAUDE_PLUGIN_DATA}/checks.yaml — plugin storage,
+        which never_mutate_claude_home names as its one declared exception, and where the
+        nag-once mechanism already lives. It configures the MACHINE and the AGENT, not a
+        repository, so a per-project copy would be the wrong shape and the inventory stays at
+        14. template/checks.yaml is the documented default, carrying no machine-specific values.
+        What is "for this machine" needs no answer from the standard after all: a check whose
+        config carries a `command:` runs an external program, so anything too personal to
+        publish lives in the user's config and never in the engine.
     - id: end_stamp
       what: "A marker that /end ran"
       status: "REJECTED — not deferred"
