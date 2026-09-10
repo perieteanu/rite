@@ -93,7 +93,12 @@ def main() -> int:
         verdict, reason, output = run(gate)
         results.append((gate["id"], verdict, reason))
         print(f"  {verdict:5} {gate['id']:{width}}  {reason}")
-        if verdict == FAIL and output.strip():
+        # EVERY gate's output, not only a failing one. A passing gate still reports things
+        # that must not disappear — rite-check.py's NA lines name each test it did NOT run,
+        # including scope exclusions. Printing only on failure hid the
+        # --exclude-scope=session line from CI entirely, which made a claim in
+        # d-session-scope-excluded-from-ci false the day it was written.
+        if output.strip():
             for line in output.rstrip().splitlines():
                 print(f"        | {line}")
             print()
