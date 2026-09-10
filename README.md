@@ -87,12 +87,14 @@ immediately. It never overwrites anything and is safe to re-run.
 The `stage` line in `.rite.yaml` decides what the standard requires of you. A new project is
 asked for two files, not thirteen:
 
+<!-- rite:generated stage-table -->
 | stage | what it adds |
 |---|---|
 | `idea` | `LOG.md`, `HANDOFF.md` |
 | `spec` | `README.md`, `CLAUDE.md`, `docs/MISSION.md`, `docs/ROADMAP.yaml` |
 | `build` | `docs/ARCHITECTURE.md`, `docs/CONVENTIONS.md`, `docs/DECISIONS.yaml` |
 | `shipped` | `LICENSE` |
+<!-- /rite:generated -->
 
 Nothing expires and nothing nags. You raise the stage when the project genuinely changes, and
 the checker then names exactly which documents it wants. A tool that opens by listing everything
@@ -123,7 +125,7 @@ business asking that of anyone else.
 
 Nine gates run on every push, across Linux, macOS and Windows. Two of them cannot run on a CI
 runner — the YAML parser's differential test needs PyYAML as an oracle, and the installed-copy
-test needs an installed plugin — so the runner reports **`7 of 9 gates ran`** and names the two
+test needs an installed plugin — so the runner reports **`9 of 11 gates ran`** and names the two
 it skipped rather than showing an unqualified green.
 
 The YAML is read by a subset parser shipped with Rite, so there is no dependency to install. It

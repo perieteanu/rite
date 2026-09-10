@@ -25,6 +25,15 @@ gates:
     command: [spec/render-standard.py, --protocol, --check]
     what: "SESSION-PROTOCOL.md still matches session-protocol.yaml"
 
+  - id: blocks
+    command: [spec/render-standard.py, --blocks, --check]
+    what: "the stage table inside README and template/.rite.yaml still matches the spec"
+    # PROJECT-STANDARD.md is generated whole and cannot drift. README.md is prose a human owns
+    # that CONTAINS one table the spec owns, so the table is fenced by inert markers and
+    # refilled. This gate is half of what retired c-stage-table-duplicated-in-three-places; the
+    # other half is stage-table below, because generation cannot catch a copy that is not drift
+    # from anything.
+
   - id: riteyaml
     command: [scripts/test-riteyaml.py]
     what: "riteyaml parses this project's YAML identically to PyYAML"
@@ -43,7 +52,14 @@ gates:
 
   - id: portability-rules
     command: [scripts/test-portability-rules.py]
-    what: "modules that print declare UTF-8 stdio; every subprocess.run names encoding and errors"
+    what: "UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no hardcoded python3"
+
+  - id: stage-table
+    command: [scripts/test-stage-table-guard.py]
+    what: "no document restates the stage mapping outside a rite:generated block"
+    # The other half of the same fix. It reads the live, rewrite-only documents only: LOG.md,
+    # DECISIONS.yaml and ROADMAP's milestones are append-only records of what was true then,
+    # and a gate that fails on a file nobody may legally edit is a gate that gets switched off.
 
   - id: scaffold
     command: [scripts/test-scaffold.py]
