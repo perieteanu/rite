@@ -30,7 +30,8 @@ def mirror_memory(root: Path) -> None:
         return
     try:
         subprocess.run([sys.executable, str(script), "--project", str(root)],
-                       capture_output=True, text=True, timeout=20)
+                       capture_output=True, text=True, timeout=20,
+                       encoding="utf-8", errors="replace")
     except (OSError, subprocess.SubprocessError):
         pass
 

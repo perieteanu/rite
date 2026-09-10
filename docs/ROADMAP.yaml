@@ -63,7 +63,7 @@ inception:
 current_state: >
   Stage `build`, declared in .rite.yaml. Verified against the filesystem, the harness and
   three operating systems on 2026-09-10.
-  Rite is an installed, running plugin at version 0.5.0 — rite@rite, four skills reachable as
+  Rite is an installed, running plugin at version 0.5.1 — rite@rite, four skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.

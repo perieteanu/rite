@@ -39,7 +39,8 @@ def fail(msg: str) -> None:
 
 def run(root: pathlib.Path) -> str:
     out = subprocess.run([sys.executable, str(CHECKER), str(root), "--force"],
-                         capture_output=True, text=True, encoding="utf-8")
+                         capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
     return out.stdout + out.stderr
 
 
