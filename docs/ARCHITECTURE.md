@@ -108,7 +108,7 @@ Built, as of 2026-09-10:
 ```
 scripts/
   rite-check.py      THE CHECKER. Reads spec/project-standard.yaml and runs the completion
-                     tests. 63 checks on this project; 62 of 63 declared tests implemented.
+                     tests. 64 checks on this project; 64 of 64 declared tests implemented.
   rite_copy.py       THE COPIER. Brings in what Claude writes OUTSIDE the project: the memory
                      mirror (free_replace, one file), plan copies and session scratchpad
                      scripts (write_once, many). Attribution is AUTHORSHIP — a Write or
@@ -128,9 +128,13 @@ scripts/
   riterules.py       Predicates SHARED by the checker and the watcher — git_show, zone_of,
                      git_removed_lines, log_future_timestamps. One implementation, because two
                      would be free to disagree.
-  rite_watch.py      THE WATCHER. PostToolUse: an append-only file rewritten, or a LOG entry
-                     dated in the future. Silent on success — it fires on every write, and a
-                     watcher that speaks when nothing is wrong gets disabled.
+  rite_watch.py      THE WATCHER, dispatching on the event. PostToolUse: an append-only file
+                     rewritten, or a LOG entry dated in the future. CwdChanged: a mid-session
+                     move to a DIFFERENT marked project, once. Silent on success — it fires on
+                     every write and every cd, and a watcher that speaks when nothing is wrong
+                     gets disabled.
+  rite_issue.py      Records what RITE got wrong, from any project, into plugin storage rather
+                     than into the project you are in. Append-only and untriaged on purpose.
   test-watch-discipline.py  That the watcher catches both, and stays silent otherwise.
   test-preflight-port-parity.py  The port still agrees with the engine it came from. Temporary.
   riteyaml.py        Stdlib-only parser for the YAML subset this project uses. 358 lines.
@@ -210,6 +214,7 @@ template/            THE SEED SET — .rite.yaml, LOG.md, HANDOFF.md, carrying {
                      content, like skills/. Seed CONTENT lives here rather than in string
                      literals because it is config a human should be able to edit.
 skills/              /rite:log /rite:end /rite:handoff /rite:preflight /rite:init /rite:update
+                     /rite:issue
   log/SKILL.md         both-invocable — Claude logs as work happens
   end/SKILL.md         disable-model-invocation: Claude never ends a session
   handoff/SKILL.md     disable-model-invocation

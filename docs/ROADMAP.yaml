@@ -40,6 +40,8 @@ claims:
     - scripts/rite_copy.py
     - scripts/rite_preflight.py
     - scripts/rite_watch.py
+    - scripts/rite_issue.py
+    - skills/issue/SKILL.md
     - scripts/riterules.py
     - scripts/ritededup.py
     - template/checks.yaml
@@ -81,8 +83,8 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin at version 0.20.0 — rite@rite, six skills reachable as
-  /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update, and a SessionStart hook whose verdict line
+  Rite is an installed, running plugin at version 0.22.0 — rite@rite, SEVEN skills reachable as
+  /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.
@@ -185,7 +187,20 @@ current_state: >
   runs an external program instead of living in the engine. SessionStart emits ONE verdict
   covering the POST and the project standard, with a ported dedup that Rite's own hook never had.
   Costin's preflight still runs beside it, as the mirror does; retiring it is his call.
-  STILL MISSING: ONE declared rule is unimplemented, deleted_ids_appear_in_milestones. The
+  THE CHECKER IS AT FULL COVERAGE — 64 of 64 declared tests implemented, 0 NA on this project,
+  for the first time. deleted_ids_appear_in_milestones was the last, and it is what makes the
+  deletion convention safe: closing an item by deleting it is only sound if the item is promoted
+  rather than erased. required_any_of_sections was implemented all along and invoked by NOTHING,
+  because the spec declared its data under `structure:` while no artifact listed the rule under
+  `tests:`; wiring it exposed that it also ignored the section_aliases declared beside it.
+  TWO WATCHERS RUN, both in scripts/rite_watch.py dispatching on the event: write discipline on
+  PostToolUse, and a once-per-session notice when the cwd moves to a different marked project.
+  /rite:issue records what RITE got wrong from whatever project you hit it in, appending to
+  ${CLAUDE_PLUGIN_DATA}/feedback.md and never to the project you are in.
+  THE FIRST REAL `command:` CHECK IS LIVE and it is not in this repo: tracker_registered reads
+  project-tracker's projects.yaml from ~/.claude/scripts, wired in Costin's own checks.yaml.
+  That is the mechanism working as designed — the engine never learns that file's shape.
+  STILL MISSING: no declared rule is unimplemented. The
   checker's coverage line now reads 62 of 63: `optional` markers were being counted in the
   denominator as rules awaiting implementation, which understated the checker by four and had
   four documents repeating 'seven declared tests unimplemented' for days.
