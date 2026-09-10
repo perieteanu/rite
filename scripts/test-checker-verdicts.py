@@ -284,8 +284,16 @@ with tempfile.TemporaryDirectory() as d:
     summary = [ln for ln in out.splitlines() if "not required at stage" in ln]
     if not summary:
         fail("the collapsed summary line is missing entirely")
-    elif "46" not in summary[0]:
-        fail(f"the collapsed line must state HOW MANY checks it stands for: {summary[0].strip()}")
+    else:
+        # A COUNT, NOT A LITERAL — the same lesson as the NA assertion below. This pinned "46"
+        # and broke the moment a test was declared on a build-stage artifact, which is noise
+        # rather than a finding. The claim is that the collapsed line SAYS HOW MANY it stands
+        # for, so a reader can see what is coming; the exact number is not the contract.
+        stands_for = re.search(r"(\d+)\s+checks not required", summary[0])
+        if not stands_for:
+            fail(f"the collapsed line must state HOW MANY checks it stands for: {summary[0].strip()}")
+        elif int(stands_for.group(1)) < 1:
+            fail(f"the collapsed line claims to stand for nothing: {summary[0].strip()}")
 
     # The artifacts must still be named, or the user cannot learn what is coming.
     for want in ("README.md", "docs/MISSION.md", "docs/ARCHITECTURE.md", "LICENSE"):

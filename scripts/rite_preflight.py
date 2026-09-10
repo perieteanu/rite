@@ -35,16 +35,9 @@ Fast, deterministic session checkup. Surfaces *what's wrong and whose side it's 
 (claude/harness vs project vs machine), token-tight.
 
 Invocation modes (see CLAUDE.md / README.md):
-  preflight.py --hook    Called by the SessionStart hook. Runs the LOCAL tier, writes
-                         the full report to last-post.txt, and emits ONLY a verdict to
-                         context via hookSpecificOutput.additionalContext (JSON, exit 0):
-                           GREEN  -> one terse line
-                           YELLOW/RED -> verdict + only the failing checks + report path
-                         Always exits 0 (never blocks session start).
-                         Deduplicated: the VS Code extension dispatches one
-                         SessionStart twice (~47ms apart), so a repeat of the
-                         same session_id+source is suppressed (see already_emitted;
-                         window: checks.yaml thresholds.hook_dedup_window_s).
+  (no --hook mode)       SessionStart goes through rite_session_start.py, which calls
+                         local_verdict() and folds the POST into one emission with the project
+                         standard. Dedup lives there too, in ritededup.
   preflight.py           Manual run. LOCAL tier, human report to stdout.
   preflight.py --full    Manual run. LOCAL + NETWORK tiers, human report to stdout.
 
@@ -69,7 +62,6 @@ sys.path.insert(0, str(HERE))
 import ritefs  # noqa: E402
 import riteyaml  # noqa: E402
 import rite_copy  # noqa: E402
-import ritededup  # noqa: E402
 
 ritefs.use_utf8_stdio()
 
@@ -100,9 +92,6 @@ DEFAULT_PROJECT_MARKERS = ["CLAUDE.md", ".git", "README.md", "package.json", "py
 ORDER = {"NA": 0, "GREEN": 1, "YELLOW": 2, "RED": 3}
 
 Result = namedtuple("Result", "name side status headline detail")
-
-
-already_emitted = ritededup.already_emitted
 
 
 def is_project_shaped(d, cfg):
@@ -758,65 +747,18 @@ def local_verdict(cwd):
         return None, "GREEN"
 
 
-def emit_hook(results, verdict):
-    now = dt.datetime.now()
-    n = sum(1 for r in results if r.status != "NA")
-    if verdict == "GREEN":
-        ctx_text = f"preflight GREEN — {n} checks ok ({now:%H:%M})"
-    else:
-        out = [f"preflight {verdict} — session POST ({now:%H:%M}):"]
-        for r in results:
-            if r.status in ("YELLOW", "RED"):
-                out.append(f"  [{r.status}/{r.side}] {r.name}: {r.headline}")
-        out.append(f"full report: {REPORT_PATH}")
-        ctx_text = "\n".join(out)
-    # SessionStart cannot pop a message straight to the user (systemMessage is not
-    # honored for this event). The one honest channel is additionalContext -> Claude;
-    # the relay line makes Claude state the verdict at the top of its first reply.
-    # For an on-request, fully-visible report, run the /preflight command instead.
-    relay = ("\n(Claude: open your first reply by stating this preflight verdict to "
-             "Costin, before anything else.)")
-    # Source-verified 2026-05-29 (read anthropic.claude-code v2.1.156 on disk): the VS
-    # Code extension consumes ONLY `additionalContext` (1 ref). `systemMessage`,
-    # `showOutput`, `suppressOutput` have 0 refs — they do nothing in the extension. The
-    # banner above the prompt (rateLimitWarning/warningBanner/...) is built-in and not
-    # hook-addressable. So additionalContext + a relay instruction is the only path that
-    # can reach the user in the VS Code chat; /preflight covers the on-demand case.
-    print(json.dumps({"hookSpecificOutput": {
-        "hookEventName": "SessionStart",
-        "additionalContext": ctx_text + relay,
-    }}))
-
-
-# ─── main ───────────────────────────────────────────────────────────────────
-
-def read_payload(hook_mode):
-    """Hook mode: the SessionStart JSON payload from stdin (session_id, source, cwd).
-
-    Read once — stdin is a stream and cannot be re-read by the dedup below.
-    """
-    if not hook_mode:
-        return {}
-    try:
-        return json.loads(sys.stdin.read() or "{}") or {}
-    except Exception:
-        return {}
-
-
-def resolve_cwd(hook_mode, payload):
-    if hook_mode:
-        if payload.get("cwd"):
-            return Path(payload["cwd"]).resolve()
-        env = os.environ.get("CLAUDE_PROJECT_DIR")
-        if env:
-            return Path(env).resolve()
-    return Path.cwd().resolve()
+# THE --hook PATH WAS DELETED ON 2026-09-10, hours after the port brought it over. Nothing
+# invoked it: SessionStart runs rite_session_start.py, which calls local_verdict() above and
+# folds the result into ONE emission alongside the project standard. emit_hook, read_payload,
+# resolve_cwd and a second copy of the dedup all sat here unreachable.
+#
+# Deleted rather than kept "in case": code that has never run in this codebase is untested code
+# presenting as supported, and a second dedup implementation beside ritededup is exactly the
+# drift this project attacks. The original still has it, and the original is still the fallback.
 
 
 def main():
     ap = argparse.ArgumentParser(description="rite — the session POST (power-on self-test)")
-    ap.add_argument("--hook", action="store_true",
-                    help="hook mode: emit verdict JSON for additionalContext")
     ap.add_argument("--init-config", action="store_true",
                     help="write the documented default checks.yaml if absent; never overwrites")
     ap.add_argument("--full", action="store_true",
@@ -827,35 +769,13 @@ def main():
         return init_config()
 
     cfg = load_config()
-    payload = read_payload(args.hook)
-    cwd = resolve_cwd(args.hook, payload)
-
-    # Duplicate dispatch of the same SessionStart: stay silent (emit nothing) and
-    # skip the checks entirely — the first firing already wrote last-post.txt.
-    # Wrapped: a bug in the dedup path must never cost us the verdict, so any
-    # failure here falls through and emits (fail-open, same as the helper).
-    if args.hook:
-        try:
-            if already_emitted(payload, cwd,
-                               cfg["thresholds"].get("hook_dedup_window_s", 20),
-                               STAMP_PATH):
-                sys.exit(0)
-        except SystemExit:
-            raise
-        except Exception:
-            pass
-
-    ctx = Ctx(cwd, cfg)
-    include_network = args.full and not args.hook  # network never runs in the auto hook
-    results = run_checks(ctx, include_network)
+    ctx = Ctx(Path.cwd().resolve(), cfg)
+    results = run_checks(ctx, args.full)
     verdict = verdict_of(results)
 
-    write_report(ctx, results, verdict, include_network)
-    if args.hook:
-        emit_hook(results, verdict)
-    else:
-        print_human(ctx, results, verdict, include_network)
-    sys.exit(0)  # never block the session
+    write_report(ctx, results, verdict, args.full)
+    print_human(ctx, results, verdict, args.full)
+    return 0
 
 
 if __name__ == "__main__":

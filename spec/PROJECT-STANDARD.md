@@ -408,6 +408,7 @@ _Schema strictness: loose._
 |---|---|---|
 | exists | `file_present` | — |
 | populated | `min_content_sections` | `3` — At least three H2 sections beyond the title. This replaces a required-key list, which cannot span a Rust codebase and a plumbing schematic. |
+| populated | `required_any_of_sections` | One of the topology sections, honouring `section_aliases` — "Summary" satisfies "Shape". DECLARED 2026-09-10: the rule had been implemented since the checker was written and invoked by NOTHING, because `required_any_of_sections` appeared only under `structure:` as data and no artifact listed it under `tests:`. Dead code in the checker whose whole subject is rules nobody runs. YELLOW, never RED, and `required_any_of_waived_when` says why: a non-code project whose top-level keys ARE the topology has no generic container section, and d-noncode-first-class makes those first-class. The finding names the waiver so a reader can dismiss it deliberately rather than wonder. |
 | fresh | `as_of_present` | — |
 | fresh | `as_of_within_days_of_activity` | `90` — Measured against source mtime, never against another document. |
 | populated | `claims_declared` | — |
