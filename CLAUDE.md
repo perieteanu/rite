@@ -147,13 +147,21 @@ is to stop an agent producing plausible-but-wrong output. Correction paragraphs 
 appended beneath it rather than the false paragraph being deleted, so the document contradicted
 itself and the first thing a reader met was the lie.
 
-What is genuinely not built, as of 2026-09-09:
+What is genuinely not built, as of 2026-09-10:
 
-- **No CI.** Six gates exist and nothing runs them but a human or Claude, by hand.
+- **CI runs SEVEN gates, but only five of them on a runner.** `.github/workflows/gates.yml`
+  fires on every push. `test-riteyaml.py` skips there (PyYAML is its oracle and CI does not
+  install it) and `test-installed-current.py` always skips (a runner has no installed plugin).
+  The runner reports that coverage instead of showing an unqualified green — a skip is never
+  folded into a pass. **Ubuntu only**, so the three `severity: correctness` portability rules
+  in the spec remain enforced by nothing: `ci-portability-matrix` in ROADMAP `mid_term`.
 - **No `PostToolUse` hook**, and none of the eight watchers. It belongs to `port-mirror-memory`.
 - **No port of `preflight.py` / `claude-mirror-memory.py` / `hookdedup.py`**, and no
   `checks.yaml` — `port-preflight` has not started.
-- **Nothing published.** `github.com/perieteanu/rite` is claimed but private and empty.
+- **Nothing published.** `github.com/perieteanu/rite` is PRIVATE. It is no longer empty —
+  `main` was pushed on 2026-09-10 so that CI would have somewhere to run. A private push is
+  not publishing; `d-publish-main-in-full-no-export` governs the public one and it has not
+  happened.
 - **Seven declared tests unimplemented**, of which `mirror_not_stale` and
   `source_plans_all_copied` are the ones that matter.
 
@@ -166,13 +174,14 @@ Its shape is preserved in that decision as a sketch, not a commitment.
 # lines fail the day they stop being true. Add a path here whenever you write a sentence
 # claiming something does not exist — that is the whole discipline.
 absent:
-  - .github/workflows
   - commands
   - checks.yaml
   - scripts/preflight.py
   - scripts/claude-mirror-memory.py
   - scripts/status.json
 present:
+  - .github/workflows
+  - .github/gates.yaml
   - scripts/rite-check.py
   - scripts/riteyaml.py
   - scripts/ritefs.py

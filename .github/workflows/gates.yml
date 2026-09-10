@@ -1,0 +1,47 @@
+# The gates that were only ever run by hand.
+#
+# Rite's whole argument is that a rule with no completion test is not a rule. Seven gates
+# existed here for three days and nothing ran them but a human who remembered to — and on
+# 2026-09-09 that failed exactly as predicted: scripts/rite-check.py was truncated to zero
+# bytes and no gate caught it, because no gate ran.
+#
+# WHAT THIS DOES NOT COVER, deliberately — see d-ci-reports-its-own-coverage:
+#   - ubuntu only. The macos/windows matrix is deferred, so the three `severity: correctness`
+#     portability rules in spec/project-standard.yaml stay unenforced. Adding the matrix is a
+#     change to `runs-on` below plus a strategy block; the runner needs nothing.
+#   - PyYAML is not installed, so the riteyaml differential test SKIPS here.
+# The runner prints both facts on every run. A skip is never folded into green.
+
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      # Default fetch-depth is sufficient: rite-check.py shells out only to
+      # `git show HEAD:` and `git diff HEAD`, neither of which needs history.
+      - uses: actions/checkout@v4
+
+      # Keep in step with `python_floor` in .github/gates.yaml — that file is where the
+      # supported floor is declared for humans; this is only where it is installed.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # `python`, not `python3`: setup-python provides it on all three target platforms, so
+      # adding the OS matrix later touches `runs-on` and nothing else.
+      - name: Run the gates
+        run: python .github/run-gates.py

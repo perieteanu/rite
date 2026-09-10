@@ -1230,3 +1230,60 @@ decisions:
     chosen_by_user: true
     proposed_by: user
 
+  - id: d-ci-reports-its-own-coverage
+    date: "2026-09-10"
+    title: "CI runs the gates and states what it did not run; a skip is never folded into green"
+    context: >
+      Seven gates existed and nothing ran them but a human who remembered to. On 2026-09-09
+      that failed exactly as this project predicts rules fail: scripts/rite-check.py was
+      truncated to zero bytes and no gate caught it, because no gate ran. HANDOFF.md named CI
+      as the next move for that reason.
+    decision: >
+      .github/workflows/gates.yml runs every gate on every push, through .github/run-gates.py,
+      which reads the gate list from .github/gates.yaml using Rite's own riteyaml parser. The
+      runner distinguishes exit 0 pass / 1 fail / 2 SKIP and PRINTS ITS COVERAGE — "5 of 7
+      gates ran" plus the names of the two that did not — rather than reporting an unqualified
+      green. A gate that exits 2 without declaring `skip_means` in the gate list is treated as
+      a FAILURE.
+    rationale:
+      - >
+        THIS IS rite-check.py's OWN RULE, ONE LEVEL UP. The checker already refuses to let a
+        rule it cannot implement look like a rule that passed: it reports NA, never silence.
+        The gates deserve the same treatment, because a green badge covering five sevenths of
+        what it appears to cover is precisely the plausible-but-wrong artifact this project
+        exists to prevent. That is also why a chain of `run:` steps was rejected — a shell
+        chain has two answers and must either fail on a skip or swallow it.
+      - >
+        PyYAML IS AN ORACLE, NOT A DEPENDENCY, AND CI DOES NOT INSTALL IT. Costin's call.
+        test-riteyaml.py therefore SKIPS in CI, and riteyaml's correctness claim is enforced
+        only on a developer machine. Written down because the alternative reading is
+        catastrophic: a future session that sees `pip install pyyaml` in a workflow would
+        conclude d-stdlib-only-yaml-subset had been abandoned, and one that sees it missing
+        would "fix" the oversight. Neither is right. The gap is declared, not hidden.
+      - >
+        test-installed-current.py can NEVER pass in CI — a runner has no installed plugin — so
+        it always skips there. That is a permanent, structural gap rather than a temporary one,
+        and it is the clearest case for why skips had to be visible.
+      - >
+        UBUNTU ONLY, ALSO COSTIN'S CALL, and it leaves the sharpest gap in the repo: the spec
+        declares targets [linux, macos, windows] and three rules at severity:correctness, and
+        none of them is tested by anything. Recorded as ci-portability-matrix in ROADMAP
+        mid_term so it is a declared gap rather than an omission.
+      - >
+        THE GATE LIST HAS ONE HOME. docs/ARCHITECTURE.md describes the gates for a human; it
+        does not define them. A second hand-maintained copy inside the runner would be a drift
+        surface, which is the failure this project attacks. Reading the list with riteyaml also
+        exercises the parser in CI on every push, at no cost.
+      - >
+        THE SUPPORTED PYTHON FLOOR IS DECLARED IN .github/gates.yaml, not only in the workflow.
+        Nothing in this repo declared a floor before today. A version pinned solely in a
+        workflow step is a supported floor that no human-visible file states, which is a
+        hardcoded value with no home.
+    consequences:
+      - "CI plumbing lives in .github/, outside the four paths test-installed-current.py compares, so it never forces a plugin version bump. The plugin stays at 0.3.0."
+      - "The first run of the runner failed, correctly: .github/workflows existing made claims_match_filesystem RED in FOUR documents. The claim updates had to ship in the same commit as the workflow, or CI would have been born red. HANDOFF.md said three files; it was four."
+      - "Five of seven gates is now a number in the README and in ROADMAP current_state. It goes stale the day the matrix lands, and claims_match_filesystem will not catch it — it checks paths, not counts."
+      - "Nothing is published. The repo is private; this decision is about running the gates, not about releasing."
+    chosen_by_user: true
+    proposed_by: claude
+

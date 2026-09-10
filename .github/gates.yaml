@@ -1,0 +1,53 @@
+# What CI runs, and what a skip means for each gate.
+#
+# This file is the ONE home for the gate list. docs/ARCHITECTURE.md describes the gates in
+# prose for a human to read; a second hand-maintained copy inside the runner would be a drift
+# surface, which is the failure this project exists to attack. The runner reads this list, and
+# reads it with scripts/riteyaml.py — Rite's own parser, exercised in CI on every push.
+#
+# WRITE DISCIPLINE: rewrite-only. A gate that stops existing is DELETED here, never annotated.
+#
+# EXIT CODES are a contract shared by every gate: 0 pass, 1 fail, 2 skip. A gate that can skip
+# declares `skip_means`, and the runner refuses to fold a skip into green.
+---
+# The Python version CI runs, and therefore the floor this project supports. Declared HERE
+# rather than only inside the workflow, because a version living solely in a workflow step is
+# a supported floor that no human-visible file states — a hardcoded value with no home.
+# Nothing in this repo declared a floor before 2026-09-10. See d-ci-reports-its-own-coverage.
+python_floor: "3.11"
+
+gates:
+  - id: standard
+    command: [spec/render-standard.py, --check]
+    what: "PROJECT-STANDARD.md still matches project-standard.yaml"
+
+  - id: protocol
+    command: [spec/render-standard.py, --protocol, --check]
+    what: "SESSION-PROTOCOL.md still matches session-protocol.yaml"
+
+  - id: riteyaml
+    command: [scripts/test-riteyaml.py]
+    what: "riteyaml parses this project's YAML identically to PyYAML"
+    skip_means: >
+      PyYAML is absent, and PyYAML is the ORACLE for this test rather than a dependency of the
+      product. CI deliberately does not install it, so riteyaml's correctness claim is NOT
+      enforced here. It is enforced on a developer machine, where PyYAML is present.
+
+  - id: hook-shape
+    command: [scripts/test-hook-output.py]
+    what: "the SessionStart hook nests its verdict under hookSpecificOutput"
+
+  - id: verdicts
+    command: [scripts/test-checker-verdicts.py]
+    what: "unparseable is RED, absent stays NA, and a false claim is caught"
+
+  - id: installed-copy
+    command: [scripts/test-installed-current.py]
+    what: "the installed plugin matches this working tree, by version and by content"
+    skip_means: >
+      Rite is not installed on this machine. A CI runner never has the plugin installed, so
+      this gate ALWAYS skips in CI and is enforced only on a developer machine.
+
+  - id: self-check
+    command: [scripts/rite-check.py]
+    what: "rite passes its own standard — 0 RED, every declared claim checked against the tree"
