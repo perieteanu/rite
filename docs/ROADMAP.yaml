@@ -179,10 +179,10 @@ current_state: >
   covering the POST and the project standard, with a ported dedup that Rite's own hook never had.
   Costin's preflight still runs beside it, as the mirror does; retiring it is his call.
   STILL MISSING: ONE declared rule is unimplemented, deleted_ids_appear_in_milestones. The
-  checker's coverage line reads 61 of 66 because its denominator counts test INSTANCES and
-  includes four `optional` markers, which are not rules awaiting implementation —
-  c-coverage-counts-optional-as-unimplemented. None of the eight watchers; the PostToolUse
-  hook exists but does one job, refreshing the memory mirror.
+  checker's coverage line now reads 61 of 62: `optional` markers were being counted in the
+  denominator as rules awaiting implementation, which understated the checker by four and had
+  four documents repeating 'seven declared tests unimplemented' for days. None of the eight
+  watchers; the PostToolUse hook exists but does one job, refreshing the memory mirror.
   ADOPTING RITE NOW OPENS ON GREEN. /rite:init seeds .rite.yaml, LOG.md and HANDOFF.md from
   template/ and a scaffolded project scores 0 RED, 0 YELLOW, 8 GREEN. It writes nothing beyond
   stage `idea` on purpose: a document nobody has written cannot be seeded honestly, so the

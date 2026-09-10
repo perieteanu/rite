@@ -108,7 +108,7 @@ Built, as of 2026-09-10:
 ```
 scripts/
   rite-check.py      THE CHECKER. Reads spec/project-standard.yaml and runs the completion
-                     tests. 62 checks on this project; 61 of 66 declared tests implemented.
+                     tests. 62 checks on this project; 61 of 62 declared tests implemented.
   rite_copy.py       THE COPIER. Brings in what Claude writes OUTSIDE the project: the memory
                      mirror (free_replace, one file), plan copies and session scratchpad
                      scripts (write_once, many). Attribution is AUTHORSHIP — a Write or

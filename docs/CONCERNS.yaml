@@ -47,29 +47,6 @@ concerns:
       nothing is lost today. It becomes real when he retires it.
     do_not: "Resolve it by editing the hook. It is a DECISIONS entry either way."
 
-  - id: c-coverage-counts-optional-as-unimplemented
-    title: "The checker's coverage denominator counts `optional` markers as missing implementations"
-    status: open
-    severity: low
-    opened: "2026-09-10"
-    what: >
-      rite-check.py reports "61 of 66 declared tests implemented". The gap is five INSTANCES,
-      but four of them are `rule: optional` on plan_copy, script_copy, concerns and
-      memory_mirror. `optional` is a marker meaning the artifact is not required; it is handled
-      by an explicit branch and is deliberately absent from RULES, so the counter treats it as
-      an unimplemented rule. Exactly ONE rule is genuinely unimplemented:
-      deleted_ids_appear_in_milestones.
-    why_it_matters: >
-      It understates the checker against itself, which is the safe direction and therefore the
-      easy one to leave. But four documents repeated "seven declared tests unimplemented" for
-      days on the strength of this line — the number was read as a to-do list and it is not one.
-      A metric that is wrong in the flattering direction gets fixed; one wrong in the modest
-      direction just quietly misinforms.
-    proposal:
-      - "Exclude `optional` from the denominator, the way the branch already excludes it from execution."
-      - "Or report both units: rules implemented, and instances run. The second is what a reader wants when deciding whether to trust a verdict."
-    do_not: "Add `optional` to RULES as a no-op just to move the number. That would make the counter honest by making the code lie."
-
   - id: c-readme-sample-output-is-a-copy
     title: "The README's sample checker run restates the stage mapping, and nothing regenerates it"
     status: open
@@ -211,6 +188,23 @@ concerns:
       which renders text only and has no hover.
 
 retired_ids:
+  - id: c-coverage-counts-optional-as-unimplemented
+    retired: "2026-09-10"
+    how: settled
+    outcome: "fixed in scripts/rite-check.py — MARKER_RULES is excluded from the denominator"
+    why: >
+      Opened and fixed the same day, and it needed no decision: `optional` is a marker meaning
+      the artifact is not required, handled by its own branch and deliberately absent from RULES.
+      Counting it as an unimplemented rule understated the checker by four instances. Coverage
+      now reads 61 of 62, and the one genuinely missing rule is deleted_ids_appear_in_milestones.
+      Recorded as settled rather than dropped because the DOCUMENTS were the damage: four of them
+      repeated "seven declared tests unimplemented" for days, reading that line as a to-do list
+      it never was. A metric wrong in the flattering direction gets fixed; one wrong in the
+      modest direction just quietly misinforms, which is why a low-severity counter bug was
+      worth an entry at all.
+      NOTE: the milestones entry for port-mirror-memory says "from 57 of 64 to 61 of 66". It is
+      append-only and stays as written — it was true under the old denominator.
+
   - id: c-gate-count-restated-in-prose
     retired: "2026-09-10"
     how: settled
