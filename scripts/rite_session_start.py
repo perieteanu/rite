@@ -37,6 +37,8 @@ sys.path.insert(0, str(HERE))
 import riteyaml  # noqa: E402
 import ritefs  # noqa: E402
 
+ritefs.use_utf8_stdio()
+
 _LOG_TS = re.compile(r"^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})(?::(\d{2}))?\s\|")
 _FM = re.compile(r"^---\s*\n(.*?)\n---\s*(\n|$)", re.S)
 
@@ -120,8 +122,15 @@ def run_checker(root: Path) -> list[str]:
     if not checker.is_file():
         return []
     try:
+        # encoding + errors are BOTH required, and the second is the subtle one. This decodes
+        # the checker's report and then searches it for the literal "checks ·". Left to the
+        # locale, Windows decodes cp1252 — where 0xB7 happens to be ·, so the match works by
+        # coincidence — while cp437 and cp850 give a different character and the tail line is
+        # silently dropped instead of erroring. A verdict quietly missing its summary is worse
+        # than one that fails loudly.
         out = subprocess.run([sys.executable, str(checker), str(root)],
-                             capture_output=True, text=True, timeout=20)
+                             capture_output=True, text=True, timeout=20,
+                             encoding="utf-8", errors="replace")
     except (OSError, subprocess.SubprocessError):
         return []
     lines = [ln.strip() for ln in out.stdout.splitlines()

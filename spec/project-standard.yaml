@@ -259,6 +259,38 @@ portability:
         inside the comparison achieves the same result with no new file, consistent with the
         ruling that put the /end outcome in HANDOFF rather than a stamp.
 
+    - id: process_output_declares_encoding
+      severity: correctness
+      rule: >
+        Every entry point declares its stdout and stderr as UTF-8 before printing, via
+        ritefs.use_utf8_stdio(). Every read of another process's output names BOTH
+        encoding="utf-8" AND errors="replace". A byte must not mean different things at the
+        two ends of one pipe.
+      why: >
+        The existing rules cover files. This one covers PIPES, and its absence was found on
+        2026-09-10 by the first CI run that was not on Linux. Python selects the console
+        codepage for stdout on Windows, so a report containing `·` or `—` is emitted as cp1252
+        there and as UTF-8 on Linux and macOS — one program, three byte streams. run-gates.py
+        captured a child with encoding="utf-8", got cp1252, and a reader thread died with
+        `UnicodeDecodeError: ... byte 0x97`, which is cp1252's em dash. TWO gates reported FAIL
+        for a reason having nothing to do with what they test — the worst kind of red, because
+        it accuses the wrong component.
+      the_quieter_half: >
+        MORE IMPORTANT THAN THE CRASH. A parent that decodes with the locale and then searches
+        for a literal such as "checks ·" matches by coincidence on cp1252 and silently fails to
+        match on cp437 or cp850 — dropping the line rather than raising. That is the failure
+        this standard exists to prevent: not an error, an absence that looks like a pass.
+        Hence errors="replace" as well: mojibake in a report is a finding a human can see,
+        while a crash in the reader is a mystery attributed to the wrong place.
+      rejected_alternative: >
+        ASCII-only output. It would need no declaration at all, and it is not available: the
+        messages are read from YAML documents that are full of em dashes, so the text is
+        non-ASCII before any code formats it. The encoding has to be stated, not avoided.
+      one_implementation: >
+        ritefs.use_utf8_stdio(), same discipline as case_sensitive_name_matching and for the
+        same reason — see d-one-implementation-of-a-portability-rule. Nine entry points call
+        it. A tenth that forgets is why the reading half is defensive too.
+
     - id: shell_only_as_a_launcher
       severity: correctness
       rule: >

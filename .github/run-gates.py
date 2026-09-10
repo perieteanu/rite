@@ -31,6 +31,9 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import riteyaml  # noqa: E402
+import ritefs  # noqa: E402
+
+ritefs.use_utf8_stdio()
 
 GATES = ROOT / ".github" / "gates.yaml"
 
@@ -59,6 +62,13 @@ def run(gate: dict) -> tuple[str, str, str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        # errors="replace", because BOTH ends of this pipe must be defensive. The child now
+        # declares UTF-8 via ritefs.use_utf8_stdio(), but a gate that fails BEFORE reaching
+        # that line — or any future gate that forgets it — would otherwise take down a reader
+        # thread with UnicodeDecodeError and be reported as a failure of what it tests rather
+        # than of how it was read. A mojibake character in a report is a finding; a crash in
+        # the runner is a mystery.
+        errors="replace",
     )
     output = (proc.stdout or "") + (proc.stderr or "")
 

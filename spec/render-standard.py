@@ -29,6 +29,9 @@ HERE = Path(__file__).resolve().parent
 # scripts/test-riteyaml.py, where PyYAML is the oracle rather than a dependency.
 sys.path.insert(0, str(HERE.parent / "scripts"))
 import riteyaml  # noqa: E402
+import ritefs  # noqa: E402
+
+ritefs.use_utf8_stdio()
 
 SPEC = HERE / "project-standard.yaml"
 OUT = HERE / "PROJECT-STANDARD.md"

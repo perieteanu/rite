@@ -61,9 +61,9 @@ inception:
     namespace. Only spec/ plus this project's own Tier 0 + Tier 1 documents.
 
 current_state: >
-  Stage `build`, declared in .rite.yaml. Verified against the filesystem and the harness on
-  2026-09-09.
-  Rite is an installed, running plugin at version 0.4.0 — rite@rite, four skills reachable as
+  Stage `build`, declared in .rite.yaml. Verified against the filesystem, the harness and
+  three operating systems on 2026-09-10.
+  Rite is an installed, running plugin at version 0.5.0 — rite@rite, four skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -76,8 +76,15 @@ current_state: >
   but only FIVE of the seven gates can run on a runner: the riteyaml differential needs PyYAML
   as its oracle and CI does not install it, and the installed-copy test needs an installed
   plugin, which a runner never has. The runner reports "5 of 7 gates ran" and names the two,
-  rather than showing an unqualified green. Ubuntu only, so the three severity:correctness
-  portability rules are STILL enforced by nothing — ci-portability-matrix in mid_term.
+  rather than showing an unqualified green.
+  CI RUNS ON ALL THREE DECLARED TARGETS — ubuntu, macos and windows, fail-fast:false so one
+  platform's failure cannot hide another's findings. Until 2026-09-10 the only machine that had
+  ever run Rite was one Linux laptop. macOS passed first time, which is the first EVIDENCE that
+  case_sensitive_name_matching works rather than an assertion that it should. Windows failed
+  first time and the bug was real: entry points wrote `·` and `—` in the console codepage, so a
+  parent decoding as UTF-8 died on byte 0x97 and blamed two gates for a fault in neither. That
+  produced a FOURTH portability rule, process_output_declares_encoding, and hooks/rite.ps1 ran
+  for the first time anywhere — and passed.
   CI RUNS THE SELF-CHECK WITH --exclude-scope=session, because one test asks whether the
   session running right now has closed and is therefore RED by design for the whole working
   life of any session that logs as it works. Excluded is reported as NA, never dropped, and
@@ -99,10 +106,14 @@ current_state: >
   is PRIVATE. A private push is not publishing: it exists so CI has somewhere to run, and
   d-publish-main-in-full-no-export governs the public one, which has not happened. No one but
   this machine has run Rite.
-  near_term is EMPTY as of 2026-09-10 — every queued item closed, none invented to replace them.
+  near_term is no longer empty: as of 2026-09-10 it holds THE ORDERED PATH FROM PRIVATE TO
+  PUBLIC — ci-portability-matrix (done), setup-hook-scaffolding, readme-for-a-stranger,
+  publish-github. It was empty for one day, on purpose, and what filled it was a decision about
+  direction rather than a queue of leftovers.
   STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
-  source_plans_all_copied. No PostToolUse and none of the eight watchers. No macos/windows CI,
-  so every portability rule the spec marks severity:correctness is asserted and untested.
+  source_plans_all_copied. No PostToolUse and none of the eight watchers. No template/ seed set,
+  so a project installing Rite on day one still meets a screen of RED — the reason
+  setup-hook-scaffolding is next.
   NOTE, because this paragraph is the standing example: the claims block above passed GREEN
   while every NUMBER in this text was stale. That is the declared limit of claims_match_filesystem
   working as specified — it checks paths, not counts — and it is why the block supplements the
@@ -232,6 +243,33 @@ milestones:
       gates therefore skip on a runner, and the runner says so on every run instead of showing
       an unqualified green.
 
+  - id: ci-portability-matrix
+    what: "The gates run on ubuntu, macos and windows; a fourth portability rule came out of it"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026"
+    note: >
+      Costin put this ahead of setup-hook-scaffolding, and the ordering was vindicated within
+      the hour. Until today the only machine that had ever run Rite was one Linux laptop, and
+      the spec had asserted [linux, macos, windows] with three severity:correctness rules that
+      nothing tested.
+      BOTH outcomes were worth having. macOS passed first time — the first EVIDENCE that
+      case_sensitive_name_matching holds on a case-insensitive filesystem rather than a claim
+      that it should. Windows failed first time, on a real bug: entry points wrote `·` and `—`
+      in the console codepage, so a parent decoding with encoding="utf-8" died on byte 0x97
+      (cp1252's em dash) and TWO gates were reported FAIL for a fault in neither.
+      The prediction written beforehand was directionally right and mechanically backwards —
+      UnicodeEncodeError was expected, UnicodeDecodeError happened — which is the argument for
+      writing predictions down: a vague expectation would have been scored as correct.
+      It exposed a hole in the standard, not just in the code: the portability rules covered
+      FILES and said nothing about PIPES. process_output_declares_encoding is the fourth rule,
+      with one implementation in ritefs.use_utf8_stdio() and nine callers.
+      Two claims of mine were corrected in the process. The hook's JSON was never at risk —
+      json.dump escapes non-ASCII by default — and the quieter defect found while checking that
+      is the more dangerous one: a parent matching the literal "checks ·" after a locale decode
+      works by coincidence on cp1252 and silently drops the line on cp437, an absence that
+      reads as a pass.
+      hooks/rite.ps1 executed for the first time anywhere, and passed.
+
 near_term:
   label: "The ordered path from PRIVATE to PUBLIC"
   # Filled 2026-09-10, having been empty on purpose since 2026-09-09. It is not a queue of
@@ -240,20 +278,6 @@ near_term:
   # one setting on a repository; everything above it is what makes that setting defensible.
   # Order chosen by Costin 2026-09-10, matrix before scaffolding.
   candidates:
-    - id: ci-portability-matrix
-      what: "Add macos-latest and windows-latest to the CI matrix"
-      why: >
-        MOVED FROM mid_term AND PUT FIRST, by Costin's call. The only machine that has ever run
-        Rite is Linux. The spec declares targets [linux, macos, windows] and three rules at
-        severity:correctness, and nothing tests any of them —
-        case_sensitive_name_matching says outright that a repo carrying readme.md PASSES on
-        macOS and FAILS on Linux, the same repo scoring two verdicts. Publish before this and
-        the person who discovers that is a stranger on a Mac, running a standard whose entire
-        value is canonical names.
-      cost: "a strategy.matrix block and one line of runs-on. run-gates.py already needs nothing."
-      expect: "RED on the first run. ritefs.py exists BECAUSE that class of bug is real; finding more is the point, not a setback."
-      de_risks: "every item below it, which is the argument for going first"
-
     - id: setup-hook-scaffolding
       what: "A template/ seed set plus first-run scaffolding, gated by `stage`"
       why: >

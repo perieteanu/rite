@@ -20,6 +20,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import ritefs  # noqa: E402
 
+ritefs.use_utf8_stdio()
+
 
 def mirror_memory(root: Path) -> None:
     """Reuse the existing mirror. A second implementation is drift, not robustness."""

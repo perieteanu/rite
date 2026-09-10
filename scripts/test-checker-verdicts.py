@@ -22,6 +22,10 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import ritefs  # noqa: E402
+
+ritefs.use_utf8_stdio()
 CHECKER = HERE / "rite-check.py"
 
 HEADER = '---\nschema_version: "1.0.0"\nas_of: "2026-09-09"\nstatus: current\n'
