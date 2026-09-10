@@ -99,6 +99,10 @@ scripts/
                      under hookSpecificOutput. Asserts SHAPE, not content — see below.
   test-checker-verdicts.py  The checker's own test: unparseable is RED, absent stays NA, a
                      broken marker is reported, and a false claim is caught.
+  test-portability-rules.py  Walks the SYNTAX TREE of every .py in scripts/, spec/ and
+                     .github/: a module that prints must declare UTF-8 stdio at module level,
+                     and every subprocess.run must name encoding and errors. AST, not grep —
+                     a substring search matches the definition and the docstring too.
   test-installed-current.py  Contract test: the INSTALLED copy must match this working tree,
                      by version and by content. Skips where Rite is not installed.
 .rite.yaml           The opt-in marker. Presence is the signal; empty would be valid.
@@ -108,7 +112,8 @@ CI, as of 2026-09-10 — the gates stop depending on someone remembering:
 
 ```
 .github/
-  workflows/gates.yml  push to main, pull_request, workflow_dispatch. ubuntu-latest only.
+  workflows/gates.yml  push to main, pull_request, workflow_dispatch. ubuntu + macos +
+                       windows, fail-fast:false so one platform cannot hide another's findings.
   gates.yaml           THE GATE LIST — id, command, and what a skip means. The single home
                        for it; this document describes the gates, it does not define them.
   run-gates.py         Runs each gate and distinguishes 0 pass / 1 fail / 2 SKIP. Reads the
@@ -117,7 +122,7 @@ CI, as of 2026-09-10 — the gates stop depending on someone remembering:
 
 **A skip is never folded into green.** Two gates cannot run on a runner — `test-riteyaml.py`
 (PyYAML is its oracle and CI does not install it) and `test-installed-current.py` (a runner has
-no installed plugin) — so the runner prints `5 of 7 gates ran` and names what was not enforced.
+no installed plugin) — so the runner prints `6 of 8 gates ran` and names what was not enforced.
 That is `rite-check.py`'s own *NA, never silence* rule applied one level up, to the gates
 instead of to the checks. A gate exiting 2 without declaring `skip_means` is treated as a
 FAILURE, because an undeclared skip that reads as success is the exact shape of the problem.

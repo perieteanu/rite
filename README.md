@@ -72,7 +72,7 @@ the block above is a snapshot of it, and snapshots go stale.
 
 No published release — the namespace is claimed but the repository is private, so nobody but
 its author has run this. CI runs the gates on every push across ubuntu, macos and windows —
-though **without PyYAML**, so two of the seven gates skip there and the runner says so rather
+though **without PyYAML**, so two of the eight gates skip there and the runner says so rather
 than showing an unqualified green. There is no `template/` seed set, so a project adopting Rite
 on day one still opens on a screen of RED. The `preflight.py` port and the continuous watcher
 layer do not exist, and seven of the standard's declared tests are still unimplemented.

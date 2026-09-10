@@ -288,8 +288,17 @@ portability:
         non-ASCII before any code formats it. The encoding has to be stated, not avoided.
       one_implementation: >
         ritefs.use_utf8_stdio(), same discipline as case_sensitive_name_matching and for the
-        same reason — see d-one-implementation-of-a-portability-rule. Nine entry points call
-        it. A tenth that forgets is why the reading half is defensive too.
+        same reason — see d-one-implementation-of-a-portability-rule. Ten entry points call
+        it. An eleventh that forgets is why the reading half is defensive too.
+      checked_by: >
+        scripts/test-portability-rules.py, and this rule is the reason that file exists. Within
+        an hour of being written down, the rule was found violated at FIVE of the repo's seven
+        subprocess.run sites — two of them inside the checker itself — and they were found by
+        GREPPING, which is the discipline-instead-of-a-check failure this project exists to
+        abolish. The test walks the syntax tree rather than the text, because a substring
+        search for "use_utf8_stdio()" also matches its definition and this very sentence.
+        Verified retrospectively against the tree at 2a3a82d: it reports exactly those five,
+        by file and line.
 
     - id: shell_only_as_a_launcher
       severity: correctness

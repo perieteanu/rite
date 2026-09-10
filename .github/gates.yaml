@@ -41,6 +41,10 @@ gates:
     command: [scripts/test-checker-verdicts.py]
     what: "unparseable is RED, absent stays NA, and a false claim is caught"
 
+  - id: portability-rules
+    command: [scripts/test-portability-rules.py]
+    what: "modules that print declare UTF-8 stdio; every subprocess.run names encoding and errors"
+
   - id: installed-copy
     command: [scripts/test-installed-current.py]
     what: "the installed plugin matches this working tree, by version and by content"

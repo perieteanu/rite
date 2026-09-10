@@ -1,6 +1,6 @@
 # The gates that were only ever run by hand.
 #
-# Rite's whole argument is that a rule with no completion test is not a rule. Seven gates
+# Rite's whole argument is that a rule with no completion test is not a rule. The gates
 # existed here for three days and nothing ran them but a human who remembered to — and on
 # 2026-09-09 that failed exactly as predicted: scripts/rite-check.py was truncated to zero
 # bytes and no gate caught it, because no gate ran.
