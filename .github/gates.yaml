@@ -9,6 +9,12 @@
 #
 # EXIT CODES are a contract shared by every gate: 0 pass, 1 fail, 2 skip. A gate that can skip
 # declares `skip_means`, and the runner refuses to fold a skip into green.
+#
+# `skip_short` is the same fact in one clause, for the sentence README and ARCHITECTURE
+# GENERATE from this file. Declaring it here is the point: the gate count was hand-copied into
+# four documents and went 9 -> 11 -> 12 -> 13 in a single day, falsifying four or five
+# sentences each time (c-gate-count-restated-in-prose). A gate that declares skip_means is a
+# gate that can skip, so the skipped COUNT needs no second source either.
 ---
 # The Python version CI runs, and therefore the floor this project supports. Declared HERE
 # rather than only inside the workflow, because a version living solely in a workflow step is
@@ -27,7 +33,7 @@ gates:
 
   - id: blocks
     command: [spec/render-standard.py, --blocks, --check]
-    what: "the stage table inside README and template/.rite.yaml still matches the spec"
+    what: "every rite:generated block still matches its source — the stage table, and the gate counts and list fed from this file"
     # PROJECT-STANDARD.md is generated whole and cannot drift. README.md is prose a human owns
     # that CONTAINS one table the spec owns, so the table is fenced by inert markers and
     # refilled. This gate is half of what retired c-stage-table-duplicated-in-three-places; the
@@ -37,6 +43,7 @@ gates:
   - id: riteyaml
     command: [scripts/test-riteyaml.py]
     what: "riteyaml parses this project's YAML identically to PyYAML"
+    skip_short: "PyYAML is its oracle and CI does not install it"
     skip_means: >
       PyYAML is absent, and PyYAML is the ORACLE for this test rather than a dependency of the
       product. CI deliberately does not install it, so riteyaml's correctness claim is NOT
@@ -64,6 +71,7 @@ gates:
   - id: mirror-port-parity
     command: [scripts/test-mirror-port-parity.py]
     what: "rite's memory mirror still renders identically to the script it ported"
+    skip_short: "a runner has no copy of the script Rite ported from"
     skip_means: >
       ~/.claude/scripts/claude-mirror-memory.py is not on this machine, so there is nothing to
       compare against. A CI runner has never had it, and this is also the END STATE: the
@@ -89,6 +97,7 @@ gates:
   - id: installed-copy
     command: [scripts/test-installed-current.py]
     what: "the installed plugin matches this working tree, by version and by content"
+    skip_short: "a runner has no installed plugin"
     skip_means: >
       Rite is not installed on this machine. A CI runner never has the plugin installed, so
       this gate ALWAYS skips in CI and is enforced only on a developer machine.
