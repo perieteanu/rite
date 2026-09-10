@@ -1287,3 +1287,52 @@ decisions:
     chosen_by_user: true
     proposed_by: claude
 
+  - id: d-session-scope-excluded-from-ci
+    date: "2026-09-10"
+    title: "A test may declare `scope: session`; CI excludes that scope, and says it did"
+    context: >
+      CI's second run went red, correctly, on written_not_older_than_newest_log_entry: the
+      handoff was dated 2026-09-09 and the newest LOG entry 2026-09-10, so the checker reported
+      "session did not close" — of a session that was still open. Nothing was broken. The check
+      is right and the placement was wrong.
+    decision: >
+      The standard may mark a test `scope: session`. rite-check.py gains
+      --exclude-scope=SCOPE, CI's self-check gate passes --exclude-scope=session, and every
+      excluded test is reported as NA naming the exclusion. Exactly one test carries the scope
+      today: written_not_older_than_newest_log_entry.
+    rationale:
+      - >
+        THE PROTOCOL GUARANTEES THE RED. skills/log/SKILL.md says to log as work happens, not
+        at the end, because a session that dies before /end must still leave a record. The
+        first entry any session writes makes the handoff older than the newest log entry. So
+        this test is RED for the entire working life of every session that follows the
+        instructions, and only /end clears it. In CI — which runs at whatever mid-session
+        moment someone pushes — that is a gate red by design, and a gate red by design is the
+        gate that gets switched off within a week.
+      - >
+        THE QUESTION IS ANSWERABLE AT SessionStart AND NOT IN A PIPELINE. At SessionStart it
+        reads "did the LAST session close?", which has a true answer. In CI it reads "has the
+        session running right now closed?", which is not a defect to fix but a question with no
+        meaning in that context.
+      - >
+        EXCLUDED IS NOT SILENT. The NA line names the scope and the flag on every run. rite's
+        own rule is that a check that vanished and a check that passed must never look alike,
+        and an exclusion mechanism is precisely where that rule is easiest to betray.
+      - >
+        SCOPE IS A CALLER'S STATEMENT, NOT A PROJECT'S. --exclude-scope is deliberately a CLI
+        flag and deliberately NOT settable in .rite.yaml. It says where a check runs. Letting a
+        project exclude a scope for itself would be a project switching off its own session
+        discipline, which is the whole thing being enforced.
+      - >
+        NOT A ONE-MEMBER MECHANISM, though it has one member today.
+        log_timestamps_not_in_the_future and nag_delivered_once are declared in the protocol
+        and unimplemented; both are session-scoped by the same test. The scope exists ahead of
+        them on purpose.
+    consequences:
+      - "The five implemented completion tests are ALL end-of-session tests. Nothing in the standard checks anything mid-session — the `during` phase has no enforcement and waits on the PostToolUse watcher layer. Recorded in the protocol's honest_limits, replacing a line that had gone false."
+      - "SessionStart keeps the check at full strength: no flag there, still RED, still the signal that the last session did not close."
+      - "The plugin goes to 0.4.0. A new field in the standard plus a new flag on the checker is not a patch, on the same reasoning that made a new rule 0.3.0."
+      - "main was left red between the log push and this fix, because the gate result was not read before pushing. The failure was real and CI reported it correctly."
+    chosen_by_user: true
+    proposed_by: claude
+

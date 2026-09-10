@@ -510,6 +510,12 @@ def _artifact(d: Doc, art: dict) -> None:
                 detail = f"{prefix}`{t['value']}`" + (f" — {detail}" if detail else "")
             if t.get("patterns"):
                 detail = ", ".join(f"`{p}`" for p in t["patterns"])
+            # A scoped test is not run everywhere. Saying so in the rendered standard is the
+            # point of rendering it at all — a reader must not have to open the YAML to learn
+            # that a check is deliberately skipped in some contexts.
+            if t.get("scope"):
+                marker = f"**{t['scope']}-scoped.**"
+                detail = f"{marker} {detail}" if detail else marker
             d.add(f"| {t.get('level')} | `{t.get('rule')}` | {detail or '—'} |")
         d.add()
 

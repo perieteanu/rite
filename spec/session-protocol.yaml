@@ -227,7 +227,18 @@ tests:
       prose but is never the sole value. That was the only reason this test was unimplementable.
 
 honest_limits:
-  - "Nothing here has run. It is a specification, not a working plugin — no hooks, no commands, no scripts exist."
+  - >
+    THE START HALF RUNS; THE DURING HALF DOES NOT EXIST. SessionStart fires the hook, its
+    verdict reaches the model's context, and the end half is reachable as /rite:end. But the
+    `during` phase has no enforcement at all: mirror_memory, log_continuously and
+    clock_per_entry are disciplines an agent must remember, which is the exact category this
+    project exists to abolish. They wait on the PostToolUse watcher layer.
+  - >
+    EVERY IMPLEMENTED COMPLETION TEST IS AN END-OF-SESSION TEST. All five key off HANDOFF.md
+    or off LOG.md's relationship to it. Nothing checks anything mid-session, so a session can
+    run for hours doing everything wrong and the standard stays green until it closes. Found
+    on 2026-09-10 when CI — which runs mid-session by nature — went red on
+    written_not_older_than_newest_log_entry for a session that was simply still open.
   - >
     Four of the five tests are implementable with no revision history and no new artifact,
     which is deliberate: this protocol was designed so its own checks would not join the six

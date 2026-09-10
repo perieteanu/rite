@@ -1155,6 +1155,19 @@ artifacts:
           by user ruling on 2026-09-07, specifically to avoid inventing a file for it.
       - level: integrity
         rule: written_not_older_than_newest_log_entry
+        scope: session
+        scope_why: >
+          THE ONLY TEST WHOSE VERDICT DEPENDS ON WHETHER THE CURRENT SESSION HAS CLOSED, and
+          therefore the only one that is RED by design for the whole working life of a session.
+          The protocol tells you to log as work happens; the first entry written makes this
+          test fail, and nothing clears it but /end. That is correct at SessionStart, where the
+          question asked is "did the last session close?" — and wrong in CI, which runs at
+          whatever arbitrary mid-session moment someone pushes. A gate that is red by design
+          most of the time is the gate that gets switched off, so CI excludes this scope with
+          --exclude-scope=session. Excluded is NOT silent: it reports NA naming the exclusion,
+          because a check that vanished and a check that passed must never look alike.
+          Added 2026-09-10 after CI went red on a genuinely open session. See
+          d-session-scope-excluded-from-ci.
         means: >
           This is what makes the previous test real without a stamp. A session that worked and
           then closed without touching the handoff leaves `written:` older than the newest
