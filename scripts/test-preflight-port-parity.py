@@ -60,12 +60,17 @@ def main() -> int:
         print(f"SKIP  the original raised on import — {exc}")
         return SKIP
 
+    # ONE CONFIG, BOTH ENGINES. The first version of this gate let each engine load its own,
+    # and it failed the moment they diverged — `disk` went RED against GREEN because one config
+    # watched /mnt/storage and the other did not. That is a CONFIG difference reported as a CODE
+    # difference, which is a gate crying wolf about the thing it exists to protect. Parity means
+    # "same behaviour given the same input", so the input is held constant.
     cwd = ROOT
     try:
-        theirs = {r.name: r for r in legacy.run_checks(
-            legacy.Ctx(cwd, legacy.load_config()), False)}
+        shared_cfg = legacy.load_config()
+        theirs = {r.name: r for r in legacy.run_checks(legacy.Ctx(cwd, shared_cfg), False)}
         ours = {r.name: r for r in rite_preflight.run_checks(
-            rite_preflight.Ctx(cwd, rite_preflight.load_config()), False)}
+            rite_preflight.Ctx(cwd, dict(shared_cfg)), False)}
     except Exception as exc:
         print(f"SKIP  a check could not be run for comparison — {exc}")
         return SKIP

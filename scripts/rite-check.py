@@ -304,6 +304,11 @@ def git_removed_lines(root: Path, rel: str) -> int | None:
 # Each returns (severity, message). Absent from this table -> reported NA.
 RULES = {}
 
+# Rules that are MARKERS rather than checks: they declare something about the artifact and are
+# handled by an explicit branch, never by a RULES entry. They are excluded from the coverage
+# denominator, because "unimplemented" should mean work outstanding.
+MARKER_RULES = frozenset({"optional"})
+
 
 def rule(name):
     def deco(fn):
@@ -975,6 +980,8 @@ def check(root: Path, spec: dict,
                                     art["path"], broken))
             skipped = 0
             for test in art.get("tests") or []:
+                if test.get("rule") in MARKER_RULES:
+                    continue
                 declared += 1
                 if test.get("rule") in RULES:
                     implemented += 1
@@ -988,11 +995,20 @@ def check(root: Path, spec: dict,
             continue
 
         for test in art.get("tests") or []:
-            declared += 1
             rule_name = test.get("rule")
             # Coverage is about what this checker CAN do, not about which files this
             # project happens to carry — otherwise an absent optional artifact would
             # read as missing checker capability.
+            #
+            # `optional` IS NOT A RULE AWAITING IMPLEMENTATION. It is a marker meaning the
+            # artifact is not required, handled by its own branch and deliberately absent from
+            # RULES. Counting it in the denominator understated the checker by four instances
+            # and, worse, four documents repeated "seven declared tests unimplemented" for days
+            # on the strength of that line, read as a to-do list it never was.
+            # c-coverage-counts-optional-as-unimplemented.
+            if rule_name in MARKER_RULES:
+                continue
+            declared += 1
             if rule_name in RULES:
                 implemented += 1
             level = test.get("level", "exists")

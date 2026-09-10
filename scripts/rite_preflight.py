@@ -143,6 +143,34 @@ def load_config():
     return cfg
 
 
+TEMPLATE_CONFIG = HERE.parent / "template" / "checks.yaml"
+
+
+def init_config():
+    """Write the documented default config, if there is not one already.
+
+    WHY THIS EXISTS: template/checks.yaml shipped with the port and nothing installed it, so a
+    user got the shipped defaults and never learned the file existed — or that `command:` checks
+    were available at all. rite_init.py could not do it: that seeds a PROJECT, and this is
+    user-level config under ${CLAUDE_PLUGIN_DATA}.
+
+    NEVER OVERWRITES. The same rule the scaffolder follows: an existing file is reported and
+    left alone, because a config the user has edited is theirs.
+    """
+    if ritefs.exists_exactly(CONFIG_PATH):
+        print(f"exists, unchanged: {CONFIG_PATH}")
+        return 0
+    if not ritefs.exists_exactly(TEMPLATE_CONFIG):
+        print(f"FAIL  the shipped default is missing: {TEMPLATE_CONFIG}", file=sys.stderr)
+        return 1
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(TEMPLATE_CONFIG.read_text(encoding="utf-8"),
+                           encoding="utf-8", newline="\n")
+    print(f"wrote {CONFIG_PATH}")
+    print("Every value in it is optional — deleting the file restores the shipped defaults.")
+    return 0
+
+
 # ─── context passed to each check ───────────────────────────────────────────
 
 class Ctx:
@@ -786,12 +814,17 @@ def resolve_cwd(hook_mode, payload):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="claude-preflight session POST")
+    ap = argparse.ArgumentParser(description="rite — the session POST (power-on self-test)")
     ap.add_argument("--hook", action="store_true",
                     help="hook mode: emit verdict JSON for additionalContext")
+    ap.add_argument("--init-config", action="store_true",
+                    help="write the documented default checks.yaml if absent; never overwrites")
     ap.add_argument("--full", action="store_true",
                     help="include the network tier (manual runs)")
     args = ap.parse_args()
+
+    if args.init_config:
+        return init_config()
 
     cfg = load_config()
     payload = read_payload(args.hook)
@@ -826,4 +859,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)
