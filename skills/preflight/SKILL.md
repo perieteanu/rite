@@ -16,8 +16,14 @@ only way to evaluate before adopting.
 1. Run the checker via Bash:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/rite-check.py" [PATH] [--force]
+   bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" check [PATH] [--force]
    ```
+
+   On Windows without Git Bash the same call is
+   `pwsh "${CLAUDE_PLUGIN_ROOT}/hooks/rite.ps1" check [PATH] [--force]`. Go through the
+   shim either way rather than calling the interpreter: it is the one place that knows
+   whether this machine has `py`, `python3` or `python`, and naming one of them here is
+   the rule `python_invocation_differs` — which this line broke until 2026-09-10.
 
    Resolve `PATH` from `$ARGUMENTS`; default to the current project.
 

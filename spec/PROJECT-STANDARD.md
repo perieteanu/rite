@@ -1,6 +1,6 @@
 <!-- GENERATED FROM project-standard.yaml BY render-standard.py — DO NOT EDIT.
-     Edit the YAML, then run: python3 spec/render-standard.py
-     Verify with:             python3 spec/render-standard.py --check -->
+     Edit the YAML, then re-render: spec/render-standard.py
+     Verify with:                   spec/render-standard.py --check -->
 
 # The fully featured project
 

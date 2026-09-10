@@ -4,7 +4,7 @@
 Reads spec/project-standard.yaml (the authority) and executes the tests each artifact
 declares. Stdlib only; YAML via scripts/riteyaml.py.
 
-    python3 scripts/rite-check.py [PROJECT_DIR] [--force] [--exclude-scope=SCOPE]
+    python scripts/rite-check.py [PROJECT_DIR] [--force] [--exclude-scope=SCOPE]
 
 --exclude-scope=SCOPE skips every test the standard declares with that `scope:`, reporting
 each as NA naming the exclusion rather than dropping it. CI passes --exclude-scope=session,

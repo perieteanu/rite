@@ -4,7 +4,7 @@
 
 **Version** `1.0.0` · **As of** `2026-09-08` · **Status** `draft`
 
-_Generated from `spec/session-protocol.yaml`. Do not edit; run `python3 spec/render-standard.py --protocol`._
+_Generated from `spec/session-protocol.yaml`. Do not edit; run `spec/render-standard.py --protocol`._
 
 claude-preflight is a session-START self-test with months of real use behind it. There has never been a session-END counterpart: the closing ritual — log, docs, memory, handoff — was three scattered sentences of prose and nothing that checked it. This is the half that was missing.
 
