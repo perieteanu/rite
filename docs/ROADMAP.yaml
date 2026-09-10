@@ -63,7 +63,7 @@ inception:
 current_state: >
   Stage `build`, declared in .rite.yaml. Verified against the filesystem, the harness and
   three operating systems on 2026-09-10.
-  Rite is an installed, running plugin at version 0.8.0 — rite@rite, five skills reachable as
+  Rite is an installed, running plugin at version 0.8.1 — rite@rite, five skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -308,6 +308,24 @@ milestones:
       template carried a prose preamble that entries_parse counted as nine broken entries, so
       every project Rite seeded would have opened on a YELLOW of Rite's own making.
 
+  - id: readme-for-a-stranger
+    what: "README rewritten for someone who is not us, and the report made readable while doing it"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026 10:23:52"
+    note: >
+      It now leads with what Rite DOES rather than what the repository contains: a real sample
+      verdict, install commands verified against the shipped binary rather than recalled, the
+      stage table so a newcomer sees two files asked of them instead of thirteen, and an Honest
+      limits section naming the Claude-Code-only constraint, the uncalibrated freshness windows
+      and the seven unimplemented tests.
+      THE VALUABLE PART WAS A DEFECT IT EXPOSED. Writing an honest example meant generating real
+      output instead of a plausible one, and the real output was 54 lines conveying ONE finding
+      — 46 of them "not required before stage X". Stage gating had taken RED from 9 to 0 and
+      replaced it with a wall of NA, which is half a fix by the standard d-stage-gates-the-
+      standard sets. Collapsed to 15 lines, counted and named rather than dropped.
+      A fabricated example would have shown the tidy output I imagined and the defect would have
+      shipped. That is the whole argument for evidence over assertion, landing on its author.
+
 near_term:
   label: "The ordered path from PRIVATE to PUBLIC"
   # Filled 2026-09-10, having been empty on purpose since 2026-09-09. It is not a queue of
@@ -316,19 +334,6 @@ near_term:
   # one setting on a repository; everything above it is what makes that setting defensible.
   # Order chosen by Costin 2026-09-10, matrix before scaffolding.
   candidates:
-    - id: readme-for-a-stranger
-      what: "Rewrite README for someone who is not us"
-      why: >
-        It currently reads as notes between author and agent — Why / What is here now /
-        Prerequisites / What it costs you / Not here yet — and no line tells a reader how to add
-        the marketplace. The standard calls README the highest-value file in the repo, and it is
-        the only one most visitors will read.
-      note: >
-        d-never-instruct-installation does NOT forbid this, and the misreading is easy enough to
-        be worth writing down. That decision governs what the TOOL says at runtime — it must not
-        tell someone to install Python and break their environment. A README line reading
-        `/plugin marketplace add perieteanu/rite` is not an environment instruction.
-
     - id: publish-github
       what: "Flip the repository to public"
       why: "MOVED FROM mid_term. One setting. Everything above exists to make it defensible."

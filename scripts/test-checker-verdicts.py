@@ -227,11 +227,15 @@ with tempfile.TemporaryDirectory() as d:
 with tempfile.TemporaryDirectory() as d:
     tmp = pathlib.Path(d)
     out = bare_project(tmp, "stage: idea\n")
-    arch = [ln for ln in out.splitlines() if "docs/ARCHITECTURE.md" in ln]
-    if not arch or not all(ln.strip().startswith("NA") for ln in arch):
-        fail("an artifact below its required stage must be NA, never RED")
-    if not any("not required before stage build" in ln for ln in arch):
-        fail("a stage-deferred artifact must name the stage that would require it")
+    # Its individual lines are COLLAPSED into the summary (case 17), so what must hold is that
+    # it is never RED and is still named under the stage that will require it.
+    if any("docs/ARCHITECTURE.md" in ln and ln.strip().startswith(("RED", "YELLOW"))
+           for ln in out.splitlines()):
+        fail("an artifact below its required stage must never be RED or YELLOW")
+    build_line = [ln for ln in out.splitlines()
+                  if ln.strip().startswith("build") and "docs/ARCHITECTURE.md" in ln]
+    if not build_line:
+        fail("a stage-deferred artifact must be listed under the stage that would require it")
 
 # 14. A DECLARATION BEATS TIER. LICENSE is tier 2 and required from `shipped`; an earlier gate
 #     let `tier >= 2` short-circuit the stage, so it stayed optional at every stage and a
@@ -261,6 +265,36 @@ with tempfile.TemporaryDirectory() as d:
     out = bare_project(tmp, "stage: idea\n")
     if any("standard_version" in ln for ln in out.splitlines()):
         fail("a project declaring no standard_version must not be told anything about it")
+
+# 17. STAGE-DEFERRED CHECKS ARE COLLAPSED BUT NOT DROPPED. Measured on 2026-09-10: a project at
+#     stage `idea` printed 54 lines to convey ONE finding, 46 of them "not required before
+#     stage X". Collapsing is only safe while the count stays honest and the artifacts stay
+#     named — otherwise it is hiding, and this project's rule is that a check which vanished
+#     and one that passed must never look alike.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = bare_project(tmp, "stage: idea\n")
+
+    printed = [ln for ln in out.splitlines() if ln.startswith("  ")]
+    if len(printed) > 25:
+        fail(f"a stage-idea project printed {len(printed)} lines — the stage-deferred checks "
+             f"are not being collapsed")
+
+    summary = [ln for ln in out.splitlines() if "not required at stage" in ln]
+    if not summary:
+        fail("the collapsed summary line is missing entirely")
+    elif "46" not in summary[0]:
+        fail(f"the collapsed line must state HOW MANY checks it stands for: {summary[0].strip()}")
+
+    # The artifacts must still be named, or the user cannot learn what is coming.
+    for want in ("README.md", "docs/MISSION.md", "docs/ARCHITECTURE.md", "LICENSE"):
+        if want not in out:
+            fail(f"a stage-deferred artifact vanished from the report entirely: {want}")
+
+    # And the totals must be untouched: collapsing is a display choice, never a verdict change.
+    total = [ln for ln in out.splitlines() if "checks ·" in ln]
+    if not total or "59 NA" not in total[0]:
+        fail(f"collapsing changed the NA count — it must not: {total[0].strip() if total else ''}")
 
 if failures:
     print(f"\n{len(failures)} FAILED")

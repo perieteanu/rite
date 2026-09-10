@@ -49,11 +49,15 @@ LEVEL_SEVERITY = {"exists": RED, "integrity": RED, "populated": YELLOW, "fresh":
 
 
 class Finding:
-    __slots__ = ("severity", "side", "level", "rule", "path", "message")
+    # `deferred_to` carries the stage an artifact is waiting for, and exists only so the report
+    # can COLLAPSE those lines instead of printing one per check. It never affects a verdict or
+    # a count — see report().
+    __slots__ = ("severity", "side", "level", "rule", "path", "message", "deferred_to")
 
-    def __init__(self, severity, side, level, rule, path, message):
+    def __init__(self, severity, side, level, rule, path, message, deferred_to=None):
         self.severity, self.side, self.level = severity, side, level
         self.rule, self.path, self.message = rule, path, message
+        self.deferred_to = deferred_to
 
 
 class Ctx:
@@ -891,8 +895,10 @@ def check(root: Path, spec: dict,
             if rule_name in ("optional",):
                 continue
             if optional_absent:
-                findings.append(Finding(NA, "project", level, rule_name, art["path"],
-                                        stage_note or f"tier {tier}, not present — optional"))
+                findings.append(Finding(
+                    NA, "project", level, rule_name, art["path"],
+                    stage_note or f"tier {tier}, not present — optional",
+                    deferred_to=art.get("required_from_stage") if stage_note else None))
                 continue
 
             fn = RULES.get(rule_name)
@@ -926,11 +932,36 @@ def report(root: Path, findings: list[Finding], meta: dict) -> int:
         print(f"  {'':6} {'':8} {'':10} {'':30}  every threshold and override in it was "
               f"ignored; defaults were used")
         print()
+    # STAGE-DEFERRED CHECKS ARE COLLAPSED, NOT DROPPED. Measured on 2026-09-10: a project at
+    # stage `idea` printed 54 lines to convey ONE finding, 46 of them saying "not required
+    # before stage X". Stage gating had replaced a wall of RED with a wall of NA, and
+    # d-stage-gates-the-standard exists precisely because a tool that opens by listing
+    # everything you have not done yet gets uninstalled the next day.
+    #
+    # They are summarised rather than hidden: the count and the artifacts are both still
+    # stated, so a check that is waiting and a check that passed still do not look alike. They
+    # remain in `findings` and in the NA count above, which is what keeps the totals honest.
+    deferred: dict[str, list[str]] = {}
     for f in findings:
-        if f.severity == GREEN:
+        if f.deferred_to:
+            names = deferred.setdefault(f.deferred_to, [])
+            if f.path not in names:
+                names.append(f.path)
+
+    for f in findings:
+        if f.severity == GREEN or f.deferred_to:
             continue
         print(f"  {f.severity:6} {f.side:8} {f.level:10} {f.path:{width}}  "
               f"{f.rule} — {f.message}")
+
+    if deferred:
+        order = ctx.spec.get("stage_vocabulary", {}).get("values", [])
+        total = sum(1 for f in findings if f.deferred_to)
+        print(f"  {NA:6} {'project':8} {'—':10} {total} checks not required at stage "
+              f"{ctx.stage!r}, waiting on:")
+        for stage in sorted(deferred, key=lambda s: order.index(s) if s in order else 99):
+            print(f"  {'':6} {'':8} {'':10}   {stage:8} {', '.join(deferred[stage])}")
+
     if not (counts[RED] or counts[YELLOW] or counts[NA]):
         print("  all checks green")
     print()
