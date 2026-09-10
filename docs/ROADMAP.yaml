@@ -473,6 +473,28 @@ milestones:
       c-session-post-is-gated-by-participation rather than a quiet exception.
       Costin's preflight keeps running beside it, as the mirror does. Retiring it is his call.
 
+  - id: watcher-write-discipline
+    what: "The first of the eight watchers: append-only rewrites and future timestamps reported as they happen"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026"
+    note: >
+      Chosen first of the eight because it is the only one with a MEASURED hit rate rather than
+      a plausible rationale — 100% on this project's own real failures, which is what the item
+      already recorded.
+      It closes the gap the protocol's honest_limits named: every implemented completion test is
+      an end-of-session test, so a session could rewrite an append-only file at 14:00 and the
+      standard stayed green until it closed. /rite:update made the record correctable on demand;
+      this makes one class of damage report itself.
+      IT ALSO ABSORBED c-log-timestamps-must-be-machine-read, open since 2026-09-08 with nowhere
+      for its check to run. Two items, one build, one predicate — riterules.log_future_timestamps
+      is shared by the watcher and by the new no_future_timestamps rule, because two copies would
+      be free to disagree about what "future" means.
+      scripts/riterules.py was extracted to make that sharing possible: git_show, zone_of and
+      git_removed_lines moved out of rite-check.py unchanged, so the watcher measures
+      append-only violations with the same predicate the checker does.
+      SILENCE ON SUCCESS IS A CONTRACT, not politeness. It fires on every Write and Edit, and a
+      watcher that speaks when nothing is wrong is one the user disables within a day.
+
 near_term:
   label: "EMPTY — the path from private to public is complete"
   # Emptied 2026-09-10, and empty ON PURPOSE rather than by omission. All four items —
@@ -488,14 +510,6 @@ mid_term:
   # 2026-09-10 as the ordered path to public. They are not listed twice.
 
   # ── the continuous layer (accepted 2026-09-08; see d-continuous-watcher-layer) ──
-  - id: watcher-write-discipline
-    what: "PostToolUse watcher on Write|Edit — flag any change to an existing line in an append-only file"
-    why: >
-      100% hit rate on this project's own real failures: a milestones entry inserted mid-list,
-      and ~30 LOG entries with extrapolated timestamps. It is also the only home for
-      c-log-timestamps-must-be-machine-read, whose check has nowhere to run today.
-    mechanism: "JSON stdout with additionalContext — plain text is discarded on tool events"
-    must: "silent on success; it injects into Claude's context on every write"
   - id: watcher-precompact-distiller
     what: "Distil the log at PreCompact, before context is compacted away"
     why: >

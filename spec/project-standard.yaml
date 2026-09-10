@@ -940,6 +940,15 @@ artifacts:
         value: 1
       - level: populated
         rule: entries_parse
+      - level: integrity
+        rule: no_future_timestamps
+        means: >
+          No entry may be dated later than now. An extrapolated timestamp is indistinguishable
+          from a machine-read one AFTERWARDS — except when extrapolation overshoots, which is
+          the case this catches. Failed live on 2026-09-07: the clock was read once at 22:11 and
+          roughly thirty further entries carried extrapolated times, some ahead of real time,
+          found only when the clock was re-read at 00:02 against entries claiming 00:13.
+          Integrity tier: this is a lie in the record, not a lapse.
         means: "Every non-blank, non-heading line matches the configured line format."
       - level: fresh
         rule: newest_entry_within_days_of_activity
