@@ -458,7 +458,7 @@ deferred_deliberately:
 
 if_revisiting_cold:
   - "Read docs/MISSION.md, then this file's current_state above. Both are short."
-  - "Run `python3 spec/render-standard.py --check` first. If it fails, someone hand-edited the generated Markdown; fix by regenerating, not by editing."
+  - "Run `spec/render-standard.py --check` first (with your interpreter — `py` on Windows). If it fails, someone hand-edited the generated Markdown; fix by regenerating, not by editing."
   - "Read spec/PROJECT-STANDARD.md to see the standard as a reader sees it. Edit spec/project-standard.yaml if it needs changing — never the .md."
   - "Check whether the plugin still does not exist. If hooks/ or commands/ appeared, this file is stale — trust the filesystem, not this line."
   - "Do NOT re-litigate: the name (d-name-rite), plugin-not-extension (d-plugin-is-the-product), preflight-as-config-not-fork (d-preflight-is-config-not-fork), EVOLUTION being out of scope (d-evolution-out-of-scope), or credibility-over-adoption (d-goal-is-credibility)."

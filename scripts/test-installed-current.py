@@ -15,7 +15,7 @@ It lives here rather than in rite-check.py deliberately: rite-check's subject is
 conformance to the standard, and no other consumer of the standard ships a plugin. This is
 about Rite's own delivery, so it is a test, not a rule.
 
-Run:  python3 scripts/test-installed-current.py
+Run:  python scripts/test-installed-current.py
 Exit: 0 pass · 1 fail · 2 skip (Rite is not installed on this machine — not a dependency)
 """
 

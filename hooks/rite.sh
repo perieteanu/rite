@@ -10,21 +10,35 @@
 # absence. This runs BEFORE Python exists, so it is the only code that can say Python is
 # missing.
 #
-# Usage:  rite.sh <session-start|session-end> ; hook JSON arrives on stdin and is passed through.
+# Usage:  rite.sh <session-start|session-end|check> [args...]
+#         The session actions take hook JSON on stdin. `check` takes [PATH] [--force] and is
+#         what the skills call, so that no prompt has to name an interpreter — the rule
+#         python_invocation_differs, which two SKILL.md files broke until 2026-09-10.
 set -euo pipefail
 
 action="${1:-}"
+if [ $# -gt 0 ]; then shift; fi
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-script="$here/../scripts/rite_${action//-/_}.py"
 
-if [ -z "$action" ] || [ ! -f "$script" ]; then
-  echo "rite: no such action '${action}'" >&2
+# An explicit table, not name-mangling. The checker is scripts/rite-check.py with a HYPHEN
+# while the session entry points use underscores, so `${action//-/_}` cannot reach it — and a
+# scripts/rite_check.py added beside scripts/rite-check.py to make the mangle work would be a
+# trap for every future reader. Three actions, named once, here.
+case "$action" in
+  session-start) script="$here/../scripts/rite_session_start.py" ;;
+  session-end)   script="$here/../scripts/rite_session_end.py" ;;
+  check)         script="$here/../scripts/rite-check.py" ;;
+  *)             script="" ;;
+esac
+
+if [ -z "$script" ] || [ ! -f "$script" ]; then
+  echo "rite: no such action '${action}' (session-start, session-end, check)" >&2
   exit 2
 fi
 
 for candidate in python3 python py; do
   if command -v "$candidate" >/dev/null 2>&1; then
-    exec "$candidate" "$script"
+    exec "$candidate" "$script" "$@"
   fi
 done
 

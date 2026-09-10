@@ -7,7 +7,7 @@ a runtime dependency — it is used to prove the replacement and then not shippe
 Per d-stdlib-only-yaml-subset: if this cannot be made to pass, the correct response is to
 revert to PyYAML, not to weaken the test.
 
-Run:  python3 scripts/test-riteyaml.py
+Run:  python scripts/test-riteyaml.py
 """
 
 from __future__ import annotations

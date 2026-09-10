@@ -10,7 +10,7 @@ lines deep, and made a written prediction untestable.
 The distinction under test is therefore not cosmetic. ABSENT is a fact about the project.
 UNPARSEABLE is a fact about Rite, and it must be loud.
 
-Run:  python3 scripts/test-checker-verdicts.py
+Run:  python scripts/test-checker-verdicts.py
 Exit: 0 pass · 1 fail
 """
 

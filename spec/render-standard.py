@@ -38,8 +38,8 @@ OUT = HERE / "PROJECT-STANDARD.md"
 
 BANNER = (
     "<!-- GENERATED FROM project-standard.yaml BY render-standard.py — DO NOT EDIT.\n"
-    "     Edit the YAML, then run: python3 spec/render-standard.py\n"
-    "     Verify with:             python3 spec/render-standard.py --check -->"
+    "     Edit the YAML, then re-render: spec/render-standard.py\n"
+    "     Verify with:                   spec/render-standard.py --check -->"
 )
 
 
@@ -604,7 +604,7 @@ def render_protocol(spec: dict) -> str:
     )
     d.add()
     d.add("_Generated from `spec/session-protocol.yaml`. Do not edit; run "
-          "`python3 spec/render-standard.py --protocol`._")
+          "`spec/render-standard.py --protocol`._")
     d.add()
     for key in ("why_this_exists", "the_measurement"):
         if meta.get(key):
@@ -796,7 +796,7 @@ def main() -> int:
         return 0
 
     if not OUT.exists():
-        print(f"FAIL  {OUT.name} does not exist. Run: python3 spec/render-standard.py")
+        print(f"FAIL  {OUT.name} does not exist. Run: python spec/render-standard.py")
         return 1
 
     current = OUT.read_text(encoding="utf-8")
@@ -813,7 +813,7 @@ def main() -> int:
         n=2,
     )
     sys.stdout.writelines(diff)
-    print("\nFix: python3 spec/render-standard.py")
+    print("\nFix: python spec/render-standard.py")
     return 1
 
 

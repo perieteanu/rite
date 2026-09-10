@@ -10,7 +10,7 @@ project exists to convert into a check that fails.
 So the assertion is deliberately about SHAPE, not about content. A verdict that is correct and
 unreadable is worth nothing, and only the shape distinguishes the two.
 
-Run:  python3 scripts/test-hook-output.py
+Run:  python scripts/test-hook-output.py
 Exit: 0 pass · 1 fail
 """
 

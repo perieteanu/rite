@@ -52,8 +52,9 @@ Only the user invokes this. Claude never decides that a session is over.
    hold. A decision belongs in `DECISIONS.yaml`, not in memory.
 
 6. Run the checks before declaring the session closed. At minimum
-   `python3 scripts/rite-check.py`, plus whatever gates the project declares. Report the
-   result; do not claim done without it.
+   `bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" check` — or `rite.ps1` on Windows without
+   Git Bash — plus whatever gates the project declares. Report the result; do not claim
+   done without it.
 
 ## Don't
 
