@@ -108,7 +108,7 @@ Built, as of 2026-09-10:
 ```
 scripts/
   rite-check.py      THE CHECKER. Reads spec/project-standard.yaml and runs the completion
-                     tests. 62 checks on this project; 61 of 62 declared tests implemented.
+                     tests. 63 checks on this project; 62 of 63 declared tests implemented.
   rite_copy.py       THE COPIER. Brings in what Claude writes OUTSIDE the project: the memory
                      mirror (free_replace, one file), plan copies and session scratchpad
                      scripts (write_once, many). Attribution is AUTHORSHIP — a Write or
@@ -119,6 +119,20 @@ scripts/
   test-mirror-port-parity.py  The port still renders identically to the script it replaced.
                      TEMPORARY: delete it when the fallback is retired.
   test-stage-table-guard.py  No document restates the stage mapping outside a generated block.
+  rite_preflight.py  THE SESSION POST. Eleven checks across claude/project/machine, two tiers
+                     (local runs automatically, full touches the network and never does). A
+                     PORT of claude-preflight, with a `command:` form so a check too personal
+                     to publish runs an external program instead of living here.
+  ritededup.py       Suppresses the extension's double-dispatched SessionStart. Fail-open: a
+                     duplicated line is cheaper than a silently missing verdict.
+  riterules.py       Predicates SHARED by the checker and the watcher — git_show, zone_of,
+                     git_removed_lines, log_future_timestamps. One implementation, because two
+                     would be free to disagree.
+  rite_watch.py      THE WATCHER. PostToolUse: an append-only file rewritten, or a LOG entry
+                     dated in the future. Silent on success — it fires on every write, and a
+                     watcher that speaks when nothing is wrong gets disabled.
+  test-watch-discipline.py  That the watcher catches both, and stays silent otherwise.
+  test-preflight-port-parity.py  The port still agrees with the engine it came from. Temporary.
   riteyaml.py        Stdlib-only parser for the YAML subset this project uses. 358 lines.
                      REFUSES rather than guesses on anything outside the subset.
   test-riteyaml.py   Differential test against PyYAML as ORACLE, not dependency.
