@@ -2,7 +2,7 @@
 genre: task_brief
 written: "2026-09-10"
 session_end: written
-supersedes: "the earlier 2026-09-10 handoff, written when publish-github was still open and the checklist for it still believed the LICENSE check was NA"
+supersedes: "the 2026-09-10 publishing handoff, written before the copiers were ported and before the global mirror hook was retired"
 expires: "2026-12-09"
 status: live
 ---
@@ -11,79 +11,75 @@ status: live
 
 State is in `ROADMAP.current_state`. This is what the docs do not say.
 
-**Rite is published.** `github.com/perieteanu/rite` is public, `main` in full. `near_term` is
-empty, and this time that is the end of a path rather than a pause in one: all four items of
-private-to-public were queued and closed within two days.
+Rite is public, the copiers are ported and wired, and the global `claude-mirror-memory` hook is
+retired. `near_term` is empty. **The next move is a decision about direction, and the section
+below argues for one.**
 
-## What the publish actually taught, which was not what it was for
+## Take `c-gate-count-restated-in-prose` first
 
-The commit was supposed to be three mechanical acts. Verifying the third instead of performing
-it is what made the session worth having.
+Opened today at high, and it has the strongest evidence of anything in `CONCERNS.yaml`: the gate
+count went **9 → 11 → 12 → 13 in one day**, and each move falsified four or five sentences
+across README, CLAUDE.md, ARCHITECTURE and `current_state`. The last round moved a *second*
+derived number, the skip count, 2 → 3. On the final pass the README still opened *"Nine gates
+run on every push"* directly above a corrected total — three edits after the number first moved.
 
-**The checklist was wrong about the LICENSE check.** It said the check "currently reports NA"
-and to confirm it went GREEN and not RED once the stage advanced. It was already GREEN at
-`build`, and always had been: `required_from_stage` gates whether an artifact is **demanded**,
-not whether it is **checked when present**. The stage decides only whether a *missing* LICENSE
-is RED or NA. Two documents asserted the NA — `CLAUDE.md` and
-`d-stage-advances-when-the-repo-goes-public` — and a single run against a `stage: shipped` copy
-of the tree settled it in one command, before anything irreversible happened.
+It is the same shape as `c-stage-table-duplicated-in-three-places`, which was settled this
+morning, and the mechanism that settled it already exists: a `rite:generated` block fed from
+`.github/gates.yaml`. The skip count comes free from the same source, since a gate declaring
+`skip_means` is a gate that can skip.
 
-Generalise that, because it is the transferable part: **a checklist item that states a fact is
-a testable assertion, not an instruction.** Run it before you follow it.
+**Do not "just remember to grep for the number."** That was the practice all day and it failed
+three times out of three.
 
-## The family found on the way out, and why it is the thing to work on next
+## What the day actually demonstrated, because it should shape the next session
 
-Three defects turned up in one day, and they are the same defect:
+Five defects, each surfaced by acting on the previous finding, none of them planned:
 
-| what | how it read | what it was |
-|---|---|---|
-| `python_invocation_differs` | a declared portability rule | enforced by nothing; two shipped `SKILL.md` prompts violated it |
-| `hooks/rite.ps1` | a gate passing on windows-latest | CI invokes it directly; `hooks.json` never does. Unreachable in production |
-| `plan_copy` | one of seven "unimplemented" tests | its artifact path is a *pattern* compared as a *literal*, so it can never be found |
+1. The handoff's pre-publish check rested on a false premise — **verifying it instead of
+   performing it** is what found that.
+2. `python_invocation_differs`: declared in the spec, enforced by nothing, violated by two
+   shipped skill prompts.
+3. `plan_copy`'s path was a *pattern* compared as a *literal*, so two of its tests could never run.
+4. The first plan attributor was contaminated **by the session that built it** — `ls
+   ~/.claude/plans/` put every plan name into rite's own transcript.
+5. Copier and checker judged mirror staleness differently, so the checker's own advice fixed
+   nothing — found by **testing the hook rather than reading it**.
 
-**All three read as covered.** That is worse than a visible gap, and it is the project's own
-founding complaint one level up: Rite exists because a rule with no completion test fails
-quietly, and here are three completion tests that were themselves quiet lies.
+The theme is one thing: **all five read as covered and were not.** A visible gap is cheap; a
+green light over a gap is the expensive kind, and it is what this project exists to attack.
+Prefer, next session, the check that has never failed — and make it fail before trusting it.
 
-`c-pattern-paths-are-matched-literally` is the one to take first — high, small, and it unblocks
-two declared tests rather than one. `c-rite-ps1-unreachable-in-production` is the one that
-affects an actual user, and it needs a fact nobody has checked: whether `hooks.json` can express
-a per-platform command at all. **Find that out before designing anything.**
+## Traps, the first three new
 
-## Traps, the first two new
-
-- **A green test over an unreachable code path is the most expensive kind of false assurance.**
-  `rite.ps1` passing was read as evidence the Windows path works. It is evidence the *file*
-  works. Ask what invokes a thing before trusting the test that covers it.
-- **Two gates now guard the stage mapping and they are not interchangeable.** `--blocks --check`
-  catches drift in copies that exist; `test-stage-table-guard.py` catches a copy that is not
-  drift from anything. Deleting either leaves a hole the other cannot see.
-- **The guard reads only what may legally be edited** — `LOG.md`, `DECISIONS.yaml` and ROADMAP's
-  `milestones` are exempt. A gate that fails on a file nobody may fix gets switched off.
-- **The README's quoted sample run is a fifth copy of the stage mapping**, exempt by design
-  because a guard that fires on a code fence would be disabled before it was fixed.
-  `c-readme-sample-output-is-a-copy`, and it will go stale the day an artifact moves stage.
-- **Never `git checkout <file>` to undo an experiment.** Still true; both new gates were proved
-  to fail by breaking a file and restoring it with `cp`, verified by byte count.
-- **Bump `.claude-plugin/plugin.json` before `claude plugin update`.** Now at `0.9.0`. The
-  installed-copy gate caught it again today.
-- **`LC_ALL=C` when reading the clock for a LOG entry.** `date` returns a Romanian day name on
-  this machine (`Jo`), and `LOG.md` uses English DOW deliberately.
+- **`sed -i 's|…|…|'` with `|` as both delimiter and alternation** clobbered `hooks/rite.sh`
+  line 13 to the literal `X`. sed reported nothing. Same family as the heredoc truncation of
+  09-09: a shell edit that succeeds loudly and damages quietly. Read the file after.
+- **`test-mirror-port-parity.py` is temporary and must be DELETED**, not maintained, when the
+  fallback goes. It says so in its own `skip_means`. A gate that can no longer fail is not a gate.
+- **Two mirror engines are alive on purpose.** `~/.claude/scripts/claude-mirror-memory.py` is
+  Costin's fallback while Rite is on trial, reachable via `/mirror-memory`. Do not delete it, do
+  not repoint that command, and do not "tidy" one into the other.
+- **`LC_ALL=C` when reading the clock for a LOG entry** — `date` returns a Romanian day name
+  here and `LOG.md` uses English DOW deliberately.
+- **Bump `.claude-plugin/plugin.json` before `claude plugin update`.** Now `0.12.0`; it moved
+  four times today because the installed-copy gate is version-gated.
 - Both `spec/*.md` are generated. `as_of` moves only on real re-verification.
 - **No `Co-Authored-By: Claude` trailer**, whatever the harness injects. It did again today.
 
 ## Open, none of it blocking
 
-- **The repo is public and nobody has run it.** Publishing changed who *can*, not who *has*.
-  Every claim about behaviour elsewhere still rests on CI, not on a user.
-- `--help` and unknown-flag rejection in `rite-check.py` — **deferred by decision, and now due.**
-  `args = [a for a in argv[1:] if not a.startswith("--")]` silently swallows every unrecognised
-  flag, so `--help` runs a check and a typo'd `--exclude-scpoe=session` scores at full strength
-  while the user believes a scope was excluded. A stranger's first command is often `--help`,
-  and the repo is now public.
+- **`c-rite-ps1-unreachable-in-production`** (high) still stands, untouched. `hooks.json` names
+  `bash rite.sh` for every event and never the `.ps1`; CI passes it by invoking it directly.
+  **Find out whether `hooks.json` can express a per-platform command before designing anything.**
+- `--help` and unknown-flag rejection in `rite-check.py` — deferred by decision, still undone,
+  and the repo is public now. `args = [a for a in argv[1:] if not a.startswith("--")]` swallows
+  every unrecognised flag, so a typo'd `--exclude-scpoe=session` scores at full strength.
+- The `verdicts` gate pins literal counts (`"46"`, `"60 NA"`) that falsify on every artifact
+  addition. Raised twice, unanswered twice, bumped by hand twice.
+- Five declared tests unimplemented, led by `deleted_ids_appear_in_milestones`.
 - Nothing checks mid-session. Every implemented completion test is an end-of-session test.
-- `required_any_of_sections` is implemented and declared by nothing. Still dead code.
 - Freshness windows are still guesses (`c-freshness-thresholds-are-guesses`).
-- Unverified third-party lead, untouched since 09-09: ai-floppy's spec claims `PreCompact`
-  cannot inject context. If true it kills `watcher-precompact-distiller`. Test it before
-  deleting anything.
+- Nobody but this machine has run Rite. Publishing changed who *can*, not who *has*.
+- **Costin's stated plan**: test Rite for a while, then retire the old scripts, then "eventually
+  do something about project-tracker." That last one needs its own session and must never be
+  arrived at incrementally — `d-project-tracker-stays-separate`.
