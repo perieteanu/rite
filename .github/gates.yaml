@@ -61,6 +61,19 @@ gates:
     # DECISIONS.yaml and ROADMAP's milestones are append-only records of what was true then,
     # and a gate that fails on a file nobody may legally edit is a gate that gets switched off.
 
+  - id: mirror-port-parity
+    command: [scripts/test-mirror-port-parity.py]
+    what: "rite's memory mirror still renders identically to the script it ported"
+    skip_means: >
+      ~/.claude/scripts/claude-mirror-memory.py is not on this machine, so there is nothing to
+      compare against. A CI runner has never had it, and this is also the END STATE: the
+      original was kept deliberately as a fallback while rite is on trial, and when it is
+      retired this gate skips forever. DELETE IT AT THAT POINT — a gate that can no longer fail
+      is not a gate — along with the parity sentence in ~/.claude/commands/mirror-memory.md.
+    # Two implementations of one output are alive at once, on purpose. "They agree" was checked
+    # twice by hand and by nothing else, which is precisely the kind of claim this project
+    # refuses to accept from anyone else. It compares the two GENERATORS and writes nothing.
+
   - id: copy-attribution
     command: [scripts/test-copy-attribution.py]
     what: "a plan is attributed by authorship — a Write or ExitPlanMode naming it — never by mention"

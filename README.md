@@ -123,10 +123,11 @@ The standard is a YAML document; the readable Markdown is **generated** from it,
 fails if anyone hand-edits the generated copy. A standard that cannot catch its own drift has no
 business asking that of anyone else.
 
-Nine gates run on every push, across Linux, macOS and Windows. Two of them cannot run on a CI
-runner — the YAML parser's differential test needs PyYAML as an oracle, and the installed-copy
-test needs an installed plugin — so the runner reports **`10 of 12 gates ran`** and names the two
-it skipped rather than showing an unqualified green.
+Thirteen gates run on every push, across Linux, macOS and Windows. Three of them cannot run on
+a CI runner — the YAML parser's differential test needs PyYAML as an oracle, the installed-copy
+test needs an installed plugin, and the mirror-port parity test needs the original script Rite
+ported from — so the runner reports **`10 of 13 gates ran`** and names the three it skipped
+rather than showing an unqualified green.
 
 The YAML is read by a subset parser shipped with Rite, so there is no dependency to install. It
 **refuses rather than guesses** on anything outside the subset it was measured against, and its
