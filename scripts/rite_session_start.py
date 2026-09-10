@@ -36,6 +36,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import riteyaml  # noqa: E402
 import ritefs  # noqa: E402
+import rite_preflight  # noqa: E402
+import ritededup  # noqa: E402
 
 ritefs.use_utf8_stdio()
 
@@ -146,12 +148,39 @@ def main() -> int:
         payload = {}
     root = Path(payload.get("cwd") or os.getcwd()).resolve()
 
-    # Opt-in. Silent where not invited.
+    # THE VS CODE EXTENSION HAS BEEN OBSERVED DISPATCHING ONE SessionStart TWICE, ~47ms apart
+    # with the same session_id, so the verdict was injected twice. Rite's own hook was never
+    # covered by the original guard, which protected only the two hooks in settings.json.
+    # Fail-open: on any doubt it emits, because a duplicated line is far cheaper than a
+    # silently missing verdict.
+    window = 20
+    try:
+        window = int((rite_preflight.load_config().get("thresholds") or {})
+                     .get("hook_dedup_window_s", 20))
+    except Exception:
+        pass
+    if window and ritededup.already_emitted(payload, root, window,
+                                            rite_preflight.STAMP_PATH):
+        emit(None)
+        return 0
+
+    # OPT-IN COVERS THE SESSION POST TOO, and that was not the first answer here. The port
+    # briefly ran the machine/agent checks regardless of the marker, reasoning that a disk
+    # filling up is true whether or not this directory carries a .rite.yaml. The hook-shape
+    # gate rejected it, and the gate was right: `participation` says Rite is silent where it
+    # was not invited, full stop, and quietly carving out an exception is how a settled rule
+    # becomes negotiable. Whether the POST should be exempt is a real question —
+    # c-session-post-is-gated-by-participation — but it is a DECISION, not something to slip
+    # into a port.
     if not ritefs.marker_present(root):
         emit(None)
         return 0
 
     parts: list[str] = []
+
+    post, _ = rite_preflight.local_verdict(root)
+    if post:
+        parts.append(post)
 
     findings = run_checker(root)
     if findings:

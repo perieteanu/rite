@@ -219,11 +219,11 @@ _Exception — `memory_mirror`: docs/claude-memory.md is script-produced yet dec
 | candidate | what | status |
 |---|---|---|
 | `status_json` | The SessionStart verdict — machine / project / claude | deferred — necessity not yet agreed |
-| `checks_yaml` | Config driving the checks, inherited in shape from claude-preflight | deferred — purpose not yet clear |
+| `checks_yaml` | Config driving the session POST, inherited in shape from claude-preflight | RESOLVED 2026-09-10 — exists, and is NOT an artifact |
 | `end_stamp` | A marker that /end ran | REJECTED — not deferred |
 
 - **`status_json`** — Discussed 2026-09-07 and NOT added. The need is asserted, not established.
-- **`checks_yaml`** — d-preflight-is-config-not-fork says preflight BECOMES this file, so it will exist. What it must contain for a stranger, versus for this machine, is unsettled.
+- **`checks_yaml`** — The deferral asked what it must contain for a stranger versus for this machine. Answered by building it. It lives at ${CLAUDE_PLUGIN_DATA}/checks.yaml — plugin storage, which never_mutate_claude_home names as its one declared exception, and where the nag-once mechanism already lives. It configures the MACHINE and the AGENT, not a repository, so a per-project copy would be the wrong shape and the inventory stays at 14. template/checks.yaml is the documented default, carrying no machine-specific values. What is "for this machine" needs no answer from the standard after all: a check whose config carries a `command:` runs an external program, so anything too personal to publish lives in the user's config and never in the engine.
 - **`end_stamp`** — Ruled out 2026-09-07: /end is a process, and its result is recorded in HANDOFF.md front matter (`session_end:`). No new file. This is why the standard has 13 artifacts and not 14, and the rejection is recorded so it is not helpfully re-proposed.
 
 ## Portability

@@ -19,6 +19,34 @@ status: current
 
 concerns:
 
+  - id: c-session-post-is-gated-by-participation
+    title: "The machine/agent POST is silent in a project that has not opted in — should it be?"
+    status: open
+    severity: medium
+    opened: "2026-09-10"
+    what: >
+      `participation` says Rite prints nothing without a .rite.yaml marker. That now covers the
+      session POST too, so a disk filling up or a second interactive session goes unreported in
+      any directory that has not opted in — which is most of them.
+    how_it_surfaced: >
+      The port briefly ran the POST regardless of the marker, on the reasoning that a machine
+      fact is true whether or not this directory opted in. The hook-shape gate rejected it
+      within the minute, and the gate was right: quietly carving an exception into a settled
+      rule is how the rule stops being one. Reverted, and raised here instead.
+    the_argument_each_way: >
+      FOR exempting it: the POST reports on the machine and the agent, not on the project. Opt-in
+      is a promise not to judge someone's REPOSITORY, and a full disk is not a judgement about
+      their repository. Costin's preflight has run everywhere for months and that is the
+      behaviour he is used to.
+      AGAINST: "silent where not invited" is the whole of participation, and a user who declined
+      Rite did not decline it selectively. An exception also needs a rule for WHICH checks are
+      exempt, and `side: machine` is a per-check declaration a user's own config can set — so
+      the exemption would be user-controllable, which is worse.
+    why_it_is_not_urgent: >
+      Costin's own preflight hook still runs beside the port and covers every directory, so
+      nothing is lost today. It becomes real when he retires it.
+    do_not: "Resolve it by editing the hook. It is a DECISIONS entry either way."
+
   - id: c-coverage-counts-optional-as-unimplemented
     title: "The checker's coverage denominator counts `optional` markers as missing implementations"
     status: open

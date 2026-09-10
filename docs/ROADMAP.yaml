@@ -173,6 +173,11 @@ current_state: >
   setup-hook-scaffolding, readme-for-a-stranger and publish-github — were queued and closed on
   2026-09-10. That is a statement rather than an omission: the next move is a decision about
   direction, not a queued task.
+  THE SESSION POST IS PORTED. scripts/rite_preflight.py is Rite's engine — eleven checks, config
+  at ${CLAUDE_PLUGIN_DATA}/checks.yaml, and a `command:` form so a check too personal to publish
+  runs an external program instead of living in the engine. SessionStart emits ONE verdict
+  covering the POST and the project standard, with a ported dedup that Rite's own hook never had.
+  Costin's preflight still runs beside it, as the mirror does; retiring it is his call.
   STILL MISSING: ONE declared rule is unimplemented, deleted_ids_appear_in_milestones. The
   checker's coverage line reads 61 of 66 because its denominator counts test INSTANCES and
   includes four `optional` markers, which are not rules awaiting implementation —
@@ -444,6 +449,30 @@ milestones:
       its own root advertising itself with `"source": "."`, and the plugins/ subdirectory form
       is for a marketplace listing OTHER repositories. Dropped as misconceived, not as skipped.
 
+  - id: port-preflight
+    what: "The session POST becomes Rite's engine; preflight becomes a config, with `command:` checks for the personal ones"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026"
+    note: >
+      d-preflight-is-config-not-fork settled the shape on 2026-09-07 and it waited three days.
+      A PORT, not a reimplementation: check bodies carried verbatim, the transformation surgical
+      — swap PyYAML for riteyaml, name every encoding, guard /proc and df, drop what is
+      superseded. Eleven checks ship; three do not, and each has a reason recorded beside the
+      registry so a later session does not restore them as omissions.
+      THE ONE PLAUSIBLE BLOCKER WAS GONE BEFORE STARTING: riteyaml already parsed the real
+      checks.yaml identically to PyYAML, verified with PyYAML as oracle. And 748 lines contained
+      exactly THREE machine-specific literals, so the decision's claim that the generalisation
+      had happened accidentally held up.
+      `command:` checks are what make the 2026-09-07 decision executable rather than aspirational
+      — without them tracker_registered forces project-tracker's file format into the published
+      engine. Proved both ways: exit 2 gives RED with the detail line, a missing command gives
+      YELLOW and no traceback.
+      TWO GATES CORRECTED THE WORK WHILE IT HAPPENED. The AST rule caught a subprocess.run
+      without encoding. The hook-shape gate rejected running the POST without a .rite.yaml
+      marker — `participation` is not negotiable by a port — which became
+      c-session-post-is-gated-by-participation rather than a quiet exception.
+      Costin's preflight keeps running beside it, as the mirror does. Retiring it is his call.
+
 near_term:
   label: "EMPTY — the path from private to public is complete"
   # Emptied 2026-09-10, and empty ON PURPOSE rather than by omission. All four items —
@@ -502,9 +531,6 @@ mid_term:
     why: "A continuous watcher needs somewhere to accumulate. May be what resolves the deferral in the inventory block."
     condition: "ONLY if the purpose proves itself in use. Deferred until then, by the user's call."
 
-  - id: port-preflight
-    what: "Port preflight.py into Rite as the engine; reduce ~/projects/claude-preflight to a checks.yaml"
-    why: "744 proven lines. The generalisation is mostly done — the machine-specific checks are already toggles."
 long_term:
   - id: vscode-viewer
     what: "Revive claude-persistent's extension as the optional persistent surface"
