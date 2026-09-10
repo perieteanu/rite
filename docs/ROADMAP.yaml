@@ -68,8 +68,8 @@ current_state: >
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.
-  ELEVEN GATES RUN, AND CI NOW RUNS THEM: standard, protocol, generated blocks, riteyaml
-  differential, stage-table guard, hook output
+  THIRTEEN GATES RUN, AND CI NOW RUNS THEM: standard, protocol, generated blocks, riteyaml
+  differential, mirror-port parity, stage-table guard, copy attribution, hook output
   shape, checker verdicts, portability rules, scaffold, installed-copy currency, and
   rite-check.py against this project itself — that last one was never counted in the list of six
   this project told itself for three days. rite-check.py reports 61 checks on this project,
@@ -86,10 +86,13 @@ current_state: >
   stricter tier behaviour in full — absence is not a claim, and deleting one line must never be
   the way to switch the standard off.
   CI IS HONEST ABOUT WHAT IT DOES NOT COVER. .github/workflows/gates.yml fires on every push,
-  but only NINE of the eleven gates can run on a runner: the riteyaml differential needs PyYAML
-  as its oracle and CI does not install it, and the installed-copy test needs an installed
-  plugin, which a runner never has. The runner names the two it skipped on every run, rather
-  than showing an unqualified green.
+  but only TEN of the thirteen gates can run on a runner: the riteyaml differential needs PyYAML
+  as its oracle and CI does not install it, the installed-copy test needs an installed plugin
+  which a runner never has, and the mirror-port parity test needs the original script rite was
+  ported from. That third one is TEMPORARY BY CONSTRUCTION: the original is Costin's fallback
+  while rite is on trial, and when he retires it the gate skips forever and must be deleted —
+  a gate that can no longer fail is not a gate. The runner names the three it skipped on every
+  run, rather than showing an unqualified green.
   CI RUNS ON ALL THREE DECLARED TARGETS — ubuntu, macos and windows, fail-fast:false so one
   platform's failure cannot hide another's findings. Until 2026-09-10 the only machine that had
   ever run Rite was one Linux laptop. macOS passed first time, which is the first EVIDENCE that

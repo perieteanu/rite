@@ -147,7 +147,7 @@ CI, as of 2026-09-10 — the gates stop depending on someone remembering:
 
 **A skip is never folded into green.** Two gates cannot run on a runner — `test-riteyaml.py`
 (PyYAML is its oracle and CI does not install it) and `test-installed-current.py` (a runner has
-no installed plugin) — so the runner prints `10 of 12 gates ran` and names what was not enforced.
+no installed plugin) — so the runner prints `10 of 13 gates ran` and names what was not enforced.
 That is `rite-check.py`'s own *NA, never silence* rule applied one level up, to the gates
 instead of to the checks. A gate exiting 2 without declaring `skip_means` is treated as a
 FAILURE, because an undeclared skip that reads as success is the exact shape of the problem.
