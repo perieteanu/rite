@@ -63,12 +63,12 @@ inception:
 current_state: >
   Stage `build`, declared in .rite.yaml. Verified against the filesystem, the harness and
   three operating systems on 2026-09-10.
-  Rite is an installed, running plugin at version 0.7.0 — rite@rite, four skills reachable as
-  /rite:log /rite:preflight /rite:handoff /rite:end, and a SessionStart hook whose verdict line
+  Rite is an installed, running plugin at version 0.8.0 — rite@rite, five skills reachable as
+  /rite:log /rite:preflight /rite:handoff /rite:end /rite:init, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.
-  EIGHT GATES RUN, AND CI NOW RUNS THEM: standard, protocol, riteyaml differential, hook output
+  NINE GATES RUN, AND CI NOW RUNS THEM: standard, protocol, riteyaml differential, hook output
   shape, checker verdicts, portability rules, installed-copy currency, and rite-check.py against
   this project itself — that last one was never counted in the list of six this project told
   itself for three days. rite-check.py reports 61 checks on this project, 0 RED, 56 GREEN,
@@ -83,7 +83,7 @@ current_state: >
   stricter tier behaviour in full — absence is not a claim, and deleting one line must never be
   the way to switch the standard off.
   CI IS HONEST ABOUT WHAT IT DOES NOT COVER. .github/workflows/gates.yml fires on every push,
-  but only SIX of the eight gates can run on a runner: the riteyaml differential needs PyYAML
+  but only SEVEN of the nine gates can run on a runner: the riteyaml differential needs PyYAML
   as its oracle and CI does not install it, and the installed-copy test needs an installed
   plugin, which a runner never has. The runner names the two it skipped on every run, rather
   than showing an unqualified green.
@@ -124,9 +124,13 @@ current_state: >
   commit that flips visibility (d-stage-advances-when-the-repo-goes-public), which is exactly
   when the LICENSE check should fire.
   STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
-  source_plans_all_copied. No PostToolUse and none of the eight watchers. NO template/ SEED SET
-  — the gating that makes a day-one project quiet now exists, but the files it wants still have
-  to be written by hand, so setup-hook-scaffolding is the other half and is next.
+  source_plans_all_copied. No PostToolUse and none of the eight watchers. The README still reads
+  as notes between author and agent and no line tells a stranger how to add the marketplace —
+  readme-for-a-stranger, and it is the first thing a visitor meets.
+  ADOPTING RITE NOW OPENS ON GREEN. /rite:init seeds .rite.yaml, LOG.md and HANDOFF.md from
+  template/ and a scaffolded project scores 0 RED, 0 YELLOW, 8 GREEN. It writes nothing beyond
+  stage `idea` on purpose: a document nobody has written cannot be seeded honestly, so the
+  refusal is the feature — d-scaffold-only-what-can-be-honest.
   NOTE, because this paragraph is the standing example: the claims block above passed GREEN
   while every NUMBER in this text was stale. That is the declared limit of claims_match_filesystem
   working as specified — it checks paths, not counts — and it is why the block supplements the
@@ -283,6 +287,27 @@ milestones:
       reads as a pass.
       hooks/rite.ps1 executed for the first time anywhere, and passed.
 
+  - id: setup-hook-scaffolding
+    what: "template/ seed set plus /rite:init, so adopting Rite opens on green instead of RED"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026"
+    note: >
+      Both halves landed the same day, and the first half made the second small. The
+      stage->requirement mapping — the part recorded as "STILL NOT SPECIFIED" and the reason
+      this item was not small — became d-stage-is-the-gating-axis, taking a day-one project from
+      9 RED to 2. The seed set then only had to reach those two.
+      /rite:init writes exactly three files and REFUSES to write more, which is the design
+      rather than a limitation: `idea` is the only stage a machine can satisfy honestly, because
+      a log with one true entry and a genre:none handoff are finished documents, while a seeded
+      MISSION.md is a lie that passes file_present. d-scaffold-only-what-can-be-honest.
+      The deliverable as originally written asked for "seeded docs/" — that was dropped
+      deliberately, not overlooked.
+      Its completion test could not live where the requirement was written: template/LOG.md is
+      not at a canonical path, so the checker never sees it. scripts/test-scaffold.py scaffolds
+      into a temp directory and checks the RESULT, and it failed on its first run — the original
+      template carried a prose preamble that entries_parse counted as nine broken entries, so
+      every project Rite seeded would have opened on a YELLOW of Rite's own making.
+
 near_term:
   label: "The ordered path from PRIVATE to PUBLIC"
   # Filled 2026-09-10, having been empty on purpose since 2026-09-09. It is not a queue of
@@ -291,19 +316,6 @@ near_term:
   # one setting on a repository; everything above it is what makes that setting defensible.
   # Order chosen by Costin 2026-09-10, matrix before scaffolding.
   candidates:
-    - id: setup-hook-scaffolding
-      what: "A template/ seed set plus first-run scaffolding, gated by `stage`"
-      why: >
-        MOVED FROM mid_term. The pivot the HANDOFF names and the piece two decisions rest on:
-        d-publish-main-in-full-no-export dropped the curated export and left this as the only
-        thing giving an end user a clean start, and d-stage-gates-the-standard exists because a
-        fresh install today opens on a screen of RED, which gets the plugin uninstalled by day
-        two. Nobody should be invited to install Rite before this exists.
-      deliverables:
-        - "template/ — seeded docs/, a genre:none HANDOFF, an empty-but-valid LOG. Each must be the VALID SMALLEST INSTANCE: it has to pass rite-check, because the first thing anyone runs is the checker on Rite itself."
-        - "the stage->requirement mapping, WHICH IS STILL NOT SPECIFIED. This is the real work and the reason the item is not small."
-        - "a command that copies the seed set into a project"
-
     - id: readme-for-a-stranger
       what: "Rewrite README for someone who is not us"
       why: >
@@ -329,7 +341,23 @@ near_term:
         to `shipped` in the SAME commit that flips visibility, which is exactly when the LICENSE
         check should fire. So the publishing commit is not a one-line visibility change — it
         also advances the stage and turns that check live.
-      still_needs: "setup-hook-scaffolding and readme-for-a-stranger, above."
+      still_needs: "readme-for-a-stranger, above. setup-hook-scaffolding closed 2026-09-10."
+      checklist: >
+        THE PUBLISHING COMMIT DOES THREE THINGS AT ONCE, and writing them down is the point of
+        this block — none is hard, and any one of them forgotten is embarrassing in public.
+        1. Flip the repository to public. That is the only irreversible half: main is published
+        in FULL, LOG.md included, per d-publish-main-in-full-no-export.
+        2. Set `stage: shipped` in .rite.yaml, in the SAME commit —
+        d-stage-advances-when-the-repo-goes-public. Not before, because declaring `shipped`
+        while private would be lying to our own checker.
+        3. Which turns the LICENSE check LIVE, since LICENSE is required_from_stage: shipped.
+        It currently reports NA. Confirm it goes GREEN and not RED before pushing.
+        Then: re-run the gates, and expect CI to go green on a public repo with unmetered
+        Actions minutes — which is when ci-portability-matrix stops costing anything.
+      before_you_flip: >
+        Both blockers are settled (above) and the scaffolding exists. What remains is
+        readme-for-a-stranger: the README still reads as notes between author and agent and no
+        line tells anyone how to add the marketplace. That is the first thing a visitor meets.
       free_upside: "Actions minutes are unmetered on public repositories, so ci-portability-matrix gets cheaper the moment this happens."
 
 mid_term:

@@ -1,0 +1,34 @@
+# Rite participation marker. Its PRESENCE is the opt-in signal — an empty file would be just
+# as valid, and everything below is optional.
+#
+# Written by `/rite:init`. Edit it freely; nothing here is generated again.
+---
+# The project's stage, from [idea, spec, build, polish, shipped, maintain, archived].
+#
+# THIS LINE DECIDES WHAT THE STANDARD ASKS OF YOU. Each artifact declares the stage it becomes
+# required at, and you are not asked for what your stage has not reached:
+#
+#   idea      LOG.md, HANDOFF.md                          <- you are here
+#   spec      + README.md, CLAUDE.md, MISSION, ROADMAP
+#   build     + ARCHITECTURE, CONVENTIONS, DECISIONS
+#   shipped   + LICENSE
+#
+# Advance it when the project genuinely changes. Nothing expires and nothing nags; the stage
+# moves because you say it moved. Run `/rite:preflight` afterwards and the checker will name
+# exactly which files it now wants.
+#
+# DELETING THIS LINE DOES NOT MAKE THE STANDARD LENIENT. With no stage declared, the older and
+# stricter behaviour applies and every core document is required at once. Absence is not a
+# claim: declaring `idea` is an act, and it is the act that earns the leniency.
+stage: idea
+
+# Optional, and unset on purpose. Absent means "the current standard", which is almost always
+# what you want. Declaring a version you do not track only earns a YELLOW saying so — Rite
+# keeps no old rule sets and never honours a pin.
+# standard_version: "1.0.0"
+
+# Optional threshold overrides, unset on purpose. The defaults are admitted guesses, so a
+# project whose cadence genuinely differs may widen a window — but never invisibly: any finding
+# computed with an override reports the override AND the default alongside it.
+# thresholds:
+#   roadmap_as_of_days: 60

@@ -14,6 +14,11 @@ claims:
     - .github/workflows/gates.yml
     - .github/gates.yaml
     - .github/run-gates.py
+    - template/LOG.md
+    - template/HANDOFF.md
+    - scripts/rite_init.py
+    - scripts/test-scaffold.py
+    - skills/init/SKILL.md
     - scripts/rite-check.py
     - scripts/riteyaml.py
     - scripts/ritefs.py
@@ -106,6 +111,12 @@ scripts/
                      under hookSpecificOutput. Asserts SHAPE, not content — see below.
   test-checker-verdicts.py  The checker's own test: unparseable is RED, absent stays NA, a
                      broken marker is reported, and a false claim is caught.
+  rite_init.py       Seeds a project to stage `idea` from template/: .rite.yaml, LOG.md,
+                     HANDOFF.md. Substitutes date tokens from the machine clock. NEVER
+                     overwrites — an existing file is skipped and reported.
+  test-scaffold.py   Scaffolds into a temp dir and checks the RESULT: 0 RED, 0 YELLOW. The
+                     seed's "valid smallest instance" claim is untestable in template/ itself,
+                     since those paths are not canonical and the checker never sees them.
   test-portability-rules.py  Walks the SYNTAX TREE of every .py in scripts/, spec/ and
                      .github/: a module that prints must declare UTF-8 stdio at module level,
                      and every subprocess.run must name encoding and errors. AST, not grep —
@@ -129,7 +140,7 @@ CI, as of 2026-09-10 — the gates stop depending on someone remembering:
 
 **A skip is never folded into green.** Two gates cannot run on a runner — `test-riteyaml.py`
 (PyYAML is its oracle and CI does not install it) and `test-installed-current.py` (a runner has
-no installed plugin) — so the runner prints `6 of 8 gates ran` and names what was not enforced.
+no installed plugin) — so the runner prints `7 of 9 gates ran` and names what was not enforced.
 That is `rite-check.py`'s own *NA, never silence* rule applied one level up, to the gates
 instead of to the checks. A gate exiting 2 without declaring `skip_means` is treated as a
 FAILURE, because an undeclared skip that reads as success is the exact shape of the problem.
@@ -142,7 +153,12 @@ The plugin, as of 2026-09-08 — **the repo root IS the plugin**:
 .claude-plugin/
   plugin.json        name, version, description, author, license
   marketplace.json   advertises this repo as a one-plugin marketplace
-skills/              /rite:log /rite:end /rite:handoff /rite:preflight
+template/            THE SEED SET — .rite.yaml, LOG.md, HANDOFF.md, carrying {{TOKEN}}
+                     placeholders substituted at scaffold time. Not a 14th artifact: the
+                     frozen inventory covers what a PROJECT carries, and this is plugin
+                     content, like skills/. Seed CONTENT lives here rather than in string
+                     literals because it is config a human should be able to edit.
+skills/              /rite:log /rite:end /rite:handoff /rite:preflight /rite:init
   log/SKILL.md         both-invocable — Claude logs as work happens
   end/SKILL.md         disable-model-invocation: Claude never ends a session
   handoff/SKILL.md     disable-model-invocation
