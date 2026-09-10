@@ -8,10 +8,12 @@
 # THIS LINE DECIDES WHAT THE STANDARD ASKS OF YOU. Each artifact declares the stage it becomes
 # required at, and you are not asked for what your stage has not reached:
 #
-#   idea      LOG.md, HANDOFF.md                          <- you are here
-#   spec      + README.md, CLAUDE.md, MISSION, ROADMAP
-#   build     + ARCHITECTURE, CONVENTIONS, DECISIONS
+# rite:generated stage-table
+#   idea      LOG.md, HANDOFF.md   <- you are here
+#   spec      + README.md, CLAUDE.md, docs/MISSION.md, docs/ROADMAP.yaml
+#   build     + docs/ARCHITECTURE.md, docs/CONVENTIONS.md, docs/DECISIONS.yaml
 #   shipped   + LICENSE
+# /rite:generated
 #
 # Advance it when the project genuinely changes. Nothing expires and nothing nags; the stage
 # moves because you say it moved. Run `/rite:preflight` afterwards and the checker will name

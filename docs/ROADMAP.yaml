@@ -68,22 +68,25 @@ current_state: >
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.
-  NINE GATES RUN, AND CI NOW RUNS THEM: standard, protocol, riteyaml differential, hook output
+  ELEVEN GATES RUN, AND CI NOW RUNS THEM: standard, protocol, generated blocks, riteyaml
+  differential, stage-table guard, hook output
   shape, checker verdicts, portability rules, scaffold, installed-copy currency, and
   rite-check.py against this project itself — that last one was never counted in the list of six
   this project told itself for three days. rite-check.py reports 61 checks on this project,
   0 RED, 56 GREEN, covering 57 of 64 declared tests.
   STAGE IS NOW THE GATING AXIS OF THE STANDARD — d-stage-is-the-gating-axis. Every artifact
-  declares required_from_stage, and a project is not asked for what its stage has not reached:
-  idea wants LOG and HANDOFF, spec adds README/CLAUDE.md/MISSION/ROADMAP, build adds
-  ARCHITECTURE/CONVENTIONS/DECISIONS, shipped adds LICENSE. Measured before: an empty project
+  declares required_from_stage, and a project is not asked for what its stage has not reached.
+  THE MAPPING IS NOT REPEATED HERE and this sentence is the reason why: it used to be, and that
+  made a fourth hand-maintained copy alongside README, template/.rite.yaml and CLAUDE.md. It
+  now has one home in the spec, is generated into README and the template as a rite:generated
+  block, and a guard fails if a fifth copy appears. Measured before: an empty project
   declaring `idea` scored 9 RED and 0 GREEN, because declaring a stage changed NOTHING — stage
   gated one artifact and tier gated the other twelve. Measured after: 2 RED, and 0 RED once LOG
   and HANDOFF exist. A DECLARATION BEATS TIER, and a project declaring NO stage keeps the older
   stricter tier behaviour in full — absence is not a claim, and deleting one line must never be
   the way to switch the standard off.
   CI IS HONEST ABOUT WHAT IT DOES NOT COVER. .github/workflows/gates.yml fires on every push,
-  but only SEVEN of the nine gates can run on a runner: the riteyaml differential needs PyYAML
+  but only NINE of the eleven gates can run on a runner: the riteyaml differential needs PyYAML
   as its oracle and CI does not install it, and the installed-copy test needs an installed
   plugin, which a runner never has. The runner names the two it skipped on every run, rather
   than showing an unqualified green.

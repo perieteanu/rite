@@ -155,6 +155,47 @@ file_format:
     hand-writing a Markdown-structure parser — trading an installed dependency for a worse
     bespoke one. Hence the split rather than a single answer.
 
+# ── generated blocks (CORE — Rite's own) ─────────────────────────────
+# WHERE THIS FILE'S DATA IS WRITTEN INTO A HAND-WRITTEN DOCUMENT, and kept true by a check.
+#
+# PROJECT-STANDARD.md is generated whole, so it cannot drift. README.md cannot be: it is prose
+# a human writes, which happens to contain one table this file owns. On 2026-09-10 that table
+# was hand-copied into README.md, template/.rite.yaml and CLAUDE.md on the same day the
+# mechanism it describes was built — four copies, three hand-maintained, introduced by the
+# project whose thesis is that such copies rot (c-stage-table-duplicated-in-three-places).
+#
+# A block names its generator and its targets. `render-standard.py --blocks` fills every one;
+# `--blocks --check` fails on any that has drifted, and that is the completion test. The
+# markers are inert to both Markdown and YAML, so a rendered README shows the table and a
+# parsed .rite.yaml sees comments.
+#
+# WHY THE LIST LIVES HERE rather than in the renderer: a path list that exists only in code is
+# a hardcoded value with no human-visible home. This file is already the authority for what is
+# generated, so it is the authority for where.
+generated_blocks:
+  layer: core
+  markers:
+    md: ["<!-- rite:generated {id} -->", "<!-- /rite:generated -->"]
+    yaml_comment: ["# rite:generated {id}", "# /rite:generated"]
+  blocks:
+    - id: stage-table
+      what: "Which artifacts each stage adds, from artifacts[].required_from_stage"
+      source: "stage_vocabulary.values for the order; artifacts[].required_from_stage for the rows"
+      targets:
+        - path: README.md
+          style: md
+        - path: template/.rite.yaml
+          style: yaml_comment
+          # A scaffolded project is always at `idea`, so the pointer is a constant of the
+          # template rather than something the generator could infer. Declared, not lost.
+          annotations:
+            idea: "<- you are here"
+      not_targeted:
+        CLAUDE.md: >
+          Its copy was DELETED on 2026-09-10 rather than generated. The mapping was a prose
+          sentence mid-bullet, and a marker block there would have forced a table into a
+          document that is dense prose by design. Removing a copy beats mechanising it.
+
 # ── write discipline (CORE) ──────────────────────────────────────────────────
 # How a file may legally be changed. Declared per artifact, because "edit the docs" means
 # five different things and getting it wrong is silent: an appended roadmap becomes a
