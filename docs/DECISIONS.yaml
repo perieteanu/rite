@@ -1328,6 +1328,19 @@ decisions:
         log_timestamps_not_in_the_future and nag_delivered_once are declared in the protocol
         and unimplemented; both are session-scoped by the same test. The scope exists ahead of
         them on purpose.
+    corrected_2026_09_10: >
+      THE RATIONALE ABOVE IS WRONG ABOUT log_timestamps_not_in_the_future, corrected within the
+      hour and left in place rather than rewritten, per the precedent set by
+      c-yaml-subset-too-narrow-for-the-wild. That test — no LOG entry may carry a timestamp
+      later than the file's own mtime — holds at every moment of a session, including the
+      middle. It never depends on whether the session closed, so it is NOT session-scoped and
+      belongs in CI at full strength.
+      Applying the actual test for the scope — does the verdict depend on whether the session
+      running right now has closed? — only nag_delivered_once joins written_not_older_than_
+      newest_log_entry. session_end_decision_recorded also fails the test: it reads front
+      matter that is already there mid-session.
+      So the tier has one member today and one future member, not two. That is thinner than
+      claimed and the claim should not have been made without applying the test to each name.
     consequences:
       - "The five implemented completion tests are ALL end-of-session tests. Nothing in the standard checks anything mid-session — the `during` phase has no enforcement and waits on the PostToolUse watcher layer. Recorded in the protocol's honest_limits, replacing a line that had gone false."
       - "SessionStart keeps the check at full strength: no flag there, still RED, still the signal that the last session did not close."
