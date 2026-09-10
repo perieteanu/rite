@@ -74,7 +74,7 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin at version 0.15.0 — rite@rite, six skills reachable as
+  Rite is an installed, running plugin at version 0.16.0 — rite@rite, six skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -173,9 +173,11 @@ current_state: >
   setup-hook-scaffolding, readme-for-a-stranger and publish-github — were queued and closed on
   2026-09-10. That is a statement rather than an omission: the next move is a decision about
   direction, not a queued task.
-  STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
-  source_plans_all_copied. None of the eight watchers — the PostToolUse hook exists but does
-  one job, refreshing the memory mirror.
+  STILL MISSING: ONE declared rule is unimplemented, deleted_ids_appear_in_milestones. The
+  checker's coverage line reads 61 of 66 because its denominator counts test INSTANCES and
+  includes four `optional` markers, which are not rules awaiting implementation —
+  c-coverage-counts-optional-as-unimplemented. None of the eight watchers; the PostToolUse
+  hook exists but does one job, refreshing the memory mirror.
   ADOPTING RITE NOW OPENS ON GREEN. /rite:init seeds .rite.yaml, LOG.md and HANDOFF.md from
   template/ and a scaffolded project scores 0 RED, 0 YELLOW, 8 GREEN. It writes nothing beyond
   stage `idea` on purpose: a document nobody has written cannot be seeded honestly, so the
@@ -425,6 +427,23 @@ milestones:
       from the global hook's only in the clock. The global hook is deliberately left running
       beside it until the port is proven.
 
+  - id: plugin-packaging
+    what: ".claude-plugin/ manifests, LICENSE and a git repo — the plugin is installable and advertises itself"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026"
+    note: >
+      CLOSED RETROSPECTIVELY, and that is the finding rather than the work. Every deliverable it
+      named — marketplace.json at the repo root, plugin.json, LICENSE, git init — has existed
+      since 2026-09-08, and the item sat in mid_term for two days while the project it described
+      was published, ported and gated. Nobody looked.
+      It was found by /rite:update's step 3, which asks whether anything actually finished, on
+      the checkpoint command's first real run. That is the step most likely to be a no-op and it
+      was not one — which is the argument for executing a step rather than reasoning about
+      whether it applies.
+      The "plugins/ layout" clause of the deliverable was never needed: Rite is one plugin at
+      its own root advertising itself with `"source": "."`, and the plugins/ subdirectory form
+      is for a marketplace listing OTHER repositories. Dropped as misconceived, not as skipped.
+
 near_term:
   label: "EMPTY — the path from private to public is complete"
   # Emptied 2026-09-10, and empty ON PURPOSE rather than by omission. All four items —
@@ -486,8 +505,6 @@ mid_term:
   - id: port-preflight
     what: "Port preflight.py into Rite as the engine; reduce ~/projects/claude-preflight to a checks.yaml"
     why: "744 proven lines. The generalisation is mostly done — the machine-specific checks are already toggles."
-  - id: plugin-packaging
-    what: ".claude-plugin/marketplace.json at repo root, plugins/ layout, LICENSE, git init"
 long_term:
   - id: vscode-viewer
     what: "Revive claude-persistent's extension as the optional persistent surface"
