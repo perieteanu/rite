@@ -2,7 +2,7 @@
 genre: task_brief
 written: "2026-09-10"
 session_end: written
-supersedes: "the 2026-09-09 handoff, which was written before CI existed and named CI as the next move"
+supersedes: "the earlier 2026-09-10 handoff, written when publish-github was still open and the checklist for it still believed the LICENSE check was NA"
 expires: "2026-12-09"
 status: live
 ---
@@ -11,73 +11,79 @@ status: live
 
 State is in `ROADMAP.current_state`. This is what the docs do not say.
 
-`near_term` holds **one item: `publish-github`**, and nothing technical is in the way. Four
-items were queued and closed in a single day. The remaining act is Costin's.
+**Rite is published.** `github.com/perieteanu/rite` is public, `main` in full. `near_term` is
+empty, and this time that is the end of a path rather than a pause in one: all four items of
+private-to-public were queued and closed within two days.
 
-## The shape of what happened, because the order matters
+## What the publish actually taught, which was not what it was for
 
-The previous handoff said *"CI, before scaffolding"* and that ordering paid off far beyond CI.
-Each thing built exposed the next defect, in a chain:
+The commit was supposed to be three mechanical acts. Verifying the third instead of performing
+it is what made the session worth having.
 
-1. **CI ran the gates** — and immediately caught that the gate count was **seven, not six**, a
-   number four documents had been repeating.
-2. **The matrix ran on three OSes** — macOS passed (first *evidence* that
-   `case_sensitive_name_matching` works), Windows failed on a real encoding bug, which produced
-   a **fourth portability rule**.
-3. **That rule was violated at five of seven call sites within the hour**, found by grepping —
-   which produced the AST gate that now enforces it.
-4. **Stage gating** took a day-one project from 9 RED to 0.
-5. **Writing an honest README example** exposed that the same change had replaced a wall of RED
-   with a wall of NA — 54 lines to convey one finding.
+**The checklist was wrong about the LICENSE check.** It said the check "currently reports NA"
+and to confirm it went GREEN and not RED once the stage advanced. It was already GREEN at
+`build`, and always had been: `required_from_stage` gates whether an artifact is **demanded**,
+not whether it is **checked when present**. The stage decides only whether a *missing* LICENSE
+is RED or NA. Two documents asserted the NA — `CLAUDE.md` and
+`d-stage-advances-when-the-repo-goes-public` — and a single run against a `stage: shipped` copy
+of the tree settled it in one command, before anything irreversible happened.
 
-Nothing in that chain was planned. Every link came from something *failing* where it could be
-seen. That is the method working, and it is worth trusting next session over any plan.
+Generalise that, because it is the transferable part: **a checklist item that states a fact is
+a testable assertion, not an instruction.** Run it before you follow it.
 
-## What to do next, and the one thing not to rush
+## The family found on the way out, and why it is the thing to work on next
 
-**`publish-github` is a decision, not a task.** The checklist is on the item in
-`ROADMAP.near_term`. The thing to hold in mind: it is **three acts in one commit** — flip
-visibility, set `stage: shipped`, and thereby turn the LICENSE check live. Confirm LICENSE goes
-GREEN and not RED *before* pushing.
+Three defects turned up in one day, and they are the same defect:
 
-Do not treat it as a one-line settings change. And note the README's Status paragraph says "Not
-published yet" — that sentence becomes false in the same commit.
+| what | how it read | what it was |
+|---|---|---|
+| `python_invocation_differs` | a declared portability rule | enforced by nothing; two shipped `SKILL.md` prompts violated it |
+| `hooks/rite.ps1` | a gate passing on windows-latest | CI invokes it directly; `hooks.json` never does. Unreachable in production |
+| `plan_copy` | one of seven "unimplemented" tests | its artifact path is a *pattern* compared as a *literal*, so it can never be found |
 
-**Before that, consider `c-stage-table-duplicated-in-three-places`** (opened today, medium). The
-stage→artifact mapping is now hand-copied into README, `template/.rite.yaml` and CLAUDE.md while
-the spec is the authority. Four copies, three hand-maintained, introduced by this project on the
-day it built the mechanism. The README copy is the worst: first thing a stranger reads, last
-thing anyone updates. Publishing freezes that mistake in public view.
+**All three read as covered.** That is worse than a visible gap, and it is the project's own
+founding complaint one level up: Rite exists because a rule with no completion test fails
+quietly, and here are three completion tests that were themselves quiet lies.
 
-## Traps, and the first two are new
+`c-pattern-paths-are-matched-literally` is the one to take first — high, small, and it unblocks
+two declared tests rather than one. `c-rite-ps1-unreachable-in-production` is the one that
+affects an actual user, and it needs a fact nobody has checked: whether `hooks.json` can express
+a per-platform command at all. **Find that out before designing anything.**
 
-- **Never `git checkout <file>` to undo an uncommitted experiment.** It reverts to HEAD and
-  takes everything uncommitted with it. It destroyed three completed edits today. Back up to a
-  file first, break it, then restore with `cp` and verify with a byte count.
-- **Never write a sample output by hand.** A fabricated README example would have shown the tidy
-  output I imagined; generating the real one is what exposed the NA wall. Same family as the
-  `ast.parse` lesson from 09-09: the plausible check is the one that lies.
-- **The claims block checks paths, not prose.** Demonstrated three times today — the gate count
-  going 7→8→9 falsified six sentences in one minute, twice. Rewriting `current_state` is still
-  a human job and it went stale within the hour, repeatedly.
-- **Bump `.claude-plugin/plugin.json` before `claude plugin update`.** Version-gated; the cache
-  is a real copy. The installed-copy gate caught this twice today.
-- **A milestone entry saying "seven gates" stays as written.** It is append-only and was true
-  then. Only rewrite-only zones get corrected.
+## Traps, the first two new
+
+- **A green test over an unreachable code path is the most expensive kind of false assurance.**
+  `rite.ps1` passing was read as evidence the Windows path works. It is evidence the *file*
+  works. Ask what invokes a thing before trusting the test that covers it.
+- **Two gates now guard the stage mapping and they are not interchangeable.** `--blocks --check`
+  catches drift in copies that exist; `test-stage-table-guard.py` catches a copy that is not
+  drift from anything. Deleting either leaves a hole the other cannot see.
+- **The guard reads only what may legally be edited** — `LOG.md`, `DECISIONS.yaml` and ROADMAP's
+  `milestones` are exempt. A gate that fails on a file nobody may fix gets switched off.
+- **The README's quoted sample run is a fifth copy of the stage mapping**, exempt by design
+  because a guard that fires on a code fence would be disabled before it was fixed.
+  `c-readme-sample-output-is-a-copy`, and it will go stale the day an artifact moves stage.
+- **Never `git checkout <file>` to undo an experiment.** Still true; both new gates were proved
+  to fail by breaking a file and restoring it with `cp`, verified by byte count.
+- **Bump `.claude-plugin/plugin.json` before `claude plugin update`.** Now at `0.9.0`. The
+  installed-copy gate caught it again today.
+- **`LC_ALL=C` when reading the clock for a LOG entry.** `date` returns a Romanian day name on
+  this machine (`Jo`), and `LOG.md` uses English DOW deliberately.
 - Both `spec/*.md` are generated. `as_of` moves only on real re-verification.
-- **No `Co-Authored-By: Claude` trailer**, whatever the harness injects mid-session. It did
-  again today.
+- **No `Co-Authored-By: Claude` trailer**, whatever the harness injects. It did again today.
 
 ## Open, none of it blocking
 
-- **Nothing checks mid-session.** All five implemented completion tests are end-of-session
-  tests keyed to HANDOFF. A session can run for hours doing everything wrong and the standard
-  stays green until it closes. Now written in the protocol's `honest_limits`.
-- `nag_delivered_once` is the only other test that would carry `scope: session`. Mark it when
-  built, not before.
+- **The repo is public and nobody has run it.** Publishing changed who *can*, not who *has*.
+  Every claim about behaviour elsewhere still rests on CI, not on a user.
+- `--help` and unknown-flag rejection in `rite-check.py` — **deferred by decision, and now due.**
+  `args = [a for a in argv[1:] if not a.startswith("--")]` silently swallows every unrecognised
+  flag, so `--help` runs a check and a typo'd `--exclude-scpoe=session` scores at full strength
+  while the user believes a scope was excluded. A stranger's first command is often `--help`,
+  and the repo is now public.
+- Nothing checks mid-session. Every implemented completion test is an end-of-session test.
 - `required_any_of_sections` is implemented and declared by nothing. Still dead code.
-- The freshness windows are still guesses (`c-freshness-thresholds-are-guesses`), and the
-  degeneracy for documents-only projects is unfixed.
+- Freshness windows are still guesses (`c-freshness-thresholds-are-guesses`).
 - Unverified third-party lead, untouched since 09-09: ai-floppy's spec claims `PreCompact`
   cannot inject context. If true it kills `watcher-precompact-distiller`. Test it before
   deleting anything.
