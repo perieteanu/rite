@@ -12,14 +12,26 @@
 # project, which is c-freshness-thresholds-are-guesses. No override is taken, so whatever the
 # defaults get wrong surfaces on this project rather than being tuned away locally.
 ---
-# standard_version is deliberately absent: how a project declares which version of the
-# standard it targets is still open (c-standard-version-policy). Writing a value here would
-# pre-empt that decision rather than record it.
+# standard_version is SETTLED as of 2026-09-10 (d-standard-version-declared-never-honoured)
+# and still deliberately absent, which now means something rather than deferring something.
+# Absent = "current", and is silent. A declared value that does not match the standard's
+# schema_version is reported YELLOW naming both — Rite keeps no old rule sets and therefore
+# never honours a pin, because a compatibility promise it cannot keep would turn a visible gap
+# into a silent wrong answer. Rite tracks its own standard by definition, so a value here could
+# only ever be noise or a lie.
 
 # The project's own stage, from [idea, spec, build, polish, shipped, maintain, archived].
-# It is the ONLY remaining consumer of a stage value (d-drop-claims-match-stage removed the
-# other), and it gates exactly one thing: LICENSE becomes REQUIRED at `shipped`.
-# `build` is the honest value — the plugin runs and is installed, but nothing is published and
-# no namespace is claimed. Declaring `shipped` to turn the LICENSE check green would be lying
-# to our own checker, which is the failure mode this project exists to prevent.
+# As of 2026-09-10 this line GATES THE WHOLE STANDARD, not one artifact: every artifact declares
+# required_from_stage, and a project is not asked for what its stage has not reached
+# (d-stage-is-the-gating-axis). At `build` that means tier 0 + tier 1; LICENSE waits for
+# `shipped`.
+#
+# Deleting this line does NOT make the standard lenient — it falls back to the older, stricter
+# tier-based requirement. Absence is not a claim.
+#
+# `build` is the honest value: the plugin runs and is installed, the namespace is claimed and
+# main is pushed, but the repository is PRIVATE and nothing is published. Declaring `shipped`
+# to turn the LICENSE check green would be lying to our own checker, which is the failure mode
+# this project exists to prevent. It advances in the same commit that makes the repo public —
+# d-stage-advances-when-the-repo-goes-public.
 stage: build

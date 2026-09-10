@@ -184,9 +184,89 @@ with tempfile.TemporaryDirectory() as d:
     if verdicts(out, "claims_match_filesystem", "docs/ROADMAP.yaml") != ["RED"]:
         fail("a present-claim differing only in case must fail on every platform")
 
+# ── stage as the gating axis ────────────────────────────────────────────────
+# Measured on 2026-09-10: an empty project declaring `stage: idea` scored 9 RED and 0 GREEN,
+# because stage gated one artifact and tier gated the rest. A tool that opens by listing
+# everything you have not done yet is uninstalled the next day — d-stage-gates-the-standard.
+
+
+def reds_for(out: str) -> list[str]:
+    return [ln.strip() for ln in out.splitlines() if ln.strip().startswith("RED")]
+
+
+def bare_project(tmp: pathlib.Path, marker: str) -> str:
+    """A project carrying nothing but the marker."""
+    (tmp / ".rite.yaml").write_text(marker, encoding="utf-8", newline="\n")
+    return run(tmp)
+
+
+# 11. At `idea` a project is asked for LOG and HANDOFF, and for nothing else.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = bare_project(tmp, "stage: idea\n")
+    reds = reds_for(out)
+    if len(reds) != 2:
+        fail(f"stage idea must require exactly 2 artifacts, got {len(reds)}: "
+             f"{[r[:60] for r in reds]}")
+    if not (any("LOG.md" in r for r in reds) and any("HANDOFF.md" in r for r in reds)):
+        fail(f"stage idea must require LOG.md and HANDOFF.md; got {[r[:60] for r in reds]}")
+
+# 12. THE ANTI-LOOPHOLE CASE, and the one that matters most. A marker with no stage must keep
+#     the OLD tier-based behaviour. If absence meant "require nothing", deleting one line from
+#     .rite.yaml would switch the standard off.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = bare_project(tmp, "# no stage declared\n")
+    reds = reds_for(out)
+    if len(reds) != 9:
+        fail(f"a marker with NO stage must still require all of tier 0+1 (9 artifacts), "
+             f"got {len(reds)} — absence must never be a way to silence the standard")
+
+# 13. A not-yet-due artifact is NA and says WHY. It must not look like one that passed, and
+#     must not look like one that failed.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = bare_project(tmp, "stage: idea\n")
+    arch = [ln for ln in out.splitlines() if "docs/ARCHITECTURE.md" in ln]
+    if not arch or not all(ln.strip().startswith("NA") for ln in arch):
+        fail("an artifact below its required stage must be NA, never RED")
+    if not any("not required before stage build" in ln for ln in arch):
+        fail("a stage-deferred artifact must name the stage that would require it")
+
+# 14. A DECLARATION BEATS TIER. LICENSE is tier 2 and required from `shipped`; an earlier gate
+#     let `tier >= 2` short-circuit the stage, so it stayed optional at every stage and a
+#     project could publish with no licence — the exact failure the field exists to prevent.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = bare_project(tmp, "stage: shipped\n")
+    lic = [ln for ln in out.splitlines() if "LICENSE" in ln and "file_present" in ln]
+    if not lic or not lic[0].strip().startswith("RED"):
+        fail("LICENSE must be RED at stage shipped — tier must not override a declared stage")
+
+# 15. Ruling A: a declared standard_version that does not match is YELLOW, and names both.
+#     Never RED: Rite keeps no old rule sets, so it cannot honour a pin.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = bare_project(tmp, "stage: idea\nstandard_version: \"0.0.1\"\n")
+    sv = [ln.strip() for ln in out.splitlines() if "standard_version" in ln]
+    if not sv or not sv[0].startswith("YELLOW"):
+        fail("a standard_version mismatch must be YELLOW, never RED and never silent")
+    elif "0.0.1" not in sv[0]:
+        fail("the standard_version finding must name the version the project targets")
+
+# 16. ...and a project that declares no standard_version is silent about it. The common case
+#     must not be nagged.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = bare_project(tmp, "stage: idea\n")
+    if any("standard_version" in ln for ln in out.splitlines()):
+        fail("a project declaring no standard_version must not be told anything about it")
+
 if failures:
     print(f"\n{len(failures)} FAILED")
     sys.exit(1)
 print("PASS  unparseable is RED and named; absent stays NA; a broken marker is reported;\n"
-      "      declared claims are checked against the tree and an undeclared one is nudged.")
+      "      declared claims are checked against the tree and an undeclared one is nudged;\n"
+      "      stage gates what is required, a declaration beats tier, and no stage means no\n"
+      "      leniency.")
 sys.exit(0)

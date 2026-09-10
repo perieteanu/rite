@@ -63,7 +63,7 @@ inception:
 current_state: >
   Stage `build`, declared in .rite.yaml. Verified against the filesystem, the harness and
   three operating systems on 2026-09-10.
-  Rite is an installed, running plugin at version 0.6.0 — rite@rite, four skills reachable as
+  Rite is an installed, running plugin at version 0.7.0 — rite@rite, four skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -71,8 +71,17 @@ current_state: >
   EIGHT GATES RUN, AND CI NOW RUNS THEM: standard, protocol, riteyaml differential, hook output
   shape, checker verdicts, portability rules, installed-copy currency, and rite-check.py against
   this project itself — that last one was never counted in the list of six this project told
-  itself for three days. rite-check.py reports 61 checks on this project, 0 RED, 55 GREEN,
+  itself for three days. rite-check.py reports 61 checks on this project, 0 RED, 56 GREEN,
   covering 57 of 64 declared tests.
+  STAGE IS NOW THE GATING AXIS OF THE STANDARD — d-stage-is-the-gating-axis. Every artifact
+  declares required_from_stage, and a project is not asked for what its stage has not reached:
+  idea wants LOG and HANDOFF, spec adds README/CLAUDE.md/MISSION/ROADMAP, build adds
+  ARCHITECTURE/CONVENTIONS/DECISIONS, shipped adds LICENSE. Measured before: an empty project
+  declaring `idea` scored 9 RED and 0 GREEN, because declaring a stage changed NOTHING — stage
+  gated one artifact and tier gated the other twelve. Measured after: 2 RED, and 0 RED once LOG
+  and HANDOFF exist. A DECLARATION BEATS TIER, and a project declaring NO stage keeps the older
+  stricter tier behaviour in full — absence is not a claim, and deleting one line must never be
+  the way to switch the standard off.
   CI IS HONEST ABOUT WHAT IT DOES NOT COVER. .github/workflows/gates.yml fires on every push,
   but only SIX of the eight gates can run on a runner: the riteyaml differential needs PyYAML
   as its oracle and CI does not install it, and the installed-copy test needs an installed
@@ -107,14 +116,17 @@ current_state: >
   is PRIVATE. A private push is not publishing: it exists so CI has somewhere to run, and
   d-publish-main-in-full-no-export governs the public one, which has not happened. No one but
   this machine has run Rite.
-  near_term is no longer empty: as of 2026-09-10 it holds THE ORDERED PATH FROM PRIVATE TO
-  PUBLIC — ci-portability-matrix (done), setup-hook-scaffolding, readme-for-a-stranger,
-  publish-github. It was empty for one day, on purpose, and what filled it was a decision about
-  direction rather than a queue of leftovers.
+  near_term is THE ORDERED PATH FROM PRIVATE TO PUBLIC and now holds three items:
+  setup-hook-scaffolding, readme-for-a-stranger, publish-github. ci-portability-matrix closed
+  the same day it was queued. Both of publish-github's blockers are settled — a project may
+  declare standard_version and a mismatch is YELLOW rather than honoured
+  (d-standard-version-declared-never-honoured), and the stage advances to `shipped` in the same
+  commit that flips visibility (d-stage-advances-when-the-repo-goes-public), which is exactly
+  when the LICENSE check should fire.
   STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
-  source_plans_all_copied. No PostToolUse and none of the eight watchers. No template/ seed set,
-  so a project installing Rite on day one still meets a screen of RED — the reason
-  setup-hook-scaffolding is next.
+  source_plans_all_copied. No PostToolUse and none of the eight watchers. NO template/ SEED SET
+  — the gating that makes a day-one project quiet now exists, but the files it wants still have
+  to be written by hand, so setup-hook-scaffolding is the other half and is next.
   NOTE, because this paragraph is the standing example: the claims block above passed GREEN
   while every NUMBER in this text was stale. That is the declared limit of claims_match_filesystem
   working as specified — it checks paths, not counts — and it is why the block supplements the
@@ -308,9 +320,16 @@ near_term:
     - id: publish-github
       what: "Flip the repository to public"
       why: "MOVED FROM mid_term. One setting. Everything above exists to make it defensible."
-      blocked_on:
-        - "c-standard-version-policy — open, marked low, and its own text says it only bites once an external user exists. Publishing manufactures that user. Needs a ruling, not code."
-        - "the `stage` question: .rite.yaml says build, and LICENSE is required_from_stage:shipped, so today the LICENSE check reports NA on the very project that ships it. Decide what stage a published Rite declares."
+      unblocked_2026_09_10: >
+        BOTH blockers are settled and neither needed code beyond a check.
+        c-standard-version-policy is retired as settled by
+        d-standard-version-declared-never-honoured: a project may declare standard_version, a
+        mismatch is YELLOW, and Rite never runs an old rule set.
+        The stage question is settled by d-stage-advances-when-the-repo-goes-public: stage moves
+        to `shipped` in the SAME commit that flips visibility, which is exactly when the LICENSE
+        check should fire. So the publishing commit is not a one-line visibility change — it
+        also advances the stage and turns that check live.
+      still_needs: "setup-hook-scaffolding and readme-for-a-stranger, above."
       free_upside: "Actions minutes are unmetered on public repositories, so ci-portability-matrix gets cheaper the moment this happens."
 
 mid_term:

@@ -59,7 +59,30 @@ layers:
 stage_vocabulary:
   layer: core
   values: [idea, spec, build, polish, shipped, maintain, archived]
-  committed_from: spec   # the stage at which Tier 1 becomes required
+
+  # STAGE IS THE GATING AXIS. Each artifact declares `required_from_stage`; a project declaring
+  # an earlier stage is not asked for it, and its file_present reports NA naming the stage
+  # rather than RED. `tier` is now a grouping label and no longer decides what is required.
+  #
+  # Why: measured on 2026-09-10, an empty project declaring `stage: idea` scored 9 RED and 0
+  # GREEN, because stage gated exactly ONE artifact (LICENSE) and tier gated everything else.
+  # A tool that opens by listing everything you have not done yet is uninstalled the next day —
+  # d-stage-gates-the-standard. Under these declarations the same project is asked for two
+  # files, both of which the scaffolding creates.
+  #
+  # `committed_from: spec` was DELETED here on 2026-09-10. It claimed to be "the stage at which
+  # Tier 1 becomes required" while the Tier 1 artifacts recorded that this rule had been
+  # REPLACED by the .rite.yaml marker — dead metadata contradicting a live rule, on the very
+  # axis this redesigns. The per-artifact declarations subsume it. The objection that removed
+  # stage-gating on 2026-09-08, that Rite had no reliable way to READ a stage, is void: the
+  # marker declares it and the project is the only honest source.
+  no_stage_declared: >
+    THE THRESHOLDS DO NOT APPLY, and tier-based requirement stands as it did before. Absence is
+    not a claim. If a missing declaration meant "require nothing", deleting one line would
+    switch the standard off — a hole straight through the product. Declaring `idea` is an act
+    and earns the leniency; declaring nothing is not. This also keeps --force runs against
+    projects that have never opted in scoring exactly as they do today.
+
   local_mapping:
     source: "project-tracker projects.yaml -> per-project `stage` field"
     note: "Identical value set today; kept as a mapping so the two can diverge."
@@ -660,6 +683,7 @@ artifacts:
     path: "README.md"
     write_discipline: rewrite_only
     tier: 0
+    required_from_stage: spec
     layer: core
     answers: "What is this, and how does a human start?"
     audience: human
@@ -707,6 +731,7 @@ artifacts:
     path: "CLAUDE.md"
     write_discipline: rewrite_only
     tier: 0
+    required_from_stage: spec
     layer: core
     answers: "What must an agent know before touching this?"
     audience: agent
@@ -756,6 +781,7 @@ artifacts:
     path: "LOG.md"
     write_discipline: append_only
     tier: 0
+    required_from_stage: idea
     layer: core
     answers: "What happened, in order?"
     audience: both
@@ -793,6 +819,7 @@ artifacts:
     path: "docs/MISSION.md"
     write_discipline: rewrite_only
     tier: 1
+    required_from_stage: spec
     layer: core
     answers: "Why does this exist, and what is it deliberately not?"
     audience: both
@@ -820,6 +847,7 @@ artifacts:
     path: "docs/ARCHITECTURE.md"
     write_discipline: rewrite_only
     tier: 1
+    required_from_stage: build
     layer: core
     answers: "What lives where, what flows where, and who owns what?"
     audience: both
@@ -880,6 +908,7 @@ artifacts:
     path: "docs/CONVENTIONS.md"
     write_discipline: rewrite_only
     tier: 1
+    required_from_stage: build
     layer: core
     answers: "What formats and vocabulary does this project use?"
     audience: both
@@ -911,6 +940,7 @@ artifacts:
     path: "docs/DECISIONS.yaml"
     write_discipline: append_only
     tier: 1
+    required_from_stage: build
     layer: core
     answers: "What is settled, and must not be re-litigated?"
     audience: both
@@ -966,6 +996,7 @@ artifacts:
     path: "docs/ROADMAP.yaml"
     write_discipline: mixed
     tier: 1
+    required_from_stage: spec
     layer: core
     answers: "What is next, what is deferred, and how do I restart cold?"
     audience: both
@@ -1107,6 +1138,7 @@ artifacts:
     path: "HANDOFF.md"
     write_discipline: write_once
     tier: 0
+    required_from_stage: idea
     layer: core
     answers: "What must the next session know that the docs do not say?"
     audience: agent
@@ -1293,9 +1325,13 @@ artifacts:
         left visible rather than papered over.
       freeze_point: "at license choice. Re-licensing is a DECISIONS entry plus new file content, never an edit."
     tests:
+      # `rule: required_from_stage` was REMOVED here on 2026-09-10, as a consolidation rather
+      # than a loss. The engine now gates every artifact on required_from_stage, so file_present
+      # already reports "not required before stage shipped" — this test asserted the same fact
+      # a second time, in a second place, which is how two sources of truth begin. Same
+      # reasoning as d-drop-claims-match-stage.
       - level: exists
-        rule: required_from_stage
-        value: shipped
+        rule: file_present
       - level: populated
         rule: min_lines
         value: 5

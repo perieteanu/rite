@@ -1349,3 +1349,106 @@ decisions:
     chosen_by_user: true
     proposed_by: claude
 
+  - id: d-stage-is-the-gating-axis
+    date: "2026-09-10"
+    title: "Every artifact declares required_from_stage; tier stops deciding what is required"
+    context: >
+      d-stage-gates-the-standard accepted on 2026-09-09 that stage should gate the standard, and
+      left the mapping unspecified — the real work. Measured on 2026-09-10, an empty project
+      declaring `stage: idea` scored 9 RED and 0 GREEN. Declaring the stage changed NOTHING,
+      because stage gated exactly one artifact (LICENSE) while tier gated the other twelve.
+    decision: >
+      Each artifact declares `required_from_stage`. The engine gates on it, so an artifact the
+      project has not reached is NA naming the stage rather than RED. `tier` becomes a grouping
+      label. The mapping: idea -> LOG, HANDOFF. spec -> README, CLAUDE.md, MISSION, ROADMAP.
+      build -> ARCHITECTURE, CONVENTIONS, DECISIONS. shipped -> LICENSE. PLAN, CONCERNS and the
+      memory mirror declare nothing and stay optional forever.
+    rationale:
+      - >
+        NOTHING WAS INVENTED. required_from_stage already existed as an artifact field and an
+        implemented rule, used by LICENSE alone. This generalises the mechanism that was already
+        there rather than adding a second one beside it.
+      - >
+        `idea` STILL REQUIRING LOG AND HANDOFF IS THE ONE OPINIONATED CALL, and it is deliberate:
+        it says even a day-old project closes its sessions, which is Rite's entire claim. The
+        alternative — requiring literally nothing at idea — would make the plugin inert exactly
+        when a habit is being formed. Both files are created by the scaffolding, so day one
+        opens GREEN rather than on two REDs.
+      - >
+        THE OBJECTION THAT KILLED STAGE-GATING IS VOID. On 2026-09-08 Tier 1 was moved off stage
+        onto the marker because stage was "a stage Rite has no reliable way to read". The marker
+        now declares it, and the project is the only honest source there could be.
+    no_stage_declared: >
+      THE ANTI-LOOPHOLE, and the load-bearing half. A marker with no `stage` keeps the old
+      tier-based behaviour in full. Absence is not a claim: if a missing declaration meant
+      "require nothing", deleting one line would switch the standard off — a hole straight
+      through the product. Declaring `idea` is an act and earns the leniency. This also keeps
+      --force runs against projects that never opted in scoring exactly as before.
+    consequences:
+      - "Day one goes from 9 required artifacts to 2. Verified: an empty project at `idea` carrying only LOG and HANDOFF scores 0 RED."
+      - "Rite's own verdict does not move — `build` requires tier 0+1, all present, still 0 RED. The mapping must not grade its author on a curve."
+      - "stage_vocabulary.committed_from was DELETED. It claimed to be the stage at which Tier 1 becomes required while the Tier 1 artifacts recorded that rule as replaced — dead metadata contradicting a live rule, on the axis being redesigned."
+      - "The rule `required_from_stage` was deleted from the checker: the engine gate supersedes it, and two implementations of one decision is how they drift. LICENSE's standalone test became a plain file_present, like every other artifact."
+      - "A DECLARATION BEATS TIER, and getting that backwards was caught by a fixture rather than by review: an earlier gate asked `tier >= 2 or ...`, which let tier short-circuit the stage, so LICENSE stayed optional at EVERY stage — a project could publish with no licence, the exact failure the field exists to prevent. The stage-progression fixture expected 8 RED at `shipped` and saw 7."
+    chosen_by_user: true
+    proposed_by: claude
+
+  - id: d-standard-version-declared-never-honoured
+    date: "2026-09-10"
+    title: "A project may declare which standard it targets; a mismatch is reported, never honoured"
+    context: >
+      c-standard-version-policy, open since 2026-09-07 at severity low, asked how a project
+      declares WHICH version of the standard it targets and what happens on a bump. Its own text
+      said it "only bites after the first external user exists" — and publishing is precisely
+      what manufactures that user, so it blocked publish-github.
+    decision: >
+      `.rite.yaml` may declare `standard_version`. Absent means current, and is silent. A
+      mismatch against `schema_version` in spec/project-standard.yaml is YELLOW, naming both
+      versions. Rite NEVER runs an old rule set.
+    rationale:
+      - >
+        PINNING IS A PROMISE THIS PROJECT CANNOT KEEP. Running the rules a project pinned to
+        would mean shipping and maintaining every past standard forever. A one-person project
+        cannot honour that, and a compatibility promise that is not honoured is worse than none
+        — it converts a visible gap into a silent wrong answer.
+      - >
+        YELLOW RATHER THAN RED because the project is not broken; it is out of step, which is
+        information rather than a defect. RED would also make a standard bump retroactively fail
+        every project that had done nothing wrong.
+      - >
+        NO NEW VERSION SOURCE. The standard already carries schema_version. Adding a second
+        version field to describe the same document is how two sources of truth start.
+      - "Unrelated to the schema_version in document front matter, which versions the shape of that document, not the standard."
+    consequences:
+      - "c-standard-version-policy is retired as settled, with this as its outcome."
+      - "Clears one of the two blocked_on lines under publish-github."
+      - "The severity was wrong while it was open: `low` was true only until publication, and publication was the event that made it bite."
+    chosen_by_user: true
+    proposed_by: claude
+
+  - id: d-stage-advances-when-the-repo-goes-public
+    date: "2026-09-10"
+    title: "Rite declares `shipped` in the same commit that makes the repository public"
+    context: >
+      .rite.yaml declares `build`, and LICENSE is required_from_stage: shipped — so the LICENSE
+      check reports NA on the one project that actually ships a LICENSE. That left an open
+      question about what stage a published Rite declares, blocking publish-github.
+    decision: >
+      Stage advances to `shipped` in the SAME commit that flips the repository to public. Not
+      before. Rite stays `build` until then.
+    rationale:
+      - >
+        IT MAKES THE LICENSE CHECK FIRE EXACTLY WHEN IT MATTERS. A project that publishes without
+        a licence is the failure the rule exists for, and that moment is publication — not some
+        earlier point chosen to make a check go green.
+      - >
+        A STAGE IS A CLAIM ABOUT REALITY, NOT A DIAL. d-stage-gates-the-standard says the user
+        advances the stage when the project genuinely changes. Declaring `shipped` while private
+        would be lying to our own checker to turn a verdict green, which is the failure mode this
+        project exists to prevent — and .rite.yaml already says so in as many words.
+    consequences:
+      - "No code, and nothing changes today. Clears the second blocked_on line under publish-github."
+      - "The commit that publishes is therefore not a one-line visibility flip: it also moves stage and turns the LICENSE check live."
+    chosen_by_user: true
+    proposed_by: claude
+

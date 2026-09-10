@@ -69,9 +69,34 @@ class Ctx:
         self.marker = self._load_marker()
         self.is_git = (root / ".git").is_dir()
         self.today = dt.date.today()
+        # The project's own declared stage, and its position in the vocabulary. None when the
+        # marker declares none — see `no_stage_declared` in the spec: absence is not a claim,
+        # so the thresholds do not apply and tier-based requirement stands.
+        self.stage = (self.marker or {}).get("stage")
+        order = spec.get("stage_vocabulary", {}).get("values", [])
+        self.stage_index = order.index(self.stage) if self.stage in order else None
         self.thresholds = (self.marker or {}).get("thresholds") or {}
         self.disabled = set((self.marker or {}).get("disabled_checks") or [])
         self.fail_on = (self.marker or {}).get("fail_on", "red")
+
+    def not_yet_required(self, art: dict) -> str | None:
+        """Why this artifact is not required at the project's declared stage, or None.
+
+        Returns the reason so the caller can REPORT it. An artifact that is simply not due yet
+        must not look like one that passed, and must not look like one that failed either.
+        """
+        want = art.get("required_from_stage")
+        if want is None or self.stage_index is None:
+            # No declaration, or no declared stage. Both fall back to tier, which the caller
+            # applies. `no_stage_declared` in the spec is the reasoning for the second case.
+            return None
+        order = self.spec.get("stage_vocabulary", {}).get("values", [])
+        try:
+            if self.stage_index >= order.index(want):
+                return None
+        except ValueError:
+            return None
+        return f"not required before stage {want} — this project declares {self.stage}"
 
     def _load_marker(self):
         p = self.root / ".rite.yaml"
@@ -716,20 +741,11 @@ def _claims_match_filesystem(ctx, art, test):
     return GREEN, f"{n} claim(s) hold"
 
 
-@rule("required_from_stage")
-def _required_from_stage(ctx, art, test):
-    stage = (ctx.marker or {}).get("stage")
-    if stage is None:
-        return NA, "no stage declared — the only remaining consumer of a stage value"
-    order = ctx.spec.get("stage_vocabulary", {}).get("values", [])
-    want = test.get("value") or art.get("required_from_stage")
-    try:
-        needed = order.index(stage) >= order.index(want)
-    except ValueError:
-        return NA, f"stage {stage!r} not in the declared vocabulary"
-    if not needed:
-        return NA, f"not required before stage {want}"
-    return (GREEN, "present") if ctx.exists_exactly(art["path"]) else (RED, f"required from stage {want}")
+# `required_from_stage` was a RULE here until 2026-09-10, declared only by LICENSE. It is now
+# an engine gate applying to every artifact — Ctx.not_yet_required() — so keeping the rule as
+# well would be two implementations of one decision, which is how the two of them drift apart.
+# Deleted rather than left dead: this repo already carries required_any_of_sections, which is
+# implemented and declared by nothing, and one such is enough.
 
 
 def parse_failure(ctx, rel: str) -> str | None:
@@ -789,6 +805,18 @@ def check(root: Path, spec: dict,
     findings: list[Finding] = []
     declared = implemented = 0
 
+    # Which version of the standard this project targets. Absent means "current", which is the
+    # common case and is silent. A mismatch is YELLOW and never RED: Rite does not keep old
+    # rule sets, so it cannot honour a pin — and a compatibility promise it cannot honour is
+    # worse than none. Reporting the gap is the honest half. See d-standard-version-declared.
+    want_version = (ctx.marker or {}).get("standard_version")
+    have_version = spec.get("schema_version")
+    if want_version and have_version and str(want_version) != str(have_version):
+        findings.append(Finding(
+            YELLOW, "project", "fresh", "standard_version", ritefs.MARKER,
+            f"targets standard {want_version}; this is {have_version}. Rite runs the CURRENT "
+            f"rules — it keeps no old rule sets — so the gap is reported, never honoured"))
+
     for art in spec.get("artifacts", []):
         tier = art.get("tier", 9)
         actual, note = ctx.resolve(art["path"])
@@ -797,8 +825,24 @@ def check(root: Path, spec: dict,
             findings.append(Finding(YELLOW, "project", "populated", "canonical_name",
                                     actual, note))
         present = ctx.exists_exactly(art["path"])
-        # Tier 2/3 are optional: absent is NA, never a failure.
-        optional_absent = tier >= 2 and not present
+        # A DECLARATION BEATS TIER; tier is only the fallback. Where the artifact declares
+        # required_from_stage AND the project declares a stage, the stage decides outright:
+        # absent-and-not-yet-due is NA naming the stage, absent-and-due is RED. Tier is
+        # consulted only when one of the two declarations is missing — see the spec's
+        # `no_stage_declared`, since deleting one line from .rite.yaml must not silence the
+        # standard.
+        #
+        # Getting this wrong once is instructive: an earlier version asked `tier >= 2 or ...`,
+        # which let tier short-circuit the stage. LICENSE is tier 2 and required from `shipped`,
+        # so it stayed optional at EVERY stage and a project could publish with no licence —
+        # the exact failure required_from_stage was introduced to prevent. Caught by the stage
+        # progression fixture expecting 8 at `shipped` and seeing 7.
+        stage_note = ctx.not_yet_required(art)
+        stage_decides = art.get("required_from_stage") is not None and ctx.stage_index is not None
+        if stage_decides:
+            optional_absent = stage_note is not None and not present
+        else:
+            optional_absent = tier >= 2 and not present
 
         # A present file that cannot be parsed is a RED in its own right, reported ONCE.
         # Its remaining tests are not run, and say so in one line rather than as a cascade
@@ -848,7 +892,7 @@ def check(root: Path, spec: dict,
                 continue
             if optional_absent:
                 findings.append(Finding(NA, "project", level, rule_name, art["path"],
-                                        f"tier {tier}, not present — optional"))
+                                        stage_note or f"tier {tier}, not present — optional"))
                 continue
 
             fn = RULES.get(rule_name)
