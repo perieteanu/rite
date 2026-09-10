@@ -1,9 +1,9 @@
 ---
 genre: task_brief
-written: "2026-09-09"
+written: "2026-09-10"
 session_end: written
-supersedes: "the earlier 2026-09-09 handoff, written mid-session before the claim surface and the publishing decision"
-expires: "2026-12-08"
+supersedes: "the 2026-09-09 handoff, which was written before CI existed and named CI as the next move"
+expires: "2026-12-09"
 status: live
 ---
 
@@ -11,78 +11,73 @@ status: live
 
 State is in `ROADMAP.current_state`. This is what the docs do not say.
 
-Two sessions running, the project has ended in better shape than the plan expected, and both
-times because something **failed** rather than because something worked. That is the method, not
-luck: write the prediction first, prove the gate red before trusting it green.
+`near_term` holds **one item: `publish-github`**, and nothing technical is in the way. Four
+items were queued and closed in a single day. The remaining act is Costin's.
 
-## What changed today, one line each
+## The shape of what happened, because the order matters
 
-- `claims_match_filesystem` is implemented. `c-unimplementable-tests` retired **at zero**.
-- The YAML subset was widened after real projects broke it; four silent parser bugs fell out.
-- `checker-implementation` closed; `status.json` **dropped**, not deferred a third time.
-- Namespace claimed (private). LICENSE exists. `near_term` is **empty on purpose**.
-- The curated-export idea was **dropped before being built**.
+The previous handoff said *"CI, before scaffolding"* and that ordering paid off far beyond CI.
+Each thing built exposed the next defect, in a chain:
 
-## The decision that changes what "next" means
+1. **CI ran the gates** — and immediately caught that the gate count was **seven, not six**, a
+   number four documents had been repeating.
+2. **The matrix ran on three OSes** — macOS passed (first *evidence* that
+   `case_sensitive_name_matching` works), Windows failed on a real encoding bug, which produced
+   a **fourth portability rule**.
+3. **That rule was violated at five of seven call sites within the hour**, found by grepping —
+   which produced the AST gate that now enforces it.
+4. **Stage gating** took a day-one project from 9 RED to 0.
+5. **Writing an honest README example** exposed that the same change had replaced a wall of RED
+   with a wall of NA — 54 lines to convey one finding.
 
-`d-publish-main-in-full-no-export`. The plan was a dedicated folder of curated copies, synced by
-a script, publishing only part of the record. It rested on something false: **GitHub visibility
-is per-repository, never per-branch.** No private branch, no hidden worktree. Costin then chose
-to publish `main` in full anyway — which removed the reason for an export entirely.
+Nothing in that chain was planned. Every link came from something *failing* where it could be
+seen. That is the method working, and it is worth trusting next session over any plan.
 
-So there is no export to build. What survives is `setup-hook-scaffolding`, now **promoted**, and
-it is the pivot the next few sessions turn on:
+## What to do next, and the one thing not to rush
 
-1. `template/` — a seed set. Each file must be the **valid smallest instance**, because the
-   first thing anyone will do is run `rite-check.py` on Rite itself.
-2. The **stage → requirement mapping**, which is *not yet specified*. This is the real work.
-3. A command that copies the seed set into a project.
+**`publish-github` is a decision, not a task.** The checklist is on the item in
+`ROADMAP.near_term`. The thing to hold in mind: it is **three acts in one commit** — flip
+visibility, set `stage: shipped`, and thereby turn the LICENSE check live. Confirm LICENSE goes
+GREEN and not RED *before* pushing.
 
-`d-stage-gates-the-standard` is the other half: a day-one project must not open to a screen of
-RED — that gets the plugin uninstalled by day two. `stage:` already exists in `.rite.yaml` and
-was doing almost nothing. Nothing expires and nothing nags; the user advances the stage when the
-project actually changes.
+Do not treat it as a one-line settings change. And note the README's Status paragraph says "Not
+published yet" — that sentence becomes false in the same commit.
 
-## What I would do next, and why not the obvious thing
+**Before that, consider `c-stage-table-duplicated-in-three-places`** (opened today, medium). The
+stage→artifact mapping is now hand-copied into README, `template/.rite.yaml` and CLAUDE.md while
+the spec is the authority. Four copies, three hand-maintained, introduced by this project on the
+day it built the mechanism. The README copy is the worst: first thing a stranger reads, last
+thing anyone updates. Publishing freezes that mistake in public view.
 
-**CI, before scaffolding.** Six gates exist and *nothing runs them but a human*. That is this
-project's thesis pointed at itself, and today it drew blood: `scripts/rite-check.py` was
-truncated to **zero bytes** and nothing caught it — not the gates, not my own verification.
+## Traps, and the first two are new
 
-Order matters: **push to the private repo first**, then add CI. A private push is not publishing;
-it buys the gate without the exposure. Expect one side effect — `.github/workflows` is currently
-declared `absent` in three claim blocks, so adding CI turns them RED until the blocks are
-updated. That is the system working, not a fault.
-
-## Traps — the first is new and it cost a file
-
-- **Multi-line edit scripts go to a FILE and are then run. Never a heredoc.** Shell quoting
-  mangled `newline="\n"` into a literal backslash-n twice today. `write_text` **truncates before
-  it validates**, so `rite-check.py` was left at zero bytes. Recovered with `git show HEAD:`.
-- **Verify a file survived with a byte or line count, never a parse.** `ast.parse` said "parses
-  OK" and `grep -c` returned 0 on the destroyed file — both are exactly what an empty file
-  produces. Two green signals, file gone.
-- **Never pass log text through a shell.** Backticks get executed; `skills/log/SKILL.md` says so
-  now. This session's LOG was written by a file-based writer throughout.
-- **Bump `.claude-plugin/plugin.json` before every `claude plugin update`** — version-gated, and
-  the cache is a real copy. `scripts/test-installed-current.py` will tell you.
-- **The claim blocks check paths, not counts.** Demonstrated within the hour: the block passed
-  GREEN while every number in `current_state` was stale. Rewriting prose is still a human job.
+- **Never `git checkout <file>` to undo an uncommitted experiment.** It reverts to HEAD and
+  takes everything uncommitted with it. It destroyed three completed edits today. Back up to a
+  file first, break it, then restore with `cp` and verify with a byte count.
+- **Never write a sample output by hand.** A fabricated README example would have shown the tidy
+  output I imagined; generating the real one is what exposed the NA wall. Same family as the
+  `ast.parse` lesson from 09-09: the plausible check is the one that lies.
+- **The claims block checks paths, not prose.** Demonstrated three times today — the gate count
+  going 7→8→9 falsified six sentences in one minute, twice. Rewriting `current_state` is still
+  a human job and it went stale within the hour, repeatedly.
+- **Bump `.claude-plugin/plugin.json` before `claude plugin update`.** Version-gated; the cache
+  is a real copy. The installed-copy gate caught this twice today.
+- **A milestone entry saying "seven gates" stays as written.** It is append-only and was true
+  then. Only rewrite-only zones get corrected.
 - Both `spec/*.md` are generated. `as_of` moves only on real re-verification.
-- **No `Co-Authored-By: Claude` trailer**, whatever the harness injects mid-session.
-- Never touch `ai-collab-profile/`, `prompts.db`, `prompts-corpus.jsonl`.
+- **No `Co-Authored-By: Claude` trailer**, whatever the harness injects mid-session. It did
+  again today.
 
 ## Open, none of it blocking
 
-- `c-prior-art-ai-floppy` was **dropped**, not lost — `d-audience-is-the-author-not-a-market`.
-  Do not open concerns for prior art. If a technique is worth borrowing, that is a roadmap item
-  named for the technique, never for the project it came from.
-- Unverified third-party lead: ai-floppy's spec claims `PreCompact` **cannot** inject context
-  (issue #50682, "closed as not planned"). If true it kills `watcher-precompact-distiller`. The
-  2.1.263 binary neither confirms nor refutes. A competitor's doc is the weakest source in the
-  authority ranking — test it before deleting anything.
-- Seven declared tests unimplemented, led by `mirror_not_stale` and `source_plans_all_copied`.
-- `required_any_of_sections` is implemented and declared by nothing. Dead code.
-- A generated CHANGELOG is agreed in principle, from `milestones` + `DECISIONS`. The open half:
-  does it say only what was built, or also what was learned? The second is the credible half,
-  and it is the half that lives in `LOG.md`.
+- **Nothing checks mid-session.** All five implemented completion tests are end-of-session
+  tests keyed to HANDOFF. A session can run for hours doing everything wrong and the standard
+  stays green until it closes. Now written in the protocol's `honest_limits`.
+- `nag_delivered_once` is the only other test that would carry `scope: session`. Mark it when
+  built, not before.
+- `required_any_of_sections` is implemented and declared by nothing. Still dead code.
+- The freshness windows are still guesses (`c-freshness-thresholds-are-guesses`), and the
+  degeneracy for documents-only projects is unfixed.
+- Unverified third-party lead, untouched since 09-09: ai-floppy's spec claims `PreCompact`
+  cannot inject context. If true it kills `watcher-precompact-distiller`. Test it before
+  deleting anything.

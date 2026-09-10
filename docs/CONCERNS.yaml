@@ -19,6 +19,29 @@ status: current
 
 concerns:
 
+  - id: c-stage-table-duplicated-in-three-places
+    title: "The stage->artifact mapping is now hand-copied into README and template/.rite.yaml"
+    status: open
+    severity: medium
+    opened: "2026-09-10"
+    what: >
+      spec/project-standard.yaml is the authority: each artifact declares required_from_stage.
+      On 2026-09-10 that mapping was ALSO written out as prose in README.md (a Markdown table
+      for newcomers), in template/.rite.yaml (a comment block explaining what each stage asks
+      for), and in CLAUDE.md. Four copies, three of them hand-maintained.
+    why_it_matters: >
+      This is precisely the failure the project exists to attack, introduced by the project, on
+      the same day the mechanism was built. Move one artifact to a different stage and three
+      documents become quietly wrong — and the claim surface will not catch it, because
+      claims_match_filesystem checks PATHS, not prose. The README copy is the worst of the
+      three: it is the first thing a stranger reads and the last thing anyone thinks to update.
+    evidence: "The gate count going 7 -> 8 -> 9 falsified six sentences in one minute, twice today. A table is the same failure with more rows."
+    proposal:
+      - "Generate the README table from the spec, the way PROJECT-STANDARD.md already is — the renderer exists and this is what it is for."
+      - "Or add a check: every stage named in a prose table must match the artifact's declared required_from_stage."
+      - "The template/.rite.yaml comment is the least dangerous copy, since a scaffolded project's marker is a snapshot the user then owns. It may be acceptable to leave it and say so."
+    do_not: "Leave all three hand-maintained and rely on remembering. That is the rule with no completion test, in the repository whose thesis is that such rules fail."
+
   - id: c-plan-attribution
     title: "A plan in ~/.claude/plans has no project attribution"
     status: open

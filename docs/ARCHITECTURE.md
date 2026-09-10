@@ -96,6 +96,13 @@ declaration beats tier, and `tier` is now a grouping label plus the fallback for
 declares no stage — where the older, stricter tier behaviour applies in full, because absence is
 not a claim and deleting one line must not silence the standard. See `d-stage-is-the-gating-axis`.
 
+**Stage-deferred checks are collapsed in the report, not dropped.** A project at `idea` produced
+54 printed lines to convey one finding, 46 of them "not required before stage X" — stage gating
+had replaced a wall of RED with a wall of NA. They are now summarised as one counted line per
+stage, naming the artifacts waiting there. They remain in the findings list and in the NA total:
+collapsing is a display choice, and the moment it changes a count it is a verdict change in
+disguise. See `d-stage-deferred-checks-are-collapsed`.
+
 Built, as of 2026-09-10:
 
 ```
