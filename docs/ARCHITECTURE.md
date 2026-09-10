@@ -155,10 +155,27 @@ CI, as of 2026-09-10 — the gates stop depending on someone remembering:
                        list with scripts/riteyaml.py, so CI exercises Rite's own parser.
 ```
 
-**A skip is never folded into green.** Three gates cannot run on a runner — `test-riteyaml.py`
-(PyYAML is its oracle and CI does not install it), `test-installed-current.py` (a runner has no
-installed plugin) and `test-mirror-port-parity.py` (a runner has no copy of the script Rite
-ported from) — so the runner prints `10 of 13 gates ran` and names what was not enforced.
+**A skip is never folded into green.** The runner names what it could not enforce, rather than
+showing an unqualified green:
+
+<!-- rite:generated gate-list -->
+| gate | what it holds | on a runner |
+|---|---|---|
+| `standard` | PROJECT-STANDARD.md still matches project-standard.yaml | runs |
+| `protocol` | SESSION-PROTOCOL.md still matches session-protocol.yaml | runs |
+| `blocks` | every rite:generated block still matches its source — the stage table, and the gate counts and list fed from this file | runs |
+| `riteyaml` | riteyaml parses this project's YAML identically to PyYAML | **skips** |
+| `hook-shape` | the SessionStart hook nests its verdict under hookSpecificOutput | runs |
+| `verdicts` | unparseable is RED, absent stays NA, and a false claim is caught | runs |
+| `portability-rules` | UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no hardcoded python3 | runs |
+| `stage-table` | no document restates the stage mapping outside a rite:generated block | runs |
+| `mirror-port-parity` | rite's memory mirror still renders identically to the script it ported | **skips** |
+| `copy-attribution` | a plan is attributed by authorship — a Write or ExitPlanMode naming it — never by mention | runs |
+| `scaffold` | a scaffolded project opens 0 RED / 0 YELLOW, and the seed never overwrites | runs |
+| `installed-copy` | the installed plugin matches this working tree, by version and by content | **skips** |
+| `self-check` | rite passes its own standard — 0 RED, every declared claim checked against the tree | runs |
+<!-- /rite:generated -->
+
 That is `rite-check.py`'s own *NA, never silence* rule applied one level up, to the gates
 instead of to the checks. A gate exiting 2 without declaring `skip_means` is treated as a
 FAILURE, because an undeclared skip that reads as success is the exact shape of the problem.

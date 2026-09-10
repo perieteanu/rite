@@ -164,7 +164,10 @@ file_format:
 # mechanism it describes was built — four copies, three hand-maintained, introduced by the
 # project whose thesis is that such copies rot (c-stage-table-duplicated-in-three-places).
 #
-# A block names its generator and its targets. `render-standard.py --blocks` fills every one;
+# A block names its generator, its targets, and optionally the `source_file` it generates FROM
+# (default: this file). The gate blocks are fed from .github/gates.yaml, because that is the
+# one home for the gate list and a generator reaching in here for it would recreate the very
+# copy it exists to remove. `render-standard.py --blocks` fills every one;
 # `--blocks --check` fails on any that has drifted, and that is the completion test. The
 # markers are inert to both Markdown and YAML, so a rendered README shows the table and a
 # parsed .rite.yaml sees comments.
@@ -195,6 +198,28 @@ generated_blocks:
           Its copy was DELETED on 2026-09-10 rather than generated. The mapping was a prose
           sentence mid-bullet, and a marker block there would have forced a table into a
           document that is dense prose by design. Removing a copy beats mechanising it.
+
+    - id: gate-counts
+      what: "How many gates run, how many skip on a runner, and why — one sentence"
+      source: "gates[] and gates[].skip_short in .github/gates.yaml"
+      source_file: ".github/gates.yaml"
+      targets:
+        - path: README.md
+          style: md
+      not_targeted:
+        CLAUDE.md and ROADMAP.current_state: >
+          Their copies were DELETED on 2026-09-10 rather than generated. Neither reader needs
+          the number — an agent reading CLAUDE.md and a session reading current_state both want
+          to know WHERE the gates are declared, which is more durable than how many there are.
+          Only the README's audience, a stranger deciding whether to care, is served by a count.
+
+    - id: gate-list
+      what: "Every gate, what it holds, and whether it runs on a CI runner"
+      source: "gates[] in .github/gates.yaml"
+      source_file: ".github/gates.yaml"
+      targets:
+        - path: docs/ARCHITECTURE.md
+          style: md
 
 # ── write discipline (CORE) ──────────────────────────────────────────────────
 # How a file may legally be changed. Declared per artifact, because "edit the docs" means
