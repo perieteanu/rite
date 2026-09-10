@@ -38,7 +38,14 @@ claims:
     - LICENSE
     - scripts/rite-check.py
     - scripts/rite_copy.py
+    - scripts/rite_preflight.py
+    - scripts/rite_watch.py
+    - scripts/riterules.py
+    - scripts/ritededup.py
+    - template/checks.yaml
     - scripts/test-copy-attribution.py
+    - scripts/test-preflight-port-parity.py
+    - scripts/test-watch-discipline.py
     - scripts/test-mirror-port-parity.py
     - scripts/test-stage-table-guard.py
     - docs/session-scripts
@@ -74,7 +81,7 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin at version 0.16.0 — rite@rite, six skills reachable as
+  Rite is an installed, running plugin at version 0.20.0 — rite@rite, six skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -179,10 +186,17 @@ current_state: >
   covering the POST and the project standard, with a ported dedup that Rite's own hook never had.
   Costin's preflight still runs beside it, as the mirror does; retiring it is his call.
   STILL MISSING: ONE declared rule is unimplemented, deleted_ids_appear_in_milestones. The
-  checker's coverage line now reads 61 of 62: `optional` markers were being counted in the
+  checker's coverage line now reads 62 of 63: `optional` markers were being counted in the
   denominator as rules awaiting implementation, which understated the checker by four and had
-  four documents repeating 'seven declared tests unimplemented' for days. None of the eight
-  watchers; the PostToolUse hook exists but does one job, refreshing the memory mirror.
+  four documents repeating 'seven declared tests unimplemented' for days.
+  THE FIRST WATCHER EXISTS — one of eight. scripts/rite_watch.py reports an append-only file
+  rewritten and a LOG entry dated in the future, on PostToolUse, silent otherwise. It closes
+  the gap honest_limits named: every implemented completion test was an end-of-session test.
+  It absorbed c-log-timestamps-must-be-machine-read, and scripts/riterules.py was extracted so
+  the watcher and the checker share one predicate rather than two free to disagree.
+  no_future_timestamps carries `scope: local_clock` and CI excludes it: LOG timestamps have no
+  timezone, so the question is only answerable on the machine that wrote them. CI proved that
+  on the first push by flagging 67 honest entries on three UTC runners.
   ADOPTING RITE NOW OPENS ON GREEN. /rite:init seeds .rite.yaml, LOG.md and HANDOFF.md from
   template/ and a scaffolded project scores 0 RED, 0 YELLOW, 8 GREEN. It writes nothing beyond
   stage `idea` on purpose: a document nobody has written cannot be seeded honestly, so the

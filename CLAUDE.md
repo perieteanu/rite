@@ -181,9 +181,11 @@ What is genuinely not built, as of 2026-09-10:
   per gate as `skip_means`, and is not enumerated here for the same reason the count is not.
   The runner reports that coverage instead of showing an unqualified green — a skip is never
   folded into a pass. It runs on **ubuntu, macos and windows** with `fail-fast: false`.
-- **None of the eight watchers.** The `PostToolUse` hook itself now exists — added 2026-09-10
-  with the copier port — but it does one job, refreshing the memory mirror when a memory file
-  is written. `watcher-write-discipline` and the other seven are unbuilt.
+- **ONE of the eight watchers.** `watcher-write-discipline` is built — `scripts/rite_watch.py`,
+  PostToolUse, reporting an append-only file rewritten or a LOG entry dated in the future, and
+  silent otherwise. The other seven are unbuilt, and **two have lost their premise**:
+  `watcher-plan-copy-on-create` bought attribution that transcript-reading now does exactly,
+  and `watcher-precompact-distiller` still rests on an unverified claim about `PreCompact`.
 - **Both ports are done.** `claude-mirror-memory.py` is `scripts/rite_copy.py`; `preflight.py`
   and `hookdedup.py` are `scripts/rite_preflight.py` and `scripts/ritededup.py`, with config at
   `${CLAUDE_PLUGIN_DATA}/checks.yaml`. Costin's originals deliberately keep running beside
