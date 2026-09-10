@@ -1,6 +1,6 @@
 ---
 schema_version: "1.0.0"
-as_of: "2026-09-09"
+as_of: "2026-09-10"
 status: current
 # The file tree below is a claim about the repository, and this is the falsifiable half of it.
 # ARCHITECTURE is must_be_current and rotted hardest: on 2026-09-08 it omitted the checker
@@ -10,8 +10,10 @@ claims:
   absent:
     - scripts/preflight.py
     - scripts/status.json
-    - .github/workflows
   present:
+    - .github/workflows/gates.yml
+    - .github/gates.yaml
+    - .github/run-gates.py
     - scripts/rite-check.py
     - scripts/riteyaml.py
     - scripts/ritefs.py
@@ -82,12 +84,12 @@ docs/
 Root: `README.md` and `CLAUDE.md` (rewrite-only), `LOG.md` (append-only), `HANDOFF.md`
 (write-once, tier 0 — always present, `genre: none` when there is nothing to hand off).
 
-Built, as of 2026-09-08:
+Built, as of 2026-09-10:
 
 ```
 scripts/
   rite-check.py      THE CHECKER. Reads spec/project-standard.yaml and runs the completion
-                     tests. 54 checks on this project; 49 of 57 declared tests implemented.
+                     tests. 61 checks on this project; 57 of 64 declared tests implemented.
   riteyaml.py        Stdlib-only parser for the YAML subset this project uses. 358 lines.
                      REFUSES rather than guesses on anything outside the subset.
   test-riteyaml.py   Differential test against PyYAML as ORACLE, not dependency.
@@ -95,10 +97,32 @@ scripts/
                      case_sensitive_name_matching; rite-check and both hooks route through it.
   test-hook-output.py  Contract test: the SessionStart hook's stdout must nest its verdict
                      under hookSpecificOutput. Asserts SHAPE, not content — see below.
+  test-checker-verdicts.py  The checker's own test: unparseable is RED, absent stays NA, a
+                     broken marker is reported, and a false claim is caught.
   test-installed-current.py  Contract test: the INSTALLED copy must match this working tree,
                      by version and by content. Skips where Rite is not installed.
 .rite.yaml           The opt-in marker. Presence is the signal; empty would be valid.
 ```
+
+CI, as of 2026-09-10 — the gates stop depending on someone remembering:
+
+```
+.github/
+  workflows/gates.yml  push to main, pull_request, workflow_dispatch. ubuntu-latest only.
+  gates.yaml           THE GATE LIST — id, command, and what a skip means. The single home
+                       for it; this document describes the gates, it does not define them.
+  run-gates.py         Runs each gate and distinguishes 0 pass / 1 fail / 2 SKIP. Reads the
+                       list with scripts/riteyaml.py, so CI exercises Rite's own parser.
+```
+
+**A skip is never folded into green.** Two gates cannot run on a runner — `test-riteyaml.py`
+(PyYAML is its oracle and CI does not install it) and `test-installed-current.py` (a runner has
+no installed plugin) — so the runner prints `5 of 7 gates ran` and names what was not enforced.
+That is `rite-check.py`'s own *NA, never silence* rule applied one level up, to the gates
+instead of to the checks. A gate exiting 2 without declaring `skip_means` is treated as a
+FAILURE, because an undeclared skip that reads as success is the exact shape of the problem.
+`.github/` sits outside the four paths `test-installed-current.py` compares, so CI plumbing
+never forces a plugin version bump. See `d-ci-reports-its-own-coverage`.
 
 The plugin, as of 2026-09-08 — **the repo root IS the plugin**:
 

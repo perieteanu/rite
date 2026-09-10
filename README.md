@@ -71,9 +71,10 @@ the block above is a snapshot of it, and snapshots go stale.
 ## Not here yet
 
 No published release — the namespace is claimed but the repository is private, so nobody but
-its author has run this. There is no CI: the gates below exist and nothing runs them
-automatically. The `preflight.py` port and the continuous watcher layer do not exist, and seven
-of the standard's declared tests are still unimplemented.
+its author has run this. CI runs the gates on every push, but on **ubuntu only and without
+PyYAML**, so two of the seven skip there and the three portability rules the standard calls
+`correctness` are still enforced by nothing. The `preflight.py` port and the continuous watcher
+layer do not exist, and seven of the standard's declared tests are still unimplemented.
 See [`docs/ROADMAP.yaml`](docs/ROADMAP.yaml).
 
 <!-- rite:claims
@@ -81,10 +82,10 @@ See [`docs/ROADMAP.yaml`](docs/ROADMAP.yaml).
 # The prose above is prose; these are the parts of it a machine can falsify. When a sentence
 # here says a thing does not exist, name it, and the check fails the day that stops being true.
 absent:
-  - .github/workflows
   - scripts/preflight.py
   - scripts/status.json
 present:
+  - .github/workflows
   - scripts/rite-check.py
   - hooks/hooks.json
   - .claude-plugin/plugin.json

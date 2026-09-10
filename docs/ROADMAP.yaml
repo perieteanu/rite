@@ -18,7 +18,7 @@
 # which belongs to project-tracker (d-evolution-out-of-scope).
 ---
 schema_version: "1.0.0"
-as_of: "2026-09-09"
+as_of: "2026-09-10"
 status: current
 
 # current_state below is the project's most consequential claim about its own tree, and on
@@ -27,11 +27,13 @@ status: current
 # fail on their own the day they stop being true.
 claims:
   absent:
-    - .github/workflows
     - scripts/preflight.py
     - scripts/status.json
     - checks.yaml
   present:
+    - .github/workflows/gates.yml
+    - .github/gates.yaml
+    - .github/run-gates.py
     - .git
     - LICENSE
     - scripts/rite-check.py
@@ -66,9 +68,16 @@ current_state: >
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
   BOTH spec halves are written and self-gating; render-standard.py fails on drift in either.
-  SIX GATES RUN: standard, protocol, riteyaml differential, hook output shape, checker verdicts,
-  and installed-copy currency. rite-check.py reports 61 checks on this project, 0 RED, 56 GREEN,
-  covering 57 of 64 declared tests.
+  SEVEN GATES RUN, AND CI NOW RUNS THEM: standard, protocol, riteyaml differential, hook output
+  shape, checker verdicts, installed-copy currency, and rite-check.py against this project
+  itself — the seventh was never counted in the list of six. rite-check.py reports 61 checks on
+  this project, 0 RED, 56 GREEN, covering 57 of 64 declared tests.
+  CI IS HONEST ABOUT WHAT IT DOES NOT COVER. .github/workflows/gates.yml fires on every push,
+  but only FIVE of the seven gates can run on a runner: the riteyaml differential needs PyYAML
+  as its oracle and CI does not install it, and the installed-copy test needs an installed
+  plugin, which a runner never has. The runner reports "5 of 7 gates ran" and names the two,
+  rather than showing an unqualified green. Ubuntu only, so the three severity:correctness
+  portability rules are STILL enforced by nothing — ci-portability-matrix in mid_term.
   DOCUMENTS NOW DECLARE MACHINE-CHECKABLE CLAIMS. README, CLAUDE.md, ARCHITECTURE and this file
   carry `claims:` blocks of absent/present paths, checked on every run — d-claim-surface. That
   implemented claims_match_filesystem, the last test parked in c-unimplementable-tests, which is
@@ -80,12 +89,14 @@ current_state: >
   projects parse identically to PyYAML, where before 4 were refused and 3 parsed wrongly.
   Still stdlib only; PyYAML is imported nowhere.
   LICENSE exists, MIT, carrying no provenance header.
-  This is a git repo, 24 commits, nothing pushed anywhere.
-  near_term is EMPTY as of 2026-09-09 — every queued item closed, none invented to replace them.
+  This is a git repo, and as of 2026-09-10 main is PUSHED to github.com/perieteanu/rite, which
+  is PRIVATE. A private push is not publishing: it exists so CI has somewhere to run, and
+  d-publish-main-in-full-no-export governs the public one, which has not happened. No one but
+  this machine has run Rite.
+  near_term is EMPTY as of 2026-09-10 — every queued item closed, none invented to replace them.
   STILL MISSING: seven declared tests unimplemented, now led by mirror_not_stale and
-  source_plans_all_copied. No PostToolUse and none of the eight watchers. No CI — six gates
-  exist and nothing runs them but a human. The namespace github.com/perieteanu/rite is claimed
-  but PRIVATE and empty, so no one but this machine has ever run Rite.
+  source_plans_all_copied. No PostToolUse and none of the eight watchers. No macos/windows CI,
+  so every portability rule the spec marks severity:correctness is asserted and untested.
   NOTE, because this paragraph is the standing example: the claims block above passed GREEN
   while every NUMBER in this text was stale. That is the declared limit of claims_match_filesystem
   working as specified — it checks paths, not counts — and it is why the block supplements the
@@ -195,6 +206,26 @@ milestones:
       Its declared limit demonstrated itself within the hour: the claims block passed GREEN
       while every number in current_state was stale. It checks paths, not counts.
 
+  - id: ci-runs-the-gates
+    what: "main pushed to a private remote; CI runs the seven gates and reports its own coverage"
+    closed: "2026-09-10"
+    log_ref: "10-09-2026"
+    note: >
+      Not a near_term item — near_term was empty by design, and this came from the HANDOFF's
+      recommendation rather than from a queue. Recorded here on the same footing as
+      claim-surface, because milestones is the coarse record of what this project delivered.
+      The gate count was WRONG in every document that stated it: six was the number everyone
+      repeated, including the handoff, while rite-check.py against this project has been a
+      seventh gate all along and is the one that catches doc rot.
+      Two predictions were written before running and both held. The claim surface fired the
+      moment .github/workflows existed, naming FOUR files — the handoff had said three, so the
+      correction was proved by the checker rather than argued. And the runner's first real run
+      exited 1 on a genuine failure, which is better evidence than the planted break the plan
+      had scheduled; the planted test was dropped as redundant.
+      Deliberately narrow, by Costin's call: ubuntu only and no PyYAML in CI. Two of seven
+      gates therefore skip on a runner, and the runner says so on every run instead of showing
+      an unqualified green.
+
 near_term:
   label: "Next 1-3 sessions"
   # EMPTY ON PURPOSE as of 2026-09-09, not through neglect. Every item that was queued is
@@ -204,6 +235,19 @@ near_term:
   candidates: []
 
 mid_term:
+  - id: ci-portability-matrix
+    what: "Add macos-latest and windows-latest to the CI matrix"
+    why: >
+      spec/project-standard.yaml declares targets [linux, macos, windows] and THREE rules at
+      severity:correctness — case_sensitive_name_matching, generated_output_is_lf_only,
+      normalize_before_byte_comparison. Nothing tests any of them. The first says outright that
+      a repo carrying readme.md passes on macOS and fails on Linux, the same repo scoring two
+      verdicts; that is the standard's central promise, asserted and unverified. A rule with no
+      completion test is not a rule, which makes this the most on-thesis gap left in the repo.
+    cost: "a `strategy.matrix` block and one line of `runs-on`. The runner already needs nothing."
+    expect: "RED on the first run. ritefs.py exists BECAUSE that class of bug is real, and finding more is the point."
+    user_note: "deferred 2026-09-10 by Costin, to keep the CI session scoped. Recorded as a gap, not an omission."
+
   # ── the continuous layer (accepted 2026-09-08; see d-continuous-watcher-layer) ──
   - id: watcher-write-discipline
     what: "PostToolUse watcher on Write|Edit — flag any change to an existing line in an append-only file"
