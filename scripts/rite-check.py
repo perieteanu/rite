@@ -328,13 +328,31 @@ def _min_content_sections(ctx, art, test):
 
 @rule("required_any_of_sections")
 def _required_any_of(ctx, art, test):
+    """One of the declared topology sections, counting declared aliases.
+
+    THE ALIASES WERE BEING IGNORED. `section_aliases` sits in the same `structure:` block and
+    says "Summary" satisfies "Shape"; the rule compared against the primary names only, so a
+    document doing exactly what the spec permits would have been reported as missing all of
+    them. Never noticed, because until 2026-09-10 no artifact declared this rule and it had
+    never run on anything.
+    """
     text = ctx.read(art["path"])
     if text is None:
         return NA, "file absent"
-    want = (art.get("structure") or {}).get("required_any_of_sections") or []
+    structure = art.get("structure") or {}
+    want = structure.get("required_any_of_sections") or []
+    if not want:
+        return NA, "the artifact declares no required_any_of_sections"
+    aliases = structure.get("section_aliases") or {}
     have = {s.lower() for s in sections(text)}
-    return (GREEN, "satisfied") if any(w.lower() in have for w in want) \
-        else (YELLOW, "none of: " + ", ".join(want))
+    for primary in want:
+        accepted = [primary, *(aliases.get(primary) or [])]
+        if any(a.lower() in have for a in accepted):
+            return GREEN, f"{primary} present" if primary.lower() in have \
+                else f"satisfied by an alias of {primary}"
+    waived = structure.get("required_any_of_waived_when")
+    note = " — waived where the top-level keys ARE the topology" if waived else ""
+    return YELLOW, "none of: " + ", ".join(want) + note
 
 
 @rule("required_keys_present")
@@ -515,6 +533,61 @@ def _append_only(ctx, art, test):
         return NA, "requires revision history — file not tracked"
     return (GREEN, "additions only") if removed == 0 \
         else (RED, f"{removed} existing line(s) changed or removed")
+
+
+@rule("deleted_ids_appear_in_milestones")
+def _deleted_ids_appear(ctx, art, test):
+    """An id that left near_term must have become a milestone — or moved, not vanished.
+
+    THE LAST DECLARED RULE TO BE IMPLEMENTED. Deleting a closed item is the convention rather
+    than marking it done in place, and that is only safe if the item is PROMOTED rather than
+    erased. Without this check the convention was a rule with no completion test, which is the
+    one thing this project exists to abolish.
+
+    A DELETION IS NOT ALWAYS A CLOSURE, and the check would be wrong without that. Items
+    legitimately MOVE between lists: ci-portability-matrix, setup-hook-scaffolding and
+    publish-github all went mid_term -> near_term on 2026-09-10, which looks identical to a
+    deletion if only one list is read. So an id that left near_term is satisfied by appearing
+    in milestones OR in any other roadmap list.
+    """
+    if not ctx.is_git:
+        return NA, "requires revision history — no git repository"
+    z = zone_of(ctx.root, art["path"], "near_term")
+    if z is None:
+        return NA, "requires revision history — file not tracked or unparseable"
+    old_nt, new_nt = z
+
+    def ids(block):
+        if not isinstance(block, dict):
+            return set()
+        return {c.get("id") for c in (block.get("candidates") or [])
+                if isinstance(c, dict) and c.get("id")}
+
+    gone = ids(old_nt) - ids(new_nt)
+    if not gone:
+        return GREEN, "no near_term id was removed"
+
+    try:
+        doc = riteyaml.load((ctx.root / art["path"]).read_text(encoding="utf-8"), art["path"])
+    except (riteyaml.RiteYamlError, OSError):
+        return NA, "the current file could not be parsed"
+
+    landed = {m.get("id") for m in (doc.get("milestones") or [])
+              if isinstance(m, dict) and m.get("id")}
+    elsewhere = set()
+    for key in ("mid_term", "long_term"):
+        for item in doc.get(key) or []:
+            if isinstance(item, dict) and item.get("id"):
+                elsewhere.add(item["id"])
+
+    lost = sorted(i for i in gone if i not in landed and i not in elsewhere)
+    if lost:
+        return RED, (f"{len(lost)} near_term id(s) removed without a milestone and not moved "
+                     f"to another list: {', '.join(lost)}. Deleting is how an item closes — but "
+                     f"only if it is promoted, never erased.")
+    moved = sorted(i for i in gone if i not in landed)
+    note = f" ({len(moved)} moved, not closed)" if moved else ""
+    return GREEN, f"{len(gone)} removed id(s) accounted for{note}"
 
 
 @rule("milestones_append_only")

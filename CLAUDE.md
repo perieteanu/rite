@@ -145,9 +145,16 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
   executable name that resolves everywhere, which is the problem the shim exists for. Entries
   also accept `if`, `async`, `once` and `shell`. **Git Bash is required on Windows** —
   `d-git-bash-required-on-windows`.
-- `SessionEnd` exists as a hook event (verified in the 2.1.263 binary alongside `Stop`,
-  `PreCompact`, `SubagentStop`). **But it fires when there are no turns left**, so it can only
-  do mechanical work. Judgement work must happen before, via a command.
+- **Claude Code exposes THIRTY-THREE hook events** — verified against the hooks reference
+  2026-09-10, when this entry named four. Beyond the ones Rite uses there are `UserPromptSubmit`,
+  `PostToolUseFailure`, `PostToolBatch`, `SubagentStart`, `TaskCreated`/`TaskCompleted`,
+  `InstructionsLoaded`, `ConfigChange`, `DirectoryAdded`, `FileChanged`, `PostCompact`,
+  `PreModelSwitch`/`PostModelSwitch` and more. **Read the reference before concluding an event
+  does not exist** — several unbuilt watchers were scoped against a list of four.
+- `SessionEnd` **fires when there are no turns left**, so it can only do mechanical work.
+  Judgement work must happen before, via a command.
+- `CwdChanged` has **no matcher support** and fires on every directory change, including a cd
+  into a subdirectory. Any discrimination is the hook's own job.
 - **A plugin and a marketplace are different things** — an earlier version of this finding
   conflated them. A single PLUGIN is `.claude-plugin/plugin.json` at its own root, plus
   `skills/`, `hooks/`, `scripts/`. A MARKETPLACE is `.claude-plugin/marketplace.json` listing
