@@ -359,7 +359,7 @@ session_end: written | updated | carried_forward | none — the outcome the clos
 | exists | `file_present` | — |
 | populated | `min_entries` | `1` |
 | populated | `entries_parse` | — |
-| integrity | `no_future_timestamps` | Every non-blank, non-heading line matches the configured line format. |
+| integrity | `no_future_timestamps` | **local_clock-scoped.** Every non-blank, non-heading line matches the configured line format. |
 | fresh | `newest_entry_within_days_of_activity` | `30` — Code changed since the last log entry means the session did not close. |
 | integrity | `append_only_preserved` | Existing entries are byte-identical to the previous revision. Only additions are legal. Format migrations are the sole exception and must be logged as such. |
 

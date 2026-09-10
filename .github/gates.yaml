@@ -119,8 +119,13 @@ gates:
       this gate ALWAYS skips in CI and is enforced only on a developer machine.
 
   - id: self-check
-    command: [scripts/rite-check.py, --exclude-scope=session]
+    command: [scripts/rite-check.py, --exclude-scope=session, --exclude-scope=local_clock]
     what: "rite passes its own standard — 0 RED, every declared claim checked against the tree"
+    # local_clock is excluded for a different reason than session, and both are reported as NA
+    # rather than dropped. LOG timestamps carry no timezone, so "dated in the future" is only
+    # answerable on the machine that wrote them: every runner is UTC and this machine is UTC+3,
+    # which made 67 honest entries read as future on the first push. See why_scoped in the spec.
+    #
     # session-scoped tests are excluded HERE and nowhere else. Their verdict depends on whether
     # the session running right now has closed, which is unanswerable in a pipeline: the
     # protocol says log as work happens, so the first entry of any session turns
