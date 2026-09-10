@@ -34,7 +34,7 @@ Structure sampled from: `hwprivacy`, `astrolabe`, `project-tracker`, `api.pdf`, 
 
 **Stages.** `idea`, `spec`, `build`, `polish`, `shipped`, `maintain`, `archived`
 
-Tier 1 becomes required at stage `spec`.
+Tier 1 becomes required at stage `None`.
 
 ## Tiers
 
@@ -536,7 +536,7 @@ _Schema strictness: loose._
 
 | level | rule | detail |
 |---|---|---|
-| exists | `required_from_stage` | `shipped` |
+| exists | `file_present` | — |
 | populated | `min_lines` | `5` |
 | integrity | `no_provenance_header` | A provenance header in LICENSE is a defect, not a compliance win. |
 

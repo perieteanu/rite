@@ -82,14 +82,6 @@ concerns:
       distinct from tool permission, which nothing else ships.
     remaining: "Needs a DECISIONS entry to close it properly, which is why it is not yet retired."
 
-  - id: c-standard-version-policy
-    title: "How does a project declare WHICH version of the standard it targets?"
-    status: open
-    severity: low
-    opened: "2026-09-07"
-    what: "And what happens on a bump — does an older project fail, warn, or pin?"
-    why_it_matters: "Only bites after the first external user exists, but the answer constrains the provenance header, which is already shipped."
-
   - id: c-log-has-no-item-ids
     title: "LOG entries cannot be linked to the roadmap items they close"
     status: open
@@ -162,6 +154,21 @@ concerns:
       which renders text only and has no hover.
 
 retired_ids:
+  - id: c-standard-version-policy
+    retired: "2026-09-10"
+    how: settled
+    outcome: d-standard-version-declared-never-honoured
+    why: >
+      Open since 2026-09-07 at severity `low`, and the severity was the interesting part: its
+      own text said it "only bites after the first external user exists" — and publishing is
+      exactly what manufactures that user, so it was low right up until the moment it became
+      blocking. It was found blocking publish-github while the pre-publication list was being
+      written, three days later.
+      Settled by declining the expensive half. A project may declare `standard_version` and a
+      mismatch is reported as YELLOW, but Rite never runs an old rule set: keeping every past
+      standard runnable is a promise a one-person project cannot honour, and an unhonoured
+      compatibility promise converts a visible gap into a silent wrong answer.
+
   - id: c-unimplementable-tests
     retired: "2026-09-09"
     how: settled

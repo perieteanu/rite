@@ -81,8 +81,15 @@ docs/
   PLAN-<date>-<slug>.md   prose        · write-once
 ```
 
-Root: `README.md` and `CLAUDE.md` (rewrite-only), `LOG.md` (append-only), `HANDOFF.md`
-(write-once, tier 0 — always present, `genre: none` when there is nothing to hand off).
+Root: `README.md` and `CLAUDE.md` (rewrite-only, required from stage `spec`), `LOG.md`
+(append-only) and `HANDOFF.md` (write-once) — both required from stage `idea`, so they are
+always present; `genre: none` when there is nothing to hand off.
+
+**Stage decides what is required, not tier.** Each artifact declares `required_from_stage`; an
+artifact the project's stage has not reached reports NA naming that stage, never RED. A
+declaration beats tier, and `tier` is now a grouping label plus the fallback for a project that
+declares no stage — where the older, stricter tier behaviour applies in full, because absence is
+not a claim and deleting one line must not silence the standard. See `d-stage-is-the-gating-axis`.
 
 Built, as of 2026-09-10:
 
