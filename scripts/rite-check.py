@@ -131,6 +131,24 @@ class Ctx:
         """
         return ritefs.exists_exactly(self.root / rel)
 
+    def glob_matches(self, pattern: str) -> list[str]:
+        """Every file matching a declared path_pattern, case-sensitively.
+
+        Path.glob alone is not enough: on macOS and Windows it matches case-insensitively, so
+        docs/plan-x.md would satisfy "docs/PLAN-*.md" there and not on Linux — the same repo,
+        two verdicts, which is the failure case_sensitive_name_matching exists to prevent. Each
+        hit is re-verified through ritefs.exists_exactly, so the guarantee is the same one
+        exists_exactly gives.
+        """
+        out: list[str] = []
+        for found in sorted(self.root.glob(pattern)):
+            if not found.is_file():
+                continue
+            rel = found.relative_to(self.root).as_posix()
+            if ritefs.exists_exactly(self.root / rel):
+                out.append(rel)
+        return out
+
     def resolve(self, rel: str) -> tuple[str, str | None]:
         """Find an artifact, honouring superseded conventions.
 
@@ -691,6 +709,97 @@ def _claims_block(ctx, art):
         return None, f"the rite:claims comment does not parse — {str(e).split(': ', 1)[-1]}"
 
 
+@rule("filename_matches_canonical")
+def _filename_matches_canonical(ctx, art, test):
+    """Every instance of a many-instance artifact is named the canonical way.
+
+    THE SHAPE IS DECLARED BY THE ARTIFACT, not held here. The first version hardcoded the PLAN
+    regex in the checker, which was wrong twice over: it is a hardcoded value with no
+    human-visible home, and it silently mis-judged the next artifact to declare this rule —
+    script_copy, whose leaf is an arbitrary filename under a dated directory. Both now carry
+    `canonical_name_pattern` and the checker only applies it.
+
+    Reachable at all only since path_pattern existed. Before that the artifact was matched
+    literally against "docs/PLAN-YYYY-MM-DD-<slug>.md", so this rule had never once run against
+    a real plan copy — c-pattern-paths-are-matched-literally.
+    """
+    pattern = art.get("path_pattern")
+    if not pattern:
+        return NA, "artifact declares no path_pattern"
+    shape = art.get("canonical_name_pattern")
+    if not shape:
+        return NA, "artifact declares no canonical_name_pattern"
+    found = ctx.glob_matches(pattern)
+    if not found:
+        return NA, "no instances present"
+    try:
+        want = re.compile(shape)
+    except re.error as exc:
+        return YELLOW, f"canonical_name_pattern does not compile — {exc}"
+    bad = [f for f in found if not want.match(f)]
+    if bad:
+        named = art.get("structure", {}).get("canonical_name", shape)
+        head = ", ".join(bad[:3]) + (f" and {len(bad) - 3} more" if len(bad) > 3 else "")
+        return YELLOW, f"{len(bad)} of {len(found)} not named {named}: {head}"
+    return GREEN, f"{len(found)} instance(s) canonically named"
+
+
+@rule("source_plans_all_copied")
+def _source_plans_all_copied(ctx, art, test):
+    """A plan this project's own session WROTE, with no copy here, fails.
+
+    Attribution is authorship, never mention: a transcript that merely lists the plans
+    directory does not own its contents. See rite_copy._authored_in, which learned that the
+    hard way.
+    """
+    try:
+        import rite_copy
+    except ImportError as exc:
+        return NA, f"cannot load the copier — {exc}"
+    if not rite_copy.PLANS_DIR.is_dir():
+        return NA, "no plans directory on this machine"
+    missing = rite_copy.uncopied_plans(ctx.root)
+    if missing is None:
+        return NA, "no session transcripts to attribute against"
+    if missing:
+        return YELLOW, (f"{len(missing)} plan(s) written by this project are not copied here: "
+                        + ", ".join(missing) + " — run rite_copy.py --plans")
+    return GREEN, "every plan this project wrote has a copy here"
+
+
+@rule("mirror_not_stale")
+def _mirror_not_stale(ctx, art, test):
+    """A memory newer than the mirror's last sync means the mirror is lying by omission."""
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    try:
+        import rite_copy
+    except ImportError as exc:
+        return NA, f"cannot load the copier — {exc}"
+    memdir = rite_copy.memory_dir_for(ctx.root)
+    if memdir is None:
+        return NA, "no memory folder for this project"
+    stamp = re.search(r"^> Last sync: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})$", text, re.MULTILINE)
+    if not stamp:
+        return YELLOW, "no `Last sync` line — cannot tell whether this mirror is current"
+    try:
+        synced = dt.datetime.strptime(stamp.group(1), "%Y-%m-%d %H:%M")
+    except ValueError:
+        return YELLOW, f"unreadable sync stamp {stamp.group(1)!r}"
+    files = rite_copy.memory_files(memdir)
+    if not files:
+        return NA, "no memory files"
+    # The stamp has minute resolution, so a memory written in the same minute as the sync is
+    # not evidence of staleness. Only a file newer than the END of that minute counts.
+    newest = max(f.stat().st_mtime for f in files)
+    if newest > (synced + dt.timedelta(minutes=1)).timestamp():
+        when = dt.datetime.fromtimestamp(newest).strftime("%Y-%m-%d %H:%M")
+        return YELLOW, (f"a memory changed at {when}, after the mirror synced at "
+                        f"{stamp.group(1)} — run rite_copy.py --memory")
+    return GREEN, f"{len(files)} memories, synced {stamp.group(1)}"
+
+
 @rule("claims_declared")
 def _claims_declared(ctx, art, test):
     if ctx.read(art["path"]) is None:
@@ -823,12 +932,24 @@ def check(root: Path, spec: dict,
 
     for art in spec.get("artifacts", []):
         tier = art.get("tier", 9)
-        actual, note = ctx.resolve(art["path"])
-        if note:
-            art = dict(art, path=actual)
-            findings.append(Finding(YELLOW, "project", "populated", "canonical_name",
-                                    actual, note))
-        present = ctx.exists_exactly(art["path"])
+        # AN ARTIFACT WITH MANY INSTANCES IS MATCHED BY GLOB, NOT BY NAME. plan_copy's `path`
+        # is a shape, "docs/PLAN-YYYY-MM-DD-<slug>.md", and comparing it literally meant the
+        # artifact was absent on every project that ever existed — including this one, with two
+        # plan copies on disk. c-pattern-paths-are-matched-literally. `path` stays the display
+        # name; presence is the glob. resolve() is skipped for these: it exists to find a file
+        # under a superseded directory, and a pattern artifact has no single file to find.
+        instances: list[str] = []
+        pattern = art.get("path_pattern")
+        if pattern:
+            instances = ctx.glob_matches(pattern)
+            present = bool(instances)
+        else:
+            actual, note = ctx.resolve(art["path"])
+            if note:
+                art = dict(art, path=actual)
+                findings.append(Finding(YELLOW, "project", "populated", "canonical_name",
+                                        actual, note))
+            present = ctx.exists_exactly(art["path"])
         # A DECLARATION BEATS TIER; tier is only the fallback. Where the artifact declares
         # required_from_stage AND the project declares a stage, the stage decides outright:
         # absent-and-not-yet-due is NA naming the stage, absent-and-due is RED. Tier is

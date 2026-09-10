@@ -10,7 +10,7 @@
 # absence. This runs BEFORE Python exists, so it is the only code that can say Python is
 # missing.
 #
-# Usage:  rite.sh <session-start|session-end|check> [args...]
+# Usage:  rite.sh <session-start|session-end|check|copy> [args...]
 #         The session actions take hook JSON on stdin. `check` takes [PATH] [--force] and is
 #         what the skills call, so that no prompt has to name an interpreter — the rule
 #         python_invocation_differs, which two SKILL.md files broke until 2026-09-10.
@@ -23,16 +23,17 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # An explicit table, not name-mangling. The checker is scripts/rite-check.py with a HYPHEN
 # while the session entry points use underscores, so `${action//-/_}` cannot reach it — and a
 # scripts/rite_check.py added beside scripts/rite-check.py to make the mangle work would be a
-# trap for every future reader. Three actions, named once, here.
+# trap for every future reader. Four actions, named once, here.
 case "$action" in
   session-start) script="$here/../scripts/rite_session_start.py" ;;
   session-end)   script="$here/../scripts/rite_session_end.py" ;;
   check)         script="$here/../scripts/rite-check.py" ;;
+  copy)          script="$here/../scripts/rite_copy.py" ;;
   *)             script="" ;;
 esac
 
 if [ -z "$script" ] || [ ! -f "$script" ]; then
-  echo "rite: no such action '${action}' (session-start, session-end, check)" >&2
+  echo "rite: no such action '${action}' (session-start, session-end, check, copy)" >&2
   exit 2
 fi
 

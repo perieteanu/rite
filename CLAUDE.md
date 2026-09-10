@@ -85,7 +85,9 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
   flow mappings, block literals or merge keys. The parser **refuses rather than guesses**, and
   its test is differential against PyYAML as an oracle. Do not "simplify" it into guessing, and
   do not reintroduce the dependency. See `d-stdlib-only-yaml-subset`.
-- **The artifact inventory is FROZEN at 13** (2026-09-07). A 14th requires a DECISIONS entry.
+- **The artifact inventory is FROZEN at 14** (13 on 2026-09-07; `script_copy` added 2026-09-10
+  by `d-session-scripts-are-the-fourteenth-artifact`, which is the process working rather than
+  the freeze failing). A 15th requires a DECISIONS entry.
   Script-produced files are out of the freeze until their producers exist. `status.json` and
   `checks.yaml` are deferred pending purpose; an `/end` stamp file was **rejected** — the
   outcome goes in HANDOFF front matter.
@@ -166,14 +168,16 @@ itself and the first thing a reader met was the lie.
 
 What is genuinely not built, as of 2026-09-10:
 
-- **CI runs ELEVEN gates, but only nine of them on a runner.** `.github/workflows/gates.yml`
+- **CI runs TWELVE gates, but only ten of them on a runner.** `.github/workflows/gates.yml`
   fires on every push. `test-riteyaml.py` skips there (PyYAML is its oracle and CI does not
   install it) and `test-installed-current.py` always skips (a runner has no installed plugin).
   The runner reports that coverage instead of showing an unqualified green — a skip is never
   folded into a pass. It runs on **ubuntu, macos and windows** with `fail-fast: false`.
 - **No `PostToolUse` hook**, and none of the eight watchers. It belongs to `port-mirror-memory`.
-- **No port of `preflight.py` / `claude-mirror-memory.py` / `hookdedup.py`**, and no
-  `checks.yaml` — `port-preflight` has not started.
+- **No port of `preflight.py` or `hookdedup.py`**, and no `checks.yaml` — `port-preflight` has
+  not started. `claude-mirror-memory.py` IS ported, as `scripts/rite_copy.py`, alongside plan
+  and session-script copying; the global hook in `~/.claude/settings.json` is deliberately
+  still running beside it until the port is proven.
 - **Published 2026-09-10.** `github.com/perieteanu/rite` is PUBLIC, `main` in full including
   `LOG.md`, per `d-publish-main-in-full-no-export`. This bullet said "Nothing published" until
   that commit. What is still true: **nobody but this machine has run Rite**, so every claim

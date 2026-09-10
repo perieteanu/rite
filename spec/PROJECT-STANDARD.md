@@ -101,6 +101,7 @@ Markdown needs no parser, degrades gracefully, and cannot fail to load on a bad 
 | `docs/CONCERNS.yaml` | `mixed` |
 | `docs/PLAN-YYYY-MM-DD-<slug>.md` | `write_once` |
 | `docs/claude-memory.md` | `free_replace` |
+| `docs/session-scripts/<ISO date>/<name>` | `write_once` |
 
 ## Verdicts and failure semantics
 
@@ -241,7 +242,7 @@ VS Code and the terminal differ MORE than Windows and macOS do, but not for file
 | `explicit_utf8_everywhere` | correctness | Every read and write names encoding='utf-8'. Never rely on the platform default. |
 | `python_invocation_differs` | documentation | Never hardcode `python3` in documentation or a hook command. On Windows the name is `py` or `python`; `python3` is not a standard Windows executable. |
 | `stdlib_only_no_pip_dependencies` | correctness | Python stdlib only. No pip install, ever, for the base layer. YAML is read by a subset parser shipped with Rite. |
-| `claude_home_slug_derivation` | open | Deriving a project slug from a path is platform-specific and is not yet solved. |
+| `claude_home_slug_derivation` | documentation | Derive root -> slug and never slug -> root. The first is deterministic and governs every write; the second is lossy and may only name a project in a report. |
 
 **`case_sensitive_name_matching`** — macOS (APFS default) and Windows are case-insensitive. Path("README.md").exists() returns True for a file actually named readme.md. A project carrying readme.md and Claude.md therefore PASSES on macOS and Windows and FAILS on Linux — the same repo, two verdicts. For a standard whose entire value is canonical names, that is a correctness bug, not a portability nicety. It is also the rule most likely to be undone by a well-meaning simplification.
 
@@ -263,7 +264,7 @@ _Rejected alternative: ASCII-only output. It would need no declaration at all, a
 
 **`stdlib_only_no_pip_dependencies`** — PyYAML is not installed by default on macOS or Windows, so depending on it would make "pip install first" the default first-run experience on two of three target platforms. Measured across 1839 lines of this project's own YAML, every construct that makes YAML hard to parse is unused — no anchors, aliases, tags, flow mappings, block literals, merge keys or complex keys — so the dependency buys almost nothing.
 
-**`claude_home_slug_derivation`** — Memory directories encode the project path as dashes (-home-perieteanu-projects-rite). On Windows that is a drive letter and backslashes. Unbuilt today; it lands in the port-mirror-memory work.
+**`claude_home_slug_derivation`** — Memory directories encode the project path with every non-alphanumeric character replaced by a dash (-home-perieteanu-projects-rite). On Windows that is a drive letter and backslashes, encoded the same way.
 
 ## The artifact set
 
@@ -282,6 +283,7 @@ _Rejected alternative: ASCII-only output. It would need no declaration at all, a
 | 2 | `docs/CONCERNS.yaml` | What is proposed or worrying but NOT yet settled? |
 | 2 | `docs/PLAN-YYYY-MM-DD-<slug>.md` | What was the agreed plan for a piece of work? |
 | 3 | `docs/claude-memory.md` | What does the agent durably remember about this project? |
+| 3 | `docs/session-scripts/<ISO date>/<name>` | How was this change actually made? |
 
 ## Artifacts in detail
 
@@ -599,6 +601,23 @@ _Schema strictness: loose._
 |---|---|---|
 | exists | `optional` | — |
 | fresh | `mirror_not_stale` | Newest memory file newer than the mirror's last sync fails. |
+
+### `docs/session-scripts/<ISO date>/<name>`
+
+**Tier 3** · layer `local` · audience `both` · form `text` · write `write_once`
+
+**Answers:** How was this change actually made?
+
+**Canonical name:** `session-scripts/<ISO date>/<original filename>`
+
+**Notes.** The throwaway scripts a session writes to do its own work — the ones that performed the edits behind a commit. They live in /tmp, so they do not survive a reboot: late is the same as never, which is why this runs from SessionEnd as well as /rite:end. Attribution is free, unlike plan_copy: the scratchpad path already contains the project slug, so nothing has to be inferred. Deliberately narrow about what counts — *.py and *.sh at the scratchpad root only. The session that built this had a README.md.bak and a shipped-probe/ tree in the same directory, and neither is a script.
+
+**Completion tests:**
+
+| level | rule | detail |
+|---|---|---|
+| exists | `optional` | — |
+| populated | `filename_matches_canonical` | — |
 
 ## Explicitly out of scope
 

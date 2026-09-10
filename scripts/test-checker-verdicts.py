@@ -293,7 +293,7 @@ with tempfile.TemporaryDirectory() as d:
 
     # And the totals must be untouched: collapsing is a display choice, never a verdict change.
     total = [ln for ln in out.splitlines() if "checks ·" in ln]
-    if not total or "59 NA" not in total[0]:
+    if not total or "60 NA" not in total[0]:
         fail(f"collapsing changed the NA count — it must not: {total[0].strip() if total else ''}")
 
 if failures:

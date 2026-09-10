@@ -125,7 +125,7 @@ business asking that of anyone else.
 
 Nine gates run on every push, across Linux, macOS and Windows. Two of them cannot run on a CI
 runner — the YAML parser's differential test needs PyYAML as an oracle, and the installed-copy
-test needs an installed plugin — so the runner reports **`9 of 11 gates ran`** and names the two
+test needs an installed plugin — so the runner reports **`10 of 12 gates ran`** and names the two
 it skipped rather than showing an unqualified green.
 
 The YAML is read by a subset parser shipped with Rite, so there is no dependency to install. It
