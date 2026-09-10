@@ -5,11 +5,15 @@
 # 2026-09-09 that failed exactly as predicted: scripts/rite-check.py was truncated to zero
 # bytes and no gate caught it, because no gate ran.
 #
-# WHAT THIS DOES NOT COVER, deliberately — see d-ci-reports-its-own-coverage:
-#   - ubuntu only. The macos/windows matrix is deferred, so the three `severity: correctness`
-#     portability rules in spec/project-standard.yaml stay unenforced. Adding the matrix is a
-#     change to `runs-on` below plus a strategy block; the runner needs nothing.
-#   - PyYAML is not installed, so the riteyaml differential test SKIPS here.
+# ALL THREE DECLARED TARGETS RUN as of 2026-09-10. spec/project-standard.yaml declares
+# targets [linux, macos, windows] and three rules at `severity: correctness`, and until now
+# nothing tested any of them — the only machine that had ever run Rite was one Linux laptop.
+# case_sensitive_name_matching says outright that a repo carrying readme.md passes on macOS
+# and fails on Linux; a standard whose value is canonical names cannot assert that untested.
+#
+# WHAT THIS STILL DOES NOT COVER — see d-ci-reports-its-own-coverage:
+#   - PyYAML is not installed, so the riteyaml differential test SKIPS on every platform.
+#   - test-installed-current.py always skips: a runner has no installed plugin.
 # The runner prints both facts on every run. A skip is never folded into green.
 
 name: gates
@@ -29,7 +33,14 @@ permissions:
 
 jobs:
   gates:
-    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast MUST stay false. The point of a matrix here is to learn what each platform
+      # says; cancelling the others the moment one goes red would hide exactly the findings
+      # this exists to collect, and leave a portability bug half-diagnosed.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       # Default fetch-depth is sufficient: rite-check.py shells out only to
       # `git show HEAD:` and `git diff HEAD`, neither of which needs history.
