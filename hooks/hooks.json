@@ -8,6 +8,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" session-start",
+            "shell": "bash",
             "timeout": 20
           }
         ]
@@ -18,6 +19,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" session-start",
+            "shell": "bash",
             "timeout": 20
           }
         ]
@@ -29,6 +31,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" session-end",
+            "shell": "bash",
             "timeout": 20
           }
         ]
@@ -41,6 +44,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" copy --hook",
+            "shell": "bash",
             "timeout": 10
           }
         ]
