@@ -29,9 +29,13 @@
 # Deleting this line does NOT make the standard lenient — it falls back to the older, stricter
 # tier-based requirement. Absence is not a claim.
 #
-# `build` is the honest value: the plugin runs and is installed, the namespace is claimed and
-# main is pushed, but the repository is PRIVATE and nothing is published. Declaring `shipped`
-# to turn the LICENSE check green would be lying to our own checker, which is the failure mode
-# this project exists to prevent. It advances in the same commit that makes the repo public —
-# d-stage-advances-when-the-repo-goes-public.
-stage: build
+# `shipped` as of 2026-09-10, advanced in the SAME commit that made the repository public —
+# d-stage-advances-when-the-repo-goes-public. It said `build` until that moment, because
+# declaring `shipped` while private would have been lying to our own checker, which is the
+# failure mode this project exists to prevent.
+#
+# Note what this did NOT change, since the checklist expected otherwise: the LICENSE check was
+# already GREEN at `build`. required_from_stage gates whether an artifact is DEMANDED, not
+# whether it is CHECKED when present — LICENSE exists, so min_lines and no_provenance_header
+# always ran. The stage decides only whether a MISSING LICENSE is RED or NA.
+stage: shipped
