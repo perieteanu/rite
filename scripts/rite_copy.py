@@ -462,6 +462,40 @@ def generate_mirror(slug: str, files: list[Path]) -> str:
     return "\n".join(lines) + "\n"
 
 
+MIRROR_STAMP = re.compile(r"^> Last sync: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})$", re.MULTILINE)
+
+# The stamp has minute resolution, so a memory written in the same minute as the sync is not
+# evidence of staleness. Only a file newer than the END of that minute counts.
+STAMP_RESOLUTION = dt.timedelta(minutes=1)
+
+
+def mirror_stamp(text: str) -> dt.datetime | None:
+    m = MIRROR_STAMP.search(text)
+    if not m:
+        return None
+    try:
+        return dt.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M")
+    except ValueError:
+        return None
+
+
+def mirror_is_stale(root: Path, text: str, files: list[Path]) -> bool | None:
+    """Is this mirror older than the memories it claims to mirror? None = cannot tell.
+
+    SHARED WITH THE CHECKER on purpose, and the reason is a bug this had on its first run. The
+    copier skipped rewriting whenever the CONTENT matched, ignoring the stamp; the checker
+    judged staleness from the STAMP alone. So a mirror with a stale stamp and correct content
+    was YELLOW forever, and the checker's own advice — "run rite_copy.py --memory" — did
+    nothing. Two implementations of one predicate is the drift this project exists to attack,
+    and it took under an hour to prove it on itself.
+    """
+    stamp = mirror_stamp(text)
+    if stamp is None or not files:
+        return None
+    newest = max(f.stat().st_mtime for f in files)
+    return newest > (stamp + STAMP_RESOLUTION).timestamp()
+
+
 def mirror_memory(root: Path, dry_run: bool) -> Report:
     report = Report()
     memdir = memory_dir_for(root)
@@ -490,9 +524,17 @@ def mirror_memory(root: Path, dry_run: bool) -> Report:
         # Compare everything but the clock: a timestamp differs on every run and would make
         # "unchanged" impossible to report, which is the same reason no generated file in this
         # repo carries one.
-        strip = lambda s: re.sub(r"^> Last sync: .*$", "", s, flags=re.MULTILINE)  # noqa: E731
-        if strip(current) == strip(text):
+        strip = lambda s: MIRROR_STAMP.sub("", s)  # noqa: E731
+        stale = mirror_is_stale(root, current, files)
+        if strip(current) == strip(text) and stale is False:
             report.add("current", target.name, f"{len(files)} memories, unchanged")
+            return report
+        if strip(current) == strip(text):
+            # Content matches but the stamp does not vouch for it. Rewriting refreshes the
+            # stamp, which is the only thing mirror_not_stale can read.
+            report.add("restamped", target.name, f"{len(files)} memories, sync stamp refreshed")
+            if not dry_run:
+                target.write_text(text, encoding="utf-8", newline="\n")
             return report
     if dry_run:
         report.add("would write", target.name, f"{len(files)} memories")
@@ -505,6 +547,44 @@ def mirror_memory(root: Path, dry_run: bool) -> Report:
 
 # ── cli ──────────────────────────────────────────────────────────────────────
 
+def run_as_hook() -> int:
+    """PostToolUse. Refresh the mirror only when a memory file was just written.
+
+    WHY A MODE RATHER THAN JUST RUNNING --memory: a full refresh costs ~66ms, and PostToolUse
+    fires on every Write and Edit. Paying that on every edit to catch the handful that touch a
+    memory would be a tax on the whole session, and a hook that makes editing feel slow is a
+    hook the user removes.
+
+    It replaces the mid-session half of the global claude-mirror-memory hook, which is the only
+    thing SessionEnd copying could not cover: end-of-session freshness leaves the mirror wrong
+    for the length of the session, and the mirror exists to be READ from the workspace.
+
+    ALWAYS EXITS 0. A hook that fails is a hook that breaks the session it was meant to serve,
+    and this one is never worth a lost turn.
+    """
+    try:
+        payload = json.loads(sys.stdin.read() or "{}")
+    except (ValueError, TypeError):
+        return 0
+    tool = payload.get("tool_input")
+    written = tool.get("file_path") if isinstance(tool, dict) else None
+    if not isinstance(written, str):
+        return 0
+    # A memory file, not the MEMORY.md index — the index is a table of contents and the mirror
+    # excludes it, so writing it changes nothing the mirror shows.
+    normalised = written.replace("\\", "/")
+    if "/memory/" not in normalised or normalised.endswith("/MEMORY.md"):
+        return 0
+    root = Path(payload.get("cwd") or os.getcwd()).resolve()
+    if not ritefs.marker_present(root):
+        return 0
+    try:
+        mirror_memory(root, False)
+    except Exception:
+        pass
+    return 0
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--plans", action="store_true", help="copy attributable plans into the project")
@@ -513,7 +593,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--all", action="store_true", help="all three")
     ap.add_argument("--project", default=None, help="project root (default: cwd)")
     ap.add_argument("-n", "--dry-run", action="store_true", help="report, write nothing")
+    ap.add_argument("--hook", action="store_true",
+                    help="PostToolUse: refresh the mirror iff a memory file was written")
     args = ap.parse_args(argv[1:])
+
+    if args.hook:
+        return run_as_hook()
 
     root = Path(args.project).resolve() if args.project else Path.cwd()
     if not ritefs.marker_present(root):

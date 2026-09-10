@@ -1,29 +1,11 @@
-#!/usr/bin/env python3
-"""rite_session_end — the mechanical half. No judgement, because there are no turns left.
+import pathlib, sys
+p = pathlib.Path("scripts/rite_session_end.py")
+t = p.read_text(encoding="utf-8")
+before = len(t.encode("utf-8"))
 
-SessionEnd fires when Claude has no turns remaining. It can copy files and stamp state; it
-CANNOT write a handoff, distil a LOG entry, or update docs. Anything needing a decision runs
-earlier, from /rite:end. That split is forced by the harness, not chosen.
-
-Deliberately silent: nothing it prints can reach anyone.
-"""
-
-from __future__ import annotations
-
-import json
-import os
-import sys
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-import rite_copy  # noqa: E402
-import ritefs  # noqa: E402
-
-ritefs.use_utf8_stdio()
-
-
-def copy_everything(root: Path) -> None:
+start = t.index("def mirror_memory(root: Path) -> None:")
+end = t.index("def main() -> int:")
+new = '''def copy_everything(root: Path) -> None:
     """Mirror memory, copy plans, copy this session's scratchpad scripts.
 
     IN-PROCESS, not a subprocess. Until 2026-09-10 this shelled out to
@@ -48,17 +30,11 @@ def copy_everything(root: Path) -> None:
             continue
 
 
-def main() -> int:
-    try:
-        payload = json.loads(sys.stdin.read() or "{}")
-    except ValueError:
-        payload = {}
-    root = Path(payload.get("cwd") or os.getcwd()).resolve()
-    if not ritefs.marker_present(root):
-        return 0
-    copy_everything(root)
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+'''
+t = t[:start] + new + t[end:]
+t = t.replace("    mirror_memory(root)\n    copy_plans(root)\n", "    copy_everything(root)\n", 1)
+t = t.replace("import json\nimport os\nimport subprocess\nimport sys",
+              "import json\nimport os\nimport sys", 1)
+t = t.replace("import ritefs  # noqa: E402", "import rite_copy  # noqa: E402\nimport ritefs  # noqa: E402", 1)
+p.write_text(t, encoding="utf-8", newline="\n")
+print(f"rite_session_end.py: {before} -> {len(p.read_bytes())}")

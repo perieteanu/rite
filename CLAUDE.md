@@ -173,7 +173,9 @@ What is genuinely not built, as of 2026-09-10:
   install it) and `test-installed-current.py` always skips (a runner has no installed plugin).
   The runner reports that coverage instead of showing an unqualified green — a skip is never
   folded into a pass. It runs on **ubuntu, macos and windows** with `fail-fast: false`.
-- **No `PostToolUse` hook**, and none of the eight watchers. It belongs to `port-mirror-memory`.
+- **None of the eight watchers.** The `PostToolUse` hook itself now exists — added 2026-09-10
+  with the copier port — but it does one job, refreshing the memory mirror when a memory file
+  is written. `watcher-write-discipline` and the other seven are unbuilt.
 - **No port of `preflight.py` or `hookdedup.py`**, and no `checks.yaml` — `port-preflight` has
   not started. `claude-mirror-memory.py` IS ported, as `scripts/rite_copy.py`, alongside plan
   and session-script copying; the global hook in `~/.claude/settings.json` is deliberately

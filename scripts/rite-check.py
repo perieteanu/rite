@@ -763,7 +763,7 @@ def _source_plans_all_copied(ctx, art, test):
         return NA, "no session transcripts to attribute against"
     if missing:
         return YELLOW, (f"{len(missing)} plan(s) written by this project are not copied here: "
-                        + ", ".join(missing) + " — run rite_copy.py --plans")
+                        + ", ".join(missing) + " — run /rite:end, or rite.sh copy --plans")
     return GREEN, "every plan this project wrote has a copy here"
 
 
@@ -780,24 +780,21 @@ def _mirror_not_stale(ctx, art, test):
     memdir = rite_copy.memory_dir_for(ctx.root)
     if memdir is None:
         return NA, "no memory folder for this project"
-    stamp = re.search(r"^> Last sync: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})$", text, re.MULTILINE)
-    if not stamp:
-        return YELLOW, "no `Last sync` line — cannot tell whether this mirror is current"
-    try:
-        synced = dt.datetime.strptime(stamp.group(1), "%Y-%m-%d %H:%M")
-    except ValueError:
-        return YELLOW, f"unreadable sync stamp {stamp.group(1)!r}"
     files = rite_copy.memory_files(memdir)
     if not files:
         return NA, "no memory files"
-    # The stamp has minute resolution, so a memory written in the same minute as the sync is
-    # not evidence of staleness. Only a file newer than the END of that minute counts.
-    newest = max(f.stat().st_mtime for f in files)
-    if newest > (synced + dt.timedelta(minutes=1)).timestamp():
-        when = dt.datetime.fromtimestamp(newest).strftime("%Y-%m-%d %H:%M")
-        return YELLOW, (f"a memory changed at {when}, after the mirror synced at "
-                        f"{stamp.group(1)} — run rite_copy.py --memory")
-    return GREEN, f"{len(files)} memories, synced {stamp.group(1)}"
+    stamp = rite_copy.mirror_stamp(text)
+    if stamp is None:
+        return YELLOW, "no readable `Last sync` line — cannot tell whether this mirror is current"
+    # ONE PREDICATE, shared with the copier. Two implementations disagreed within the hour they
+    # both existed: the copier skipped rewriting when content matched and the checker judged by
+    # the stamp, so a stale stamp over correct content stayed YELLOW and the checker's own
+    # advice fixed nothing.
+    if rite_copy.mirror_is_stale(memdir.parent, text, files):
+        when = dt.datetime.fromtimestamp(max(f.stat().st_mtime for f in files))
+        return YELLOW, (f"a memory changed at {when:%Y-%m-%d %H:%M}, after the mirror synced at "
+                        f"{stamp:%Y-%m-%d %H:%M} — run /rite:end, or rite.sh copy --memory")
+    return GREEN, f"{len(files)} memories, synced {stamp:%Y-%m-%d %H:%M}"
 
 
 @rule("claims_declared")
