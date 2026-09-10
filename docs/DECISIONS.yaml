@@ -1498,3 +1498,36 @@ decisions:
     chosen_by_user: true
     proposed_by: claude
 
+  - id: d-stage-deferred-checks-are-collapsed
+    date: "2026-09-10"
+    title: "Checks a project's stage has not reached are collapsed into a counted line, never dropped"
+    context: >
+      Found while writing an honest README example, and only because the example was generated
+      rather than invented. A project at stage `idea` printed 54 lines to convey ONE finding —
+      46 of them saying "not required before stage X". Rite's own report is 5 lines. Stage
+      gating had taken the RED count from 9 to 0 and replaced a wall of RED with a wall of NA.
+    decision: >
+      The report prints one counted line per deferred stage, naming the artifacts waiting there.
+      54 lines becomes 15. The findings stay in the list and in the NA total; only their
+      DISPLAY changes.
+    rationale:
+      - >
+        IT IS HALF A FIX OTHERWISE. d-stage-gates-the-standard exists because a tool that opens
+        by listing everything you have not done yet gets uninstalled the next day. Lowering the
+        severity while keeping the volume answers the letter of that and not the point.
+      - >
+        COLLAPSED, NOT DROPPED, and the distinction is the whole reason this is safe. The count
+        and the artifact names are both still printed, so a check that is waiting and a check
+        that passed still do not look alike — the rule that governs NA everywhere else in this
+        checker. Dropping them would have been simpler and would have broken it.
+      - >
+        THE TOTALS ARE UNTOUCHED. Collapsing is a display choice; the moment it changes a count
+        it has become a verdict change wearing a formatting disguise. The fixture asserts the NA
+        total explicitly for that reason.
+    consequences:
+      - "A new fixture in test-checker-verdicts.py asserts the line count, the summary's own count, that every deferred artifact is still named, and that the NA total is unchanged. Proved red by disabling the collapse: 68 lines, fixture fails."
+      - "It caught two of my errors immediately — numbers copied from the wrong fixture, and an older case that assumed ARCHITECTURE prints its own lines."
+      - "Finding gained a `deferred_to` field. It carries display grouping only and never affects a verdict."
+    chosen_by_user: true
+    proposed_by: claude
+
