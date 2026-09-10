@@ -39,6 +39,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import riteyaml  # noqa: E402
 import ritefs  # noqa: E402
+import riterules  # noqa: E402
+from riterules import git_removed_lines, git_show, zone_of  # noqa: E402,F401
 
 ritefs.use_utf8_stdio()
 
@@ -249,57 +251,6 @@ def newest_source_mtime(root: Path) -> dt.date | None:
     return newest
 
 
-def git_show(root: Path, rel: str) -> str | None:
-    """The committed version of a file at HEAD, or None if unavailable."""
-    try:
-        # encoding is LOAD-BEARING here, not hygiene. git emits the blob's bytes; text=True
-        # alone decodes them with the locale, so on Windows a UTF-8 document comes back as
-        # cp1252 mojibake. It still PARSES — mojibake is valid YAML text — and every scalar
-        # then differs from the same scalar read with encoding="utf-8", so milestones_append_only
-        # reported an existing milestone as CHANGED on a file that had only been appended to.
-        # RED on windows, GREEN on ubuntu and macOS, from one missing argument. Found by CI on
-        # 2026-09-10. See portability `process_output_declares_encoding`.
-        out = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{rel}"],
-                             capture_output=True, text=True, timeout=10,
-                             encoding="utf-8", errors="replace")
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return out.stdout if out.returncode == 0 else None
-
-
-def zone_of(root: Path, rel: str, key: str):
-    """(committed_value, current_value) for one top-level key. None when unavailable.
-
-    Line-diffing a MIXED file is wrong: ROADMAP has three zones with three different
-    disciplines, and deleting from the rewrite-only zone is not merely legal but REQUIRED
-    when closing an item. A whole-file diff cannot tell that from rewriting a milestone.
-    """
-    old_text = git_show(root, rel)
-    if old_text is None:
-        return None
-    try:
-        old = riteyaml.load(old_text, f"HEAD:{rel}") or {}
-        new = riteyaml.load((root / rel).read_text(encoding="utf-8"), rel) or {}
-    except (riteyaml.RiteYamlError, OSError):
-        return None
-    return old.get(key), new.get(key)
-
-
-def git_removed_lines(root: Path, rel: str) -> int | None:
-    """Lines deleted from a tracked file relative to HEAD. None when unavailable."""
-    try:
-        out = subprocess.run(
-            ["git", "-C", str(root), "diff", "-U0", "HEAD", "--", rel],
-            capture_output=True, text=True, timeout=10,
-            encoding="utf-8", errors="replace",
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    if out.returncode != 0:
-        return None
-    return sum(1 for ln in out.stdout.splitlines() if ln.startswith("-") and not ln.startswith("---"))
-
-
 # ── rules ───────────────────────────────────────────────────────────────────
 # Each returns (severity, message). Absent from this table -> reported NA.
 RULES = {}
@@ -450,6 +401,24 @@ def _entries_parse(ctx, art, test):
     bad = [i + 1 for i, ln in enumerate(text.splitlines())
            if ln.strip() and not ln.startswith("#") and not _LOG_LINE.match(ln)]
     return (GREEN, "all parse") if not bad else (YELLOW, f"{len(bad)} unparseable (first: line {bad[0]})")
+
+
+@rule("no_future_timestamps")
+def _no_future_timestamps(ctx, art, test):
+    """A dated entry later than now. See riterules.log_future_timestamps for the reasoning.
+
+    Shares its predicate with the PostToolUse watcher, which asks the same question the instant
+    a write lands. One implementation, two consumers — two copies would be free to disagree
+    about what "future" means, which is the drift this project attacks everywhere else.
+    """
+    text = ctx.read(art["path"])
+    if text is None:
+        return NA, "file absent"
+    future = riterules.log_future_timestamps(text)
+    if future:
+        return RED, (f"{len(future)} entry/entries dated in the future — a timestamp that was "
+                     f"extrapolated, not read. First: {future[0]}")
+    return GREEN, "no entry is dated later than now"
 
 
 @rule("newest_entry_within_days_of_activity")

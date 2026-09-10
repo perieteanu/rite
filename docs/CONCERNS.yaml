@@ -129,30 +129,6 @@ concerns:
     why_it_matters: "deleted_ids_appear_in_milestones is checkable; the LOG side of the same link is not."
     proposal: "Either accept the one-directional link, or allow an optional trailing `(#id)` in the log description."
 
-  - id: c-log-timestamps-must-be-machine-read
-    title: "A model-written LOG entry can carry an invented timestamp indistinguishable from a real one"
-    status: open
-    severity: medium
-    opened: "2026-09-08"
-    what: >
-      During the 2026-09-07 session Claude read the machine clock at 22:11 and then wrote
-      roughly thirty further LOG entries with extrapolated times, some of them AHEAD of real
-      time — verified when the clock was finally re-read at 00:02 against entries claiming
-      00:13. CONVENTIONS already forbids this ("the machine clock. Never invent, round, or
-      approximate") and the rule failed exactly the way this project says rules fail: nothing
-      checked it.
-    why_it_matters: >
-      It is the project's own thesis landing on the project. A plausible invented timestamp is
-      indistinguishable from a real one after the fact, so the corpus's 1808 LOG entries cannot
-      be assumed to be clock-accurate either. Timestamps are also the ONLY ordering key —
-      CONVENTIONS says file order may differ from chronological order and consumers must sort
-      by parsed timestamp.
-    proposal:
-      - "A shipped /log reads the clock itself, per entry, and never accepts a model-supplied time."
-      - "A check that fails: no LOG entry may carry a timestamp later than the file's own mtime."
-      - "That check is cheap, needs no revision history, and would have caught this immediately — so it does NOT belong in c-unimplementable-tests."
-    do_not: "Backfill or correct the existing entries. They are append-only, and the correction is already logged."
-
   - id: c-status-line-presence
     title: "A static command-reference popup — discoverability for /end, which only fires if typed"
     status: open
@@ -188,6 +164,26 @@ concerns:
       which renders text only and has no hover.
 
 retired_ids:
+  - id: c-log-timestamps-must-be-machine-read
+    retired: "2026-09-10"
+    how: settled
+    outcome: d-write-discipline-watcher
+    why: >
+      Open since 2026-09-08 with, in its own words, nowhere for its check to run. It now runs in
+      two places from one predicate: as the `no_future_timestamps` rule at session start, and in
+      the PostToolUse watcher the instant a write lands.
+      The check is NARROWER than the concern's title and deliberately so. An invented timestamp
+      in the PAST is indistinguishable from a machine-read one afterwards; nothing can catch it.
+      What is provable is a timestamp in the FUTURE — and that is precisely what extrapolation
+      produces when it overshoots, which is what happened on 2026-09-07: thirty entries
+      extrapolated from a single 22:11 reading, some ahead of real time, found only when the
+      clock was re-read at 00:02 against entries claiming 00:13.
+      The concern also proposed comparing against the file's own mtime. Rejected as weaker: at
+      PostToolUse the file was just written, so its mtime IS now, and `now` needs no filesystem
+      round-trip and no assumption that mtime survived a copy.
+      The do_not stands and was honoured: the existing entries are append-only and were not
+      backfilled.
+
   - id: c-coverage-counts-optional-as-unimplemented
     retired: "2026-09-10"
     how: settled

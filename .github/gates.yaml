@@ -92,6 +92,12 @@ gates:
     # twice by hand and by nothing else, which is precisely the kind of claim this project
     # refuses to accept from anyone else. It compares the two GENERATORS and writes nothing.
 
+  - id: watch-discipline
+    command: [scripts/test-watch-discipline.py]
+    what: "the write-discipline watcher catches rewrites and future timestamps, and is silent otherwise"
+    # Silence on success is as load-bearing as the catching: it fires on every Write and Edit,
+    # and a watcher that speaks when nothing is wrong is one the user disables within a day.
+
   - id: copy-attribution
     command: [scripts/test-copy-attribution.py]
     what: "a plan is attributed by authorship — a Write or ExitPlanMode naming it — never by mention"

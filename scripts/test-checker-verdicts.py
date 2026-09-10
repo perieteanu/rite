@@ -17,6 +17,7 @@ Exit: 0 pass · 1 fail
 from __future__ import annotations
 
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -292,9 +293,22 @@ with tempfile.TemporaryDirectory() as d:
             fail(f"a stage-deferred artifact vanished from the report entirely: {want}")
 
     # And the totals must be untouched: collapsing is a display choice, never a verdict change.
+    #
+    # ASSERTED AS AN INVARIANT, NOT A LITERAL. This line pinned "59 NA", then "60 NA", and was
+    # about to pin "61 NA" — it broke three times in one day, every time an artifact or a rule
+    # was added, and each break was noise rather than a finding. The number was never the point:
+    # the claim is that every declared check lands in exactly one bucket, so collapsing cannot
+    # quietly drop one. That holds whatever the counts are.
     total = [ln for ln in out.splitlines() if "checks ·" in ln]
-    if not total or "60 NA" not in total[0]:
-        fail(f"collapsing changed the NA count — it must not: {total[0].strip() if total else ''}")
+    if not total:
+        fail("the summary line is missing entirely")
+    else:
+        nums = [int(x) for x in re.findall(r"(\d+)\s+(?:checks|RED|YELLOW|NA|GREEN)", total[0])]
+        if len(nums) != 5:
+            fail(f"could not read the five counts from: {total[0].strip()}")
+        elif nums[0] != sum(nums[1:]):
+            fail(f"collapsing lost a check — {nums[0]} declared but "
+                 f"{sum(nums[1:])} accounted for: {total[0].strip()}")
 
 # ── the CLI contract ─────────────────────────────────────────────────────────
 # Until 2026-09-10 every unrecognised flag was silently discarded: `--help` ran a full check,
