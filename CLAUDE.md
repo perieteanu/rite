@@ -50,6 +50,14 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
   whole basis of the freshness tests; collapse it and the tests become mtime theatre.
 - **Do not verify a doc claim against another doc.** After the first line of code exists,
   every doc claim is a testable assertion. Check it against the filesystem or the host.
+- **"Source" means RECORDED change, not file timestamps.** Freshness compares a document against
+  the newest commit date among tracked, non-documentation files — `source_definition` in the spec
+  declares which paths are excluded, and `.rite.yaml` may add more via `source_exclude`. mtime is
+  only the fallback where there is no repository, and the finding says so. Until 2026-09-12 this
+  was "every file on disk, dated by mtime", which meant a `.gitignore` alone made a documents-only
+  project look like it had code and `touch` could silence a stale document. Where the answer is
+  unknowable — shallow clone, no commits yet, no source, no git — each case says which in its own
+  words; never collapse them into one sentence.
 - **`docs/` is deliberately mixed, and the split is per file, not per project.** MISSION,
   ARCHITECTURE and CONVENTIONS are Markdown with YAML front matter because they are prose;
   DECISIONS and ROADMAP are YAML because the completion tests read their fields. Do not

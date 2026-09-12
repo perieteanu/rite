@@ -137,7 +137,7 @@ fails if anyone hand-edits the generated copy. A standard that cannot catch its 
 business asking that of anyone else.
 
 <!-- rite:generated gate-counts -->
-15 gates run on every push, across Linux, macOS and Windows. 4 cannot run on a CI runner — `test-riteyaml.py` (PyYAML is its oracle for the structures; the kinds and spec parity still run), `test-preflight-port-parity.py` (a runner has no copy of preflight.py), `test-mirror-port-parity.py` (a runner has no copy of the script Rite ported from) and `test-installed-current.py` (a runner has no installed plugin) — so the runner reports **`11 of 15 gates ran`** and names the 4 it skipped rather than showing an unqualified green.
+16 gates run on every push, across Linux, macOS and Windows. 5 cannot run on a CI runner — `test-riteyaml.py` (PyYAML is its oracle for the structures; the kinds and spec parity still run), `test-freshness-source.py` (it builds git fixtures, and git is a capability rather than a prerequisite), `test-preflight-port-parity.py` (a runner has no copy of preflight.py), `test-mirror-port-parity.py` (a runner has no copy of the script Rite ported from) and `test-installed-current.py` (a runner has no installed plugin) — so the runner reports **`11 of 16 gates ran`** and names the 5 it skipped rather than showing an unqualified green.
 <!-- /rite:generated -->
 
 The YAML is read by a subset parser shipped with Rite, so there is no dependency to install. It

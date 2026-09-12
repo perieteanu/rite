@@ -16,10 +16,12 @@ Stdlib only, like everything else here.
 from __future__ import annotations
 
 import datetime as dt
+import fnmatch
 import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -173,6 +175,151 @@ def project_yaml_files(root: Path, spec: dict,
         "excluded": len(candidates) - len(files),
         "ignored_by_git": ignored,
     }
+
+
+# ── what the project last RECORDED as changed ────────────────────────────────
+# Freshness asks whether a document is older than the thing it describes, so this is the measure
+# every freshness verdict rests on. It used to be "the newest mtime on disk", which was wrong in
+# both directions: a .gitignore or an ignored PDF made a documents-only project look like it had
+# source, and `touch` could silence a genuinely stale document. c-source-is-filesystem-mtime.
+#
+# The definition is DECLARED in spec/project-standard.yaml under `source_definition`; this code
+# reads it rather than carrying its own copy.
+
+class SourceActivity(NamedTuple):
+    """What the project last recorded as changed, and how much that answer is worth.
+
+    `date` is None whenever the answer is unknowable, and `reason` then says which of the three
+    ways it is unknowable — shallow clone, no commits yet, or genuinely no source. Those are
+    different facts about different projects and must not share one sentence.
+    """
+
+    date: dt.date | None
+    reason: str
+    dirty: bool
+    mode: str
+
+
+def _source_exclusions(spec: dict, marker: dict | None) -> list[str]:
+    """Every path that is not source, from the spec plus whatever the project declares."""
+    sd = spec.get("source_definition") or {}
+    local = (spec.get("local") or {}).get("docs_dir") or {}
+    dirs = [local.get("default") or "docs", *(local.get("alternatives") or [])]
+    out: list[str] = []
+    for raw in sd.get("excluded_paths") or []:
+        pattern = str(raw)
+        if "{docs_dir}" in pattern:
+            out.extend(pattern.replace("{docs_dir}", d) for d in dirs)
+        else:
+            out.append(pattern)
+    out.extend(str(p) for p in (sd.get("operational_not_source") or {}).get("paths") or [])
+    out.extend(str(p) for p in (marker or {}).get("source_exclude") or [])
+    return out
+
+
+def _pathspecs(exclusions: list[str]) -> list[str]:
+    """git exclude pathspecs. `glob` magic only where the pattern actually needs it."""
+    specs = []
+    for e in exclusions:
+        specs.append(f":(exclude,glob){e}" if "*" in e else f":(exclude){e}")
+    return specs
+
+
+def _git(root: Path, args: list[str]) -> subprocess.CompletedProcess | None:
+    """git, or None when it could not be run at all. encoding is load-bearing — see git_show."""
+    try:
+        return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
+                              timeout=15, encoding="utf-8", errors="replace")
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _git_source_activity(root: Path, exclusions: list[str]) -> SourceActivity | None:
+    """The git answer, or None when git itself could not be asked (then mtime is the fallback)."""
+    shallow = _git(root, ["rev-parse", "--is-shallow-repository"])
+    if shallow is None:
+        return None
+    if shallow.returncode == 0 and shallow.stdout.strip() == "true":
+        return SourceActivity(
+            None,
+            "shallow clone — every file's last commit is the clone's, so a date here would "
+            "describe how the repository was fetched rather than when the project changed",
+            False, "git")
+    specs = _pathspecs(exclusions)
+    log = _git(root, ["log", "-1", "--format=%cs", "--", ".", *specs])
+    if log is None:
+        return None
+    if log.returncode != 0:
+        # Exit 128, "does not have any commits yet". NOT the same fact as documents-only: a project
+        # scaffolded by /rite:init and checked before its first commit lands here.
+        return SourceActivity(
+            None, "no commits yet — nothing has been recorded to measure a document against",
+            False, "git")
+    stamp = log.stdout.strip()
+    if not stamp:
+        return SourceActivity(
+            None, "documents-only project — no source has ever been committed", False, "git")
+    try:
+        when = dt.date.fromisoformat(stamp)
+    except ValueError:
+        return None
+    status = _git(root, ["status", "--porcelain", "--", ".", *specs])
+    dirty = bool(status and status.returncode == 0 and status.stdout.strip())
+    return SourceActivity(when, "", dirty, "git")
+
+
+def _excluded(rel: str, exclusions: list[str]) -> bool:
+    name = rel.rsplit("/", 1)[-1]
+    for e in exclusions:
+        if e.endswith("/"):
+            bare = e.rstrip("/").removeprefix("**/")
+            if rel == bare or rel.startswith(f"{bare}/") or f"/{bare}/" in f"/{rel}":
+                return True
+        elif "*" in e:
+            if fnmatch.fnmatchcase(rel, e) or fnmatch.fnmatchcase(name, e):
+                return True
+        elif rel == e or name == e:
+            return True
+    return False
+
+
+def _mtime_source_activity(root: Path, exclusions: list[str]) -> SourceActivity:
+    """The filesystem answer, for a project with no repository to ask.
+
+    Six of ten sampled projects on this machine are not repositories, including the non-code ones
+    d-noncode-first-class exists to serve, so this is a real path rather than a safety net. Its
+    limitation is declared rather than hidden: after a fresh checkout every mtime is checkout time,
+    and nothing here can tell that from work.
+    """
+    newest: dt.date | None = None
+    for p in root.rglob("*"):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(root).as_posix()
+        if rel.startswith(".git/") or _excluded(rel, exclusions):
+            continue
+        try:
+            when = dt.date.fromtimestamp(p.stat().st_mtime)
+        except OSError:
+            continue
+        if newest is None or when > newest:
+            newest = when
+    if newest is None:
+        return SourceActivity(
+            None, "documents-only project — no source to measure against", False, "mtime")
+    return SourceActivity(newest, "", False, "mtime")
+
+
+def newest_source_date(root: Path, spec: dict, marker: dict | None = None) -> SourceActivity:
+    """When the project last recorded a change to something a document could describe."""
+    exclusions = _source_exclusions(spec, marker)
+    if (root / ".git").is_dir():
+        # A git WORKTREE carries .git as a file, not a directory, so it takes the mtime path. The
+        # finding names the mode, which is the honest half of that limitation.
+        activity = _git_source_activity(root, exclusions)
+        if activity is not None:
+            return activity
+    return _mtime_source_activity(root, exclusions)
 
 
 def yaml_verdict(path: Path, rel: str) -> tuple[str, str, str] | None:

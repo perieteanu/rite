@@ -2094,3 +2094,64 @@ decisions:
       - "render-standard.py now runs a subprocess. It names encoding and errors, and uses sys.executable rather than a literal interpreter, so the portability gate passes."
     proposed_by: claude
     confirmed_by_user: true
+
+  - id: d-source-is-recorded-change-not-file-timestamps
+    date: "2026-09-12"
+    title: "Freshness is measured against what the project RECORDED as changed, not against file timestamps"
+    context: >
+      c-source-is-filesystem-mtime, the high-severity half of the first outside adoption's harvest.
+      `newest_source_mtime` walked the whole tree and took mtimes, skipping four directories, four
+      filenames and one special case — a hardcoded set with no human-visible home, deciding every
+      freshness verdict in the standard.
+    decision: >
+      Source is the newest COMMIT date among tracked files that are not documentation. The
+      definition is declared in spec/project-standard.yaml under `source_definition`; mtime is the
+      fallback only where there is no repository to ask, and the finding names which basis produced
+      it. Where the answer cannot be known, the rules report NA and say which of the three ways.
+    rationale:
+      - >
+        MEASURED, THREE WAYS, AND ALL THREE HELD. On a documents-only fixture each of these ALONE
+        turned both freshness rules from NA to YELLOW with no document changed: a .gitignore, one
+        untracked git-excluded PDF, one shell script. Backdating that script's mtime silenced them
+        again. Every real git repository has a .gitignore, so no real project ever reached the
+        documents-only branch.
+      - >
+        AN mtime IS A FACT ABOUT THE FILESYSTEM; A COMMIT DATE IS A FACT ABOUT THE WORK. A clone, a
+        checkout, a copy or a `touch` all move an mtime without changing the project — and a fresh
+        clone sets every mtime to clone time, which would have turned CI YELLOW on its own once a
+        window passed. Freshness is a claim about the work.
+      - >
+        ONE `git log` CALL, measured at 2ms with exclude pathspecs. The alternative — one
+        subprocess per file — would have made the checker's cost scale with the repository and is
+        why the pathspec form was verified before the design was fixed.
+      - >
+        THE DECLARATION IS THE OTHER HALF OF THE FIX. An earlier draft of the spec section wrote
+        the exclusion list as PROSE, which would have left the real set hardcoded in the checker —
+        the very defect the section exists to remove. It is machine-readable, with `{docs_dir}`
+        expanded over the canonical name and every superseded alternative, reusing the substitution
+        `yaml_subset.checked_files` already uses.
+    three_ways_of_not_knowing: >
+      FOUND BY BUILDING IT, and the concern had seen none of them. A SHALLOW CLONE returns a date
+      that describes how the repository was fetched rather than when the project changed — and this
+      project's own CI uses actions/checkout with no fetch-depth, so the case was live rather than
+      hypothetical; the user ruled NA over an mtime fallback there, accepting that the freshness
+      rules do not run in CI. A repository with NO COMMITS exits 128 rather than returning nothing,
+      which is where a project scaffolded by /rite:init and checked before its first commit lands.
+      NO SOURCE AT ALL is the documents-only case the concern was about. Each says so in its own
+      words, because a check that cannot know something must never read like one that found nothing
+      wrong.
+    also_ruled_by_user:
+      - "A dirty working tree does not count as activity — a document cannot be stale against an edit nothing has recorded — but the finding states that uncommitted source changes exist."
+      - "A project may declare `source_exclude` in .rite.yaml for files that are not what its documents describe, its own tooling most often. Reported as a counted line, never applied in silence."
+    verified:
+      - "scripts/test-freshness-source.py, nine cases: the three measurements that opened the concern, the backdated-mtime case that proves mtime no longer decides, a dirty tree, and shallow / no-commits / no-git each naming what they cannot know."
+      - "Re-running the original experiments: the two documents-only cases report documents-only, and the third case's verdict is now IDENTICAL before and after backdating the mtime."
+      - "plumbing — no git, no non-doc file — still reports documents-only, so the project class d-noncode-first-class protects is unaffected."
+      - "peugeot307sw dates to 2026-09-10 and hwprivacy to 2026-09-07, both from commits."
+    consequences:
+      - "The rule had NO test before this. It shipped, was declared in the spec, ran on every project here for days, and nothing asserted what it measured against — which is how the defect survived being read several times."
+      - "A git WORKTREE presents .git as a file, so it takes the mtime path. Declared as an honest limit rather than hidden, and the mode is named in every finding."
+      - "The 16th gate, freshness-source, declares skip_means: it builds git fixtures, and git is a capability rather than a prerequisite."
+      - "c-freshness-thresholds-are-guesses keeps the calibration half: this fixed what the windows measure against, not whether 30, 60 and 90 days are right."
+    stated_by_user: true
+    proposed_by: claude

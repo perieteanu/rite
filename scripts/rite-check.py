@@ -229,26 +229,15 @@ def parse_date(v):
     return None
 
 
-def newest_source_mtime(root: Path) -> dt.date | None:
-    """Newest mtime of anything that is NOT documentation.
+def source_basis(activity) -> str:
+    """How a freshness finding should describe what it was measured against.
 
-    Freshness is measured against the thing described, never against another document.
-    Returns None for a documents-only project, where this measure degenerates — see
-    c-freshness-thresholds-are-guesses.
+    Stated on every finding on purpose: a verdict computed from commit dates and one computed from
+    file timestamps in a repository-less project are worth different amounts, and a reader cannot
+    tell them apart unless the report says which it is. See `source_definition` in the spec.
     """
-    newest, skip = None, {".git", "docs", "__pycache__", ".rite.yaml"}
-    for p in root.rglob("*"):
-        if not p.is_file():
-            continue
-        rel = p.relative_to(root)
-        if rel.parts[0] in skip or rel.name in {"README.md", "CLAUDE.md", "LOG.md", "HANDOFF.md"}:
-            continue
-        if rel.suffix in {".md"} and rel.parts[0] == "spec":
-            continue
-        ts = dt.date.fromtimestamp(p.stat().st_mtime)
-        if newest is None or ts > newest:
-            newest = ts
-    return newest
+    basis = "commit dates" if activity.mode == "git" else "file timestamps — no repository to ask"
+    return basis + ("; source has uncommitted changes" if activity.dirty else "")
 
 
 # ── rules ───────────────────────────────────────────────────────────────────
@@ -381,14 +370,15 @@ def _as_of_fresh(ctx, art, test):
     as_of = parse_date(doc.get("as_of"))
     if as_of is None:
         return YELLOW, "as_of missing or unparseable"
-    src = newest_source_mtime(ctx.root)
-    if src is None:
-        return NA, "documents-only project — no source to measure against"
+    activity = riterules.newest_source_date(ctx.root, ctx.spec, ctx.marker)
+    if activity.date is None:
+        return NA, activity.reason
     window, overridden = ctx.threshold(art["id"], "as_of_within_days_of_activity",
                                        test.get("value", 90))
-    age = (src - as_of).days
-    suffix = f" (window {window}d, overridden from {test.get('value')})" if overridden \
-        else f" (window {window}d)"
+    age = (activity.date - as_of).days
+    suffix = f" (window {window}d, overridden from {test.get('value')}" if overridden \
+        else f" (window {window}d"
+    suffix += f", {source_basis(activity)})"
     if age > window:
         return YELLOW, f"as_of {age}d behind newest source{suffix}"
     return GREEN, f"{max(age, 0)}d behind source{suffix}"
@@ -452,13 +442,17 @@ def _log_fresh(ctx, art, test):
             newest = d if newest is None or d > newest else newest
     if newest is None:
         return YELLOW, "no parseable entries"
-    src = newest_source_mtime(ctx.root)
-    if src is None:
-        return NA, "documents-only project — no source to measure against"
+    activity = riterules.newest_source_date(ctx.root, ctx.spec, ctx.marker)
+    if activity.date is None:
+        return NA, activity.reason
     window, overridden = ctx.threshold(art["id"], "newest_entry_within_days_of_activity",
                                        test.get("value", 30))
-    age = (src - newest).days
-    suffix = f" (window {window}d, overridden from {test.get('value')})" if overridden else ""
+    age = (activity.date - newest).days
+    suffix = f" (window {window}d, overridden from {test.get('value')}" if overridden \
+        else f" ({source_basis(activity)}"
+    if overridden:
+        suffix += f", {source_basis(activity)}"
+    suffix += ")"
     if age > window:
         return YELLOW, f"source {age}d newer than the last log entry{suffix}"
     return GREEN, f"log current to within {max(age, 0)}d{suffix}"
@@ -1099,6 +1093,17 @@ def check(root: Path, spec: dict,
             if sev in (RED, YELLOW):
                 sev = severity_if_failed if sev != NA else NA
             findings.append(Finding(sev, "project", level, rule_name, art["path"], msg))
+
+    # A project may declare that some of its files are not the thing its documents describe —
+    # tooling written to police the documentation, most often. Reported as a counted line for the
+    # same reason a threshold override is: a narrowed measure that nothing states is a silent
+    # opt-out. See source_definition.project_may_declare.
+    declared_not_source = (ctx.marker or {}).get("source_exclude") or []
+    if declared_not_source:
+        findings.append(Finding(
+            NA, "project", "populated", "source_exclude", ritefs.MARKER,
+            f"{len(declared_not_source)} path(s) declared not to be source: "
+            + ", ".join(str(p) for p in declared_not_source)))
 
     # ── the YAML the project carries that is not an artifact ──────────────────
     # THE GAP THIS CLOSES, measured: peugeot307sw committed broken YAML twice while `rite check`
