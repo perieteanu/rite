@@ -338,6 +338,112 @@ yaml_subset:
       test against PyYAML for every construct declared above, and that is the whole of the claim —
       a construct nobody wrote a case for is a construct Rite may still get wrong.
 
+# ── what "source" means (CORE) ───────────────────────────────────────────────
+# THE THING DOCUMENTS ARE MEASURED AGAINST. Freshness asks whether a document is older than the
+# thing it describes, so this definition decides every freshness verdict — and until 2026-09-12 it
+# lived nowhere but a function body, as a hardcoded set of four directories, four filenames and one
+# special case.
+#
+# IT WAS ALSO WRONG, measured rather than argued (c-source-is-filesystem-mtime, high). Source was
+# "every file on disk, dated by mtime". On a documents-only project each of these ALONE turned both
+# freshness rules from NA to YELLOW with no document changed: a .gitignore; one untracked,
+# git-excluded PDF; one shell script. Backdating that script's mtime silenced them again. Every real
+# git repository has a .gitignore, so no real project ever reached the documents-only branch, and a
+# fresh clone — where every mtime is clone time — would have turned YELLOW on its own once a window
+# passed. CLAUDE.md names that trap "mtime theatre"; it arrived through this definition rather than
+# through `as_of`.
+source_definition:
+  layer: core
+  rule: >
+    Source is what the project has RECORDED as changed: the newest commit date among tracked files
+    that are not documentation, not the newest modification time on disk. A document cannot be
+    stale against a change nothing has recorded.
+  why_not_mtime: >
+    An mtime says when a file was last written on THIS machine, which a clone, a checkout, a copy
+    or a `touch` all change without changing the project. A commit date says when the project
+    changed. The first is a fact about the filesystem; the second is a fact about the work, and
+    freshness is a claim about the work.
+  # MACHINE-READABLE ON PURPOSE. An earlier draft of this list was prose, which would have left the
+  # real exclusion set hardcoded in the checker — the very defect this section exists to remove.
+  # `{docs_dir}` expands over local.docs_dir's default AND every superseded alternative, the same
+  # substitution yaml_subset.checked_files.include_default uses. A trailing slash means "everything
+  # under here"; a bare name matches that filename at any depth.
+  excluded_paths:
+    - "{docs_dir}/"
+    - "README.md"
+    - "CLAUDE.md"
+    - "LOG.md"
+    - "HANDOFF.md"
+    - "spec/*.md"
+    - "__pycache__/"
+    - "**/__pycache__/"
+  excluded_paths_note: >
+    The documentation directory is excluded because freshness compares a document against the
+    thing it describes, never against another document. spec/*.md are generated readable forms of
+    the YAML beside them, so treating them as source would make the spec its own activity. LOG and
+    HANDOFF are the record of the work rather than the work.
+  operational_not_source:
+    paths: [".rite.yaml", ".gitignore"]
+    why: >
+      Both are configuration about how the project is HANDLED, never the thing its documents
+      describe. This is the half of the first outside adoption's finding that survives git
+      enumeration: with ignored files already dropped, a .gitignore and a marker were the only
+      things left making a documents-only project look like it had source.
+  enumeration:
+    git: >
+      One `git log -1` over the project, excluding the paths above by pathspec. Measured at 2ms,
+      so it costs one subprocess rather than one per file.
+    without_git: >
+      Newest mtime with the SAME exclusions, and the finding says it was measured that way. git is
+      a capability, not a prerequisite (d-git-is-a-capability-not-a-prerequisite), and six of ten
+      sampled projects on this machine are not repositories — including the non-code ones
+      d-noncode-first-class exists to serve.
+    ignored_files: >
+      A file git ignores is not source. Telling git not to publish a file is the project's own
+      statement that it is not part of what the project claims about itself.
+  # The three ways the answer is UNKNOWABLE. Each says so in its own words: a check that cannot
+  # know something must never be indistinguishable from one that found nothing wrong.
+  dirty_tree:
+    ruling: "Uncommitted changes do not count as activity, and the finding states that they exist."
+    why: >
+      A document cannot be stale against an edit nothing has recorded yet, and counting a dirty
+      tree as activity would make every working session report its own documents as stale the
+      moment it touched code. Reported rather than ignored, because a verdict computed while
+      source is uncommitted is a verdict with a caveat.
+  shallow_clone:
+    ruling: "NA, naming the shallow clone. A date is returned there and it must not be trusted."
+    why: >
+      A shallow clone has one commit, so every file's last-commit date is that clone's date. It is
+      an artefact of how the repository was fetched. NOT hypothetical: this project's own CI uses
+      actions/checkout with no fetch-depth, so the freshness rules deliberately do not run there.
+  no_commits:
+    ruling: "NA, naming it. A repository with no commits is not the same fact as documents-only."
+    why: >
+      A project scaffolded by /rite:init and checked before its first commit lands here. `git log`
+      exits non-zero rather than returning nothing, and borrowing the documents-only wording would
+      tell the user something false about their project.
+  project_may_declare:
+    key: "source_exclude in .rite.yaml"
+    what: "Paths the project declares are not the thing its documents describe — its own tooling, most often."
+    why: >
+      The adopting project's three scripts under tools/ exist only to police its documentation.
+      Improving them made the documentation look stale, which is the wrong incentive to put on
+      someone maintaining a documentation project.
+    never_silent: >
+      A declared exclusion is reported as a counted line, exactly as a threshold override is. A
+      narrowed scope that nothing states is a silent opt-out.
+  honest_limits:
+    - >
+      A git worktree presents `.git` as a FILE, not a directory, so it falls back to mtime mode.
+      The mode is named in the finding rather than hidden, but the fallback is a limitation.
+    - >
+      In mtime mode a fresh checkout is indistinguishable from real work: every file was written
+      at checkout time. Nothing can be done about that without a repository, which is why the mode
+      is stated.
+    - >
+      This fixes what freshness is measured AGAINST. The windows themselves — 30, 60 and 90 days —
+      are still uncalibrated guesses: c-freshness-thresholds-are-guesses keeps that half.
+
 # ── generated blocks (CORE — Rite's own) ─────────────────────────────
 # WHERE THIS FILE'S DATA IS WRITTEN INTO A HAND-WRITTEN DOCUMENT, and kept true by a check.
 #
@@ -836,7 +942,7 @@ participation:
     to check is noise on first contact, and noise is what gets a plugin uninstalled.
   marker_contents:
     minimal: "an empty file is a valid marker — presence is the signal"
-    optional_keys: [standard_version, fail_on, thresholds, disabled_checks, yaml_check]
+    optional_keys: [standard_version, fail_on, thresholds, disabled_checks, yaml_check, source_exclude]
 
   thresholds:
     rule: >
@@ -1295,7 +1401,10 @@ artifacts:
       - level: fresh
         rule: as_of_within_days_of_activity
         value: 90
-        means: "Measured against source mtime, never against another document."
+        means: >
+          Measured against what the project last RECORDED as changed — see source_definition —
+          never against another document. It said "source mtime" until 2026-09-12, which was both
+          the implementation and the defect.
       - level: populated
         rule: claims_declared
       - level: integrity

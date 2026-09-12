@@ -168,9 +168,10 @@ concerns:
 
   - id: c-source-is-filesystem-mtime
     title: "Source means every file on disk, dated by mtime — so no real project is documents-only, and freshness follows the clock on a file"
-    status: open
+    status: settled
     severity: high
     opened: "2026-09-11"
+    settled: "2026-09-12 — d-source-is-recorded-change-not-file-timestamps. Retired below."
     what: >
       newest_source_mtime() in scripts/rite-check.py walks root.rglob("*") and takes filesystem
       mtimes, skipping only .git, docs, a root-level __pycache__, .rite.yaml and four named
@@ -377,6 +378,28 @@ concerns:
     proposal: "One sentence on the ROADMAP artifact in spec/project-standard.yaml saying it describes work on the repository, not work the repository is about. Then regenerate."
 
 retired_ids:
+  - id: c-source-is-filesystem-mtime
+    retired: "2026-09-12"
+    how: settled
+    outcome: d-source-is-recorded-change-not-file-timestamps
+    why: >
+      Opened 2026-09-11 from the first outside adoption at high severity, and settled the next day.
+      Source is now what the project last RECORDED as changed — the newest commit date among
+      tracked, non-documentation files — with the definition declared in the spec rather than
+      hardcoded in a function body.
+      ITS THREE MEASUREMENTS ALL HELD, and each became a test case: a .gitignore alone, an
+      untracked git-excluded PDF, and a backdated mtime. The first two now report documents-only
+      and the third changes nothing at all.
+      WHAT THE CONCERN DID NOT SEE, found while building the fix: the answer can be unknowable in
+      THREE distinct ways, not one. A shallow clone returns a date that describes the fetch rather
+      than the project — and this repository's own CI checks out shallow, so that case was live
+      rather than hypothetical. A repository with no commits yet exits non-zero rather than
+      returning nothing, and a project scaffolded by /rite:init and checked before its first
+      commit lands there. Each says so in its own words.
+      The CALIBRATION half stays open where it belongs, in
+      c-freshness-thresholds-are-guesses: this changed what the windows measure against, not
+      whether 30, 60 and 90 days are the right numbers.
+
   - id: c-readme-sample-output-is-a-copy
     retired: "2026-09-12"
     how: settled

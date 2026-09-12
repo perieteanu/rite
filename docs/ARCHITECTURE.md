@@ -130,8 +130,9 @@ scripts/
                      duplicated line is cheaper than a silently missing verdict.
   riterules.py       Predicates SHARED by the checker and the watcher — git_show, zone_of,
                      git_removed_lines, log_future_timestamps, and since 2026-09-12
-                     git_known_files, project_yaml_files and yaml_verdict. One implementation,
-                     because two would be free to disagree about what "invalid" means.
+                     git_known_files, project_yaml_files, yaml_verdict and newest_source_date.
+                     One implementation, because two would be free to disagree about what
+                     "invalid" or "activity" means.
   rite_watch.py      THE WATCHER, dispatching on the event. PostToolUse: an append-only file
                      rewritten, a LOG entry dated in the future, or a write that leaves a
                      checked YAML file unparseable. CwdChanged: a mid-session move to a
@@ -143,6 +144,10 @@ scripts/
                      than into the project you are in. Append-only and untriaged on purpose.
   test-watch-discipline.py  That the watcher catches all three, and stays silent otherwise —
                      including on valid YAML, on an anchor, and on a YAML file out of scope.
+  test-freshness-source.py  What freshness is measured AGAINST: a .gitignore, an ignored file and
+                     a backdated mtime move nothing; a commit does; a dirty tree is reported but
+                     does not count; and shallow, no-commits and no-git each name what they
+                     cannot know. The rule had no test at all before 2026-09-12.
   test-preflight-port-parity.py  The port still agrees with the engine it came from. Temporary.
   riteyaml.py        Stdlib-only parser for the declared YAML subset. 775 lines. REFUSES rather
                      than guesses, in TWO KINDS: YamlInvalid (not YAML — the project's defect)
@@ -200,6 +205,7 @@ showing an unqualified green:
 | `protocol` | SESSION-PROTOCOL.md still matches session-protocol.yaml | runs |
 | `blocks` | every rite:generated block still matches its source — the stage table, and the gate counts and list fed from this file | runs |
 | `riteyaml` | riteyaml parses this project's YAML identically to PyYAML | **skips** |
+| `freshness-source` | freshness measures recorded change, not file timestamps, and names what it cannot know | **skips** |
 | `hook-shape` | the SessionStart hook nests its verdict under hookSpecificOutput | runs |
 | `verdicts` | unparseable is RED, absent stays NA, and a false claim is caught | runs |
 | `portability-rules` | UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no hardcoded python3 | runs |
@@ -375,9 +381,12 @@ plus binary strings is better than assumption and worse than a test.
   shape, their freshness. project-tracker owns cross-project scheduling: which project to
   touch tonight. Neither reaches into the other's question.
 - **verify_against_the_machine** — After the first line of code exists, a doc claim is a
-  testable assertion. Freshness is measured against source mtime, commit activity, or the host
-  — NEVER against another document. Errors propagate doc-to-doc; that is the failure mode
-  being designed against.
+  testable assertion. Freshness is measured against what the project RECORDED as changed — the
+  newest commit date among tracked, non-documentation files, `source_definition` in the spec — or
+  against the host, NEVER against another document. It said "source mtime" here until
+  2026-09-12, and that was the defect rather than the description: see
+  `d-source-is-recorded-change-not-file-timestamps`. Errors propagate doc-to-doc; that is the
+  failure mode being designed against.
 
 ## Layers
 

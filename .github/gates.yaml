@@ -55,6 +55,17 @@ gates:
       and they are what stops the parser and the published standard drifting apart. A skip here
       has meant "nothing was checked" since 2026-09-12 and no longer does.
 
+  - id: freshness-source
+    command: [scripts/test-freshness-source.py]
+    what: "freshness measures recorded change, not file timestamps, and names what it cannot know"
+    skip_short: "it builds git fixtures, and git is a capability rather than a prerequisite"
+    skip_means: >
+      git is not on this machine, so the fixtures cannot be built. Every case here needs a
+      repository: the point of the rule is that a COMMIT is what counts as activity, and mtime is
+      only the fallback where there is no repository to ask. A runner always has git, so this skip
+      is about a developer machine without it — and d-git-is-a-capability-not-a-prerequisite is
+      why that is a skip rather than a failure.
+
   - id: hook-shape
     command: [scripts/test-hook-output.py]
     what: "the SessionStart hook nests its verdict under hookSpecificOutput"

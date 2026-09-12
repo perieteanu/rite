@@ -187,6 +187,12 @@ current_state: >
   runs an external program instead of living in the engine. SessionStart emits ONE verdict
   covering the POST and the project standard, with a ported dedup that Rite's own hook never had.
   Costin's preflight still runs beside it, as the mirror does; retiring it is his call.
+  FRESHNESS MEASURES RECORDED CHANGE, not file timestamps —
+  d-source-is-recorded-change-not-file-timestamps. Source is the newest commit date among tracked,
+  non-documentation files; the definition is declared in the spec under `source_definition`; and
+  where it cannot be known — shallow clone, no commits yet, no source at all, no repository — the
+  finding says which. A .gitignore no longer makes a documents-only project look like it has code,
+  and backdating an mtime no longer changes a verdict. The rule had NO test before this.
   EVERY YAML FILE A PROJECT CARRIES IS NOW CHECKED, not only the 14 artifacts —
   d-project-yaml-checked-against-declared-subset, from the first outside adoption. riteyaml
   refuses in TWO KINDS (invalid is RED, outside-the-declared-subset is YELLOW), the subset is
@@ -574,6 +580,29 @@ milestones:
       FIRST WRITTEN IN THE WRONG PLACE, which is worth keeping: it was inserted ABOVE
       watcher-cwd-changed, and milestones_append_only went RED on the next run for a reordered
       list. The rule caught its own author inside ten minutes.
+
+  - id: source-is-recorded-change
+    what: "Freshness measures what the project recorded as changed, not what the filesystem says was touched"
+    closed: "2026-09-12"
+    log_ref: "12-09-2026 09:31:05"
+    note: >
+      c-source-is-filesystem-mtime, the high-severity half of the first outside adoption's harvest.
+      Source was "every file on disk, dated by mtime", so on a documents-only project a .gitignore
+      alone — which every real git repository has — turned both freshness rules from NA to YELLOW,
+      and `touch` could silence a genuinely stale document. It is now the newest commit date among
+      tracked, non-documentation files, with the definition DECLARED in the spec rather than living
+      as a hardcoded set inside a function.
+      THE THREE MEASUREMENTS THAT OPENED IT ARE NOW TEST CASES, and the fourth case is the one that
+      proves the fix: same content, mtime moved eight months back, verdict unchanged.
+      BUILDING IT FOUND WHAT THE CONCERN HAD NOT: the answer is unknowable in three distinct ways,
+      not one. A shallow clone returns a date that describes the fetch — and this repository's CI
+      checks out shallow, so the case was live. A repository with no commits exits non-zero rather
+      than returning nothing, which is where a freshly scaffolded project lands. Each says so in
+      its own words, because a check that cannot know something must never read like one that
+      found nothing wrong.
+      AND THE RULE HAD NO TEST AT ALL until now — it shipped, was declared in the spec, ran on
+      every project here for days, and nothing asserted what it measured against. That is how it
+      survived being read several times.
 
 near_term:
   label: "EMPTY — the path from private to public is complete"

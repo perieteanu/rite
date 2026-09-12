@@ -203,7 +203,7 @@ Migration of existing projects is explicitly opt-in (d-audience-public-standard,
 `.rite.yaml` is CONFIG, not a documentation artifact, so it does not count against the inventory frozen at 13. The inventory covers what a cold human or agent READS to understand the project; this file is operational, in the same family as .gitignore or phpstan.neon. Recorded explicitly because the freeze exists precisely to stop additions being absorbed without argument — see d-verdicts-and-participation.
 
 - minimal: an empty file is a valid marker — presence is the signal
-- optional keys: `standard_version`, `fail_on`, `thresholds`, `disabled_checks`, `yaml_check`
+- optional keys: `standard_version`, `fail_on`, `thresholds`, `disabled_checks`, `yaml_check`, `source_exclude`
 
 ### Thresholds
 
@@ -476,7 +476,7 @@ _Schema strictness: loose._
 | populated | `min_content_sections` | `3` — At least three H2 sections beyond the title. This replaces a required-key list, which cannot span a Rust codebase and a plumbing schematic. |
 | populated | `required_any_of_sections` | One of the topology sections, honouring `section_aliases` — "Summary" satisfies "Shape". DECLARED 2026-09-10: the rule had been implemented since the checker was written and invoked by NOTHING, because `required_any_of_sections` appeared only under `structure:` as data and no artifact listed it under `tests:`. Dead code in the checker whose whole subject is rules nobody runs. YELLOW, never RED, and `required_any_of_waived_when` says why: a non-code project whose top-level keys ARE the topology has no generic container section, and d-noncode-first-class makes those first-class. The finding names the waiver so a reader can dismiss it deliberately rather than wonder. |
 | fresh | `as_of_present` | — |
-| fresh | `as_of_within_days_of_activity` | `90` — Measured against source mtime, never against another document. |
+| fresh | `as_of_within_days_of_activity` | `90` — Measured against what the project last RECORDED as changed — see source_definition — never against another document. It said "source mtime" until 2026-09-12, which was both the implementation and the defect. |
 | populated | `claims_declared` | — |
 | integrity | `claims_match_filesystem` | The must_be_current artifact, and the one that rotted hardest. On 2026-09-08 it omitted the checker entirely; on 2026-09-09 it still called the session-start script "planned", said it writes status.json, and said it reads an /end stamp file that d-end-outcome-recorded-in-handoff had REJECTED — a rejected design documented as live, beside working code. |
 
