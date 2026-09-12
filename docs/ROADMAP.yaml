@@ -83,7 +83,7 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin at version 0.22.0 — rite@rite, SEVEN skills reachable as
+  Rite is an installed, running plugin at version 0.24.0 — rite@rite, SEVEN skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -92,8 +92,8 @@ current_state: >
   NOT repeated here: hook output
   shape, checker verdicts, portability rules, scaffold, installed-copy currency, and
   rite-check.py against this project itself — that last one was never counted in the list of six
-  this project told itself for three days. rite-check.py reports 61 checks on this project,
-  0 RED, 56 GREEN, covering 57 of 64 declared tests.
+  this project told itself for three days. rite-check.py reports 67 checks on this project,
+  covering 66 of 66 declared tests.
   STAGE IS NOW THE GATING AXIS OF THE STANDARD — d-stage-is-the-gating-axis. Every artifact
   declares required_from_stage, and a project is not asked for what its stage has not reached.
   THE MAPPING IS NOT REPEATED HERE and this sentence is the reason why: it used to be, and that
@@ -106,13 +106,14 @@ current_state: >
   stricter tier behaviour in full — absence is not a claim, and deleting one line must never be
   the way to switch the standard off.
   CI IS HONEST ABOUT WHAT IT DOES NOT COVER. .github/workflows/gates.yml fires on every push,
-  but only TEN of the thirteen gates can run on a runner: the riteyaml differential needs PyYAML
-  as its oracle and CI does not install it, the installed-copy test needs an installed plugin
-  which a runner never has, and the mirror-port parity test needs the original script rite was
-  ported from. That third one is TEMPORARY BY CONSTRUCTION: the original is Costin's fallback
-  while rite is on trial, and when he retires it the gate skips forever and must be deleted —
-  a gate that can no longer fail is not a gate. The runner names the three it skipped on every
-  run, rather than showing an unqualified green.
+  and the gates that cannot run on a runner each declare `skip_means` in .github/gates.yaml. THE
+  COUNT AND THE LIST ARE NOT REPEATED HERE — that is c-gate-count-restated-in-prose, retired by
+  deleting copies like this one rather than by maintaining them. What matters is the shape: a
+  runner reports the coverage it achieved and names what it skipped, because a skip folded into a
+  pass is the failure this project attacks. One of those gates is TEMPORARY BY CONSTRUCTION — the
+  mirror-port parity test needs the original script Rite was ported from, which is Costin's
+  fallback while Rite is on trial; when he retires it the gate skips forever and must be DELETED,
+  since a gate that can no longer fail is not a gate.
   CI RUNS ON ALL THREE DECLARED TARGETS — ubuntu, macos and windows, fail-fast:false so one
   platform's failure cannot hide another's findings. Until 2026-09-10 the only machine that had
   ever run Rite was one Linux laptop. macOS passed first time, which is the first EVIDENCE that
@@ -156,7 +157,8 @@ current_state: >
   it was drawn. c-plan-attribution is settled — d-attribution-is-authorship-not-mention — after
   three days as "the only genuinely hard part". It was never hard; the FIRST ANSWER was just
   wrong in a way nothing looked wrong about.
-  COVERAGE IS 61 OF 66 declared tests, up from 57 of 64. filename_matches_canonical,
+  COVERAGE IS 66 OF 66 declared tests; the copier port took it from 57 of 64 to 61 of 66.
+  filename_matches_canonical,
   source_plans_all_copied and mirror_not_stale are implemented, and the first two were
   UNREACHABLE rather than unwritten until an artifact could declare a path_pattern.
   THE INVENTORY IS 14, not 13. script_copy was added through the process the freeze exists to
@@ -214,7 +216,7 @@ current_state: >
   project-tracker's projects.yaml from ~/.claude/scripts, wired in Costin's own checks.yaml.
   That is the mechanism working as designed — the engine never learns that file's shape.
   STILL MISSING: no declared rule is unimplemented. The
-  checker's coverage line now reads 62 of 63: `optional` markers were being counted in the
+  checker's coverage line now reads 66 of 66: `optional` markers were being counted in the
   denominator as rules awaiting implementation, which understated the checker by four and had
   four documents repeating 'seven declared tests unimplemented' for days.
   THE FIRST WATCHER EXISTS — one of eight. scripts/rite_watch.py reports an append-only file
@@ -603,6 +605,21 @@ milestones:
       AND THE RULE HAD NO TEST AT ALL until now — it shipped, was declared in the spec, ran on
       every project here for days, and nothing asserted what it measured against. That is how it
       survived being read several times.
+
+  - id: readme-sample-generated
+    what: "The README's sample verdict is generated from a declared fixture — the last hand-maintained copy is gone"
+    closed: "2026-09-12"
+    log_ref: "12-09-2026 09:16:02"
+    note: >
+      c-readme-sample-output-is-a-copy, opened 2026-09-10 at severity low on the argument that a
+      slightly stale sample misleads nobody. Two days later it printed 61 checks and 57 of 64
+      against a real 67 and 66 of 66, in the first document a stranger reads — and severity was
+      the wrong lens: what mattered was that it was the last hand-maintained copy in a repository
+      whose thesis is that such copies rot.
+      THE FIX NEEDED A FIX WITHIN THE HOUR. The first fixture expired in 2026-03, so the generated
+      sample carried "expired 176d ago" — a count measured from today, which would have rewritten
+      the block every morning and failed its own gate for nobody's change. The two --check runs
+      meant to prove determinism both passed, because they ran in the same minute.
 
 near_term:
   label: "EMPTY — the path from private to public is complete"
