@@ -169,6 +169,60 @@ def _file_format(d: Doc, spec: dict) -> None:
             d.add()
 
 
+def _yaml_subset(d: Doc, spec: dict) -> None:
+    """The declared YAML subset, both kinds of refusal, and which files are checked."""
+    ys = spec.get("yaml_subset")
+    if not ys:
+        return
+    d.add("## The YAML subset")
+    d.add()
+    d.add(f"**Rule.** {_s(ys.get('rule'))}")
+    d.add()
+    for key in ("why_two_kinds", "measured"):
+        if ys.get(key):
+            d.add(_s(ys[key]))
+            d.add()
+    if ys.get("supported"):
+        d.add("**Supported.**")
+        d.add()
+        for item in ys["supported"]:
+            d.add(f"- {_s(item)}")
+        d.add()
+    for key, title in (
+        ("refused", "Refused — valid YAML outside the subset, reported YELLOW"),
+        ("rejected_as_invalid", "Rejected — not YAML at all, reported RED"),
+    ):
+        rows = ys.get(key) or []
+        if not rows:
+            continue
+        d.add(f"**{title}**")
+        d.add()
+        d.add("| construct | looks like | why |")
+        d.add("|---|---|---|")
+        for r in rows:
+            d.add(f"| `{r.get('construct')}` | `{r.get('yaml', '')}` | {_s(r.get('why'))} |")
+        d.add()
+    cf = ys.get("checked_files") or {}
+    if cf:
+        d.add(f"**Which files are checked.** {_s(cf.get('rule'))}")
+        d.add()
+        for key in ("enumeration", "why_not_everything", "why_not_stage_gated",
+                    "overrides_are_never_silent"):
+            if cf.get(key):
+                d.add(_s(cf[key]))
+                d.add()
+    for t in ys.get("tests") or []:
+        d.add(f"- **`{t.get('rule')}`** ({t.get('severity')}) — {_s(t.get('what'))}")
+    if ys.get("tests"):
+        d.add()
+    if ys.get("honest_limits"):
+        d.add("**Honest limits.**")
+        d.add()
+        for limit in ys["honest_limits"]:
+            d.add(f"- {_s(limit)}")
+        d.add()
+
+
 def _portability(d: Doc, spec: dict) -> None:
     port = spec.get("portability")
     if not port:
@@ -747,6 +801,7 @@ def render(spec: dict) -> str:
     _tiers(d, spec)
     _provenance(d, spec)
     _file_format(d, spec)
+    _yaml_subset(d, spec)
     _write_discipline(d, spec)
     _verdicts(d, spec)
     _participation(d, spec)
