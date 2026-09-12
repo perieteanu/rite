@@ -2050,3 +2050,47 @@ decisions:
       - "A broken write produces exactly one note naming file and construct; a valid file, an anchor, and a YAML file outside the scope all produce silence."
     chosen_by_user: true
     proposed_by: claude
+
+  - id: d-readme-sample-is-generated
+    date: "2026-09-12"
+    title: "The README's sample verdict is generated from a declared fixture, not pasted"
+    context: >
+      c-readme-sample-output-is-a-copy, opened 2026-09-10 at severity low: the README quoted a
+      real checker run, and nothing regenerated it. It was the last hand-maintained copy in the
+      repository. By 2026-09-12 it printed "61 checks" and "coverage: 57 of 64" against a real 67
+      and 66 of 66 — stale within two days, in the first document a stranger reads, in the project
+      whose thesis is that unchecked documents rot.
+    decision: >
+      A fifth generated block, `sample-verdict`. The renderer writes a fixture declared in
+      spec/project-standard.yaml to a temp directory and runs scripts/rite-check.py against it,
+      fencing the real output into README.md. `--blocks --check` is the completion test.
+    rationale:
+      - >
+        BOTH OPTIONS THE CONCERN OFFERED WERE ON THE TABLE and the cheap one was declined:
+        labelling the sample "illustrative" is a rule with no completion test, which is the thing
+        this project exists to replace.
+      - >
+        GENERATING IT IS ALSO THE HONEST CHOICE, not merely the tidy one. The previous rewrite of
+        that README section found a real defect — a 54-line report conveying one finding — only
+        because the example was generated rather than imagined. A fabricated sample would have
+        shown the tidy output I expected and the defect would have shipped.
+      - >
+        THE FIXTURE LIVES IN THE SPEC, not on disk and not in the renderer. On disk, a stray
+        .rite.yaml inside this repository would look like a second project to every tool that
+        hunts for markers. In the renderer, it would be a hardcoded value with no human-visible
+        home.
+    determinism_is_the_constraint: >
+      A generated block that changes on its own turns its gate into one that always fails, and
+      this project treats that as fatal. PROVED NECESSARY IMMEDIATELY: the first fixture expired
+      in 2026-03, so the sample printed "expired 176d ago" — a count measured from today, which
+      would have rewritten the block every morning for nobody's change. Two --check runs passed
+      and proved nothing, because they ran in the same minute. It was caught by READING the
+      output. The fixture now carries fixed dates, a far-future expiry, a fixed project directory
+      name, and no source file — so freshness reports NA rather than a day count, and every line
+      is reproducible on any machine.
+    consequences:
+      - "The sample now shows the new yaml_check line and a stale-handoff RED, which is what a session that did not close actually looks like."
+      - "The stage mapping inside it is exempt from the stage-table guard twice over: the guard skips generated blocks and fenced blocks both."
+      - "render-standard.py now runs a subprocess. It names encoding and errors, and uses sys.executable rather than a literal interpreter, so the portability gate passes."
+    proposed_by: claude
+    confirmed_by_user: true

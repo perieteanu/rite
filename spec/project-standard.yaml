@@ -404,6 +404,56 @@ generated_blocks:
         - path: docs/ARCHITECTURE.md
           style: md
 
+    # ── the README's sample verdict ──────────────────────────────────────────
+    # THE LAST HAND-MAINTAINED COPY IN THE REPOSITORY, and it rotted exactly as predicted:
+    # c-readme-sample-output-is-a-copy was opened 2026-09-10 at severity low, and by 2026-09-12
+    # the pasted run printed "61 checks" and "57 of 64" against a real 67 and 66 of 66. The
+    # block mechanism is the fix the concern asked for.
+    #
+    # DETERMINISM IS THE WHOLE DESIGN CONSTRAINT. A generated block that changes on its own turns
+    # `--blocks --check` into a gate that always fails, and this project's standing rule is that
+    # such a gate is switched off within a week. Hence: FIXED dates in the fixture, a FIXED
+    # project directory name, and NO source file — a documents-only project, whose freshness
+    # rules report NA rather than a day count that would move every morning.
+    #
+    # The fixture lives here rather than in the renderer because it is content a human should be
+    # able to read and edit, and rather than as files on disk because a stray .rite.yaml inside
+    # this repository would look like a second project to every tool that hunts for markers.
+    - id: sample-verdict
+      what: "A real checker run against a declared fixture, fenced into the README"
+      source: "this block's own `fixture`, run through scripts/rite-check.py at render time"
+      project_name: "myproject"
+      targets:
+        - path: README.md
+          style: md
+      fixture:
+        ".rite.yaml": |
+          stage: idea
+        "LOG.md": |
+          # LOG — myproject
+
+          01-01-2026 09:00:00 | Thu | myproject | [note] Adopted rite. A sample project, not a real one
+        # `expires` is deliberately absurd, and the absurdity is load-bearing. The first version
+        # of this fixture expired in 2026-03 and the sample printed "expired 176d ago" — a count
+        # measured from TODAY, so the block rewrote itself every morning and `--blocks --check`
+        # would have failed on its own within a day, for nobody's change. The two check runs that
+        # passed proved nothing: they ran in the same minute. A far-future date keeps `not_expired`
+        # green and silent, which is the only state of that rule that does not carry a clock.
+        "HANDOFF.md": |
+          ---
+          genre: none
+          written: "2025-12-20"
+          expires: "2099-12-31"
+          status: live
+          session_end: none
+          ---
+
+          # HANDOFF — myproject
+
+          Nothing to hand off. `written:` deliberately predates the newest LOG entry, which is
+          what a session that worked and then closed without touching the handoff leaves behind —
+          so the sample shows a real finding rather than an empty green report.
+
 # ── write discipline (CORE) ──────────────────────────────────────────────────
 # How a file may legally be changed. Declared per artifact, because "edit the docs" means
 # five different things and getting it wrong is silent: an appended roadmap becomes a

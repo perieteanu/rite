@@ -30,27 +30,40 @@ don't follow it.** That check is the product.
 **At session start**, a hook runs the standard's checks and puts the verdict in Claude's
 context — before you type anything:
 
+<!-- rite:generated sample-verdict -->
 ```
 rite — myproject
 
-  NA     project  fresh      LOG.md        newest_entry_within_days_of_activity — documents-only project — no source to measure against
-  NA     project  integrity  LOG.md        append_only_preserved — requires revision history — no git repository
-  RED    project  integrity  HANDOFF.md    written_not_older_than_newest_log_entry — handoff written 2026-09-02, newest log entry 2026-09-10 — session did not close
-  NA     project  populated  CONCERNS.yaml entry_required_keys — tier 2, not present — optional
-  NA     project  —          46 checks not required at stage 'idea', waiting on:
+  NA     project  fresh      LOG.md                                  newest_entry_within_days_of_activity — documents-only project — no source to measure against
+  NA     project  integrity  LOG.md                                  append_only_preserved — requires revision history — no git repository
+  RED    project  integrity  HANDOFF.md                              written_not_older_than_newest_log_entry — handoff written 2025-12-20, newest log entry 2026-01-01 — session did not close
+  NA     project  populated  docs/PLAN-YYYY-MM-DD-<slug>.md          filename_matches_canonical — tier 2, not present — optional
+  NA     project  fresh      docs/PLAN-YYYY-MM-DD-<slug>.md          source_plans_all_copied — tier 2, not present — optional
+  NA     project  populated  docs/session-scripts/<ISO date>/<name>  filename_matches_canonical — tier 3, not present — optional
+  NA     project  populated  docs/CONCERNS.yaml                      entry_required_keys — tier 2, not present — optional
+  NA     project  populated  docs/CONCERNS.yaml                      unique_ids — tier 2, not present — optional
+  NA     project  fresh      docs/claude-memory.md                   mirror_not_stale — tier 3, not present — optional
+  NA     project  integrity  .                                       yaml_check — no YAML files in scope — yaml_parses and yaml_within_subset read nothing
+  NA     project  —          47 checks not required at stage 'idea', waiting on:
                                spec     README.md, CLAUDE.md, docs/MISSION.md, docs/ROADMAP.yaml
                                build    docs/ARCHITECTURE.md, docs/CONVENTIONS.md, docs/DECISIONS.yaml
                                shipped  LICENSE
 
-  61 checks · 1 RED · 0 YELLOW · 53 NA · 7 GREEN
-  coverage: 57 of 64 declared tests implemented
+  65 checks · 1 RED · 0 YELLOW · 56 NA · 8 GREEN
+  coverage: 66 of 66 declared tests implemented
   no git repository — integrity checks report NA (capability, not prerequisite)
 ```
+<!-- /rite:generated -->
 
-Real output from a scaffolded project. Note the last block: checks your stage has not reached
-are **collapsed and counted, never dropped** — you can see what is coming without being shown a
-wall of things you have not done yet. And `coverage:` states what the checker itself cannot
-verify, so the report is honest about its own limits rather than flattering.
+**That block is generated**, not pasted: the checker is run at render time against a small
+fixture declared in [`spec/project-standard.yaml`](spec/project-standard.yaml), so it is a real
+verdict and a gate fails the day it stops matching. It used to be a copy, and it went stale
+within two days — printing 61 checks where the truth was 67.
+
+Note the collapsed block: checks your stage has not reached are **counted and named, never
+dropped** — you can see what is coming without being shown a wall of things you have not done
+yet. And `coverage:` states what the checker itself cannot verify, so the report is honest about
+its own limits rather than flattering.
 
 Every finding says **whose side it is on** and what would clear it. A check the tool cannot run
 reports `NA` and says so — it never quietly disappears, because a check that vanished and a

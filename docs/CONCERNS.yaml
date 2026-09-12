@@ -49,9 +49,10 @@ concerns:
 
   - id: c-readme-sample-output-is-a-copy
     title: "The README's sample checker run restates the stage mapping, and nothing regenerates it"
-    status: open
+    status: settled
     severity: low
     opened: "2026-09-10"
+    settled: "2026-09-12 — d-readme-sample-is-generated. Retired below."
     what: >
       README.md quotes a real run of the checker whose tail reads "46 checks not required at
       stage 'idea', waiting on: spec README.md, CLAUDE.md ... build ... shipped LICENSE". That
@@ -226,6 +227,34 @@ concerns:
       - "core.hooksPath would version the hook, but it is git config, which that decision names outright."
     do_not: "Install a hook from /rite:init by default. Offering one is a DECISIONS entry either way."
 
+  - id: c-installed-spec-is-not-compared
+    title: "The installed plugin's copy of the standard can drift from the repository, unchecked"
+    status: open
+    severity: medium
+    opened: "2026-09-12"
+    what: >
+      scripts/test-installed-current.py compares four paths — scripts, skills, hooks,
+      .claude-plugin — and excludes documents on purpose, because a cache carrying a stale LOG.md
+      is untidy rather than broken. spec/ is NEITHER of those things.
+      spec/project-standard.yaml is EXECUTABLE INPUT: rite-check.py reads it on every session
+      start, resolved relative to the script's own location, which in an installed plugin is the
+      cache copy. A spec-only change is therefore live in the repository and absent from what
+      actually runs.
+    how_it_surfaced: >
+      Found 2026-09-12 while reinstalling at 0.23.0. The gate went green on the reinstall, then
+      spec/ changed twice more in the same session — the not_utf8 line in yaml_subset, and the
+      sample fixture — and the gate stayed green with the installed spec already stale.
+    why_it_matters: >
+      Every rule, threshold, construct id and scope default lives in that file. A session would be
+      graded against an older standard than the repository states, and the report would look
+      entirely normal: a silent wrong answer rather than a visible gap, which is the failure class
+      this project exists to attack. It is also the same shape as the defect the test itself was
+      written for — an equal version with unequal bytes, which "looks current".
+    proposal:
+      - "Add spec/ to COMPARED. Smallest change, and honest: a stale spec is not untidy, it is wrong."
+      - "Or have the verdict state the spec it was computed from — path and schema_version — so a stale installed copy is visible rather than inferred."
+    do_not: "Assume the version bump covers it. A bump is what makes `update` act at all; only a comparison catches equal versions with unequal bytes."
+
   - id: c-yaml-values-are-misread-in-ways-that-still-parse
     title: "Five silent misreads survive: the file parses, and the value is wrong"
     status: open
@@ -348,6 +377,24 @@ concerns:
     proposal: "One sentence on the ROADMAP artifact in spec/project-standard.yaml saying it describes work on the repository, not work the repository is about. Then regenerate."
 
 retired_ids:
+  - id: c-readme-sample-output-is-a-copy
+    retired: "2026-09-12"
+    how: settled
+    outcome: d-readme-sample-is-generated
+    why: >
+      Opened 2026-09-10 at severity low, on the argument that a slightly stale sample misleads
+      nobody. TWO DAYS LATER it printed 61 checks and 57 of 64 against a real 67 and 66 of 66 —
+      and severity was the wrong lens: what mattered was that it was the last hand-maintained
+      copy in a repository arguing that such copies rot. It is now the fifth generated block,
+      run against a fixture declared in the spec.
+      ITS OWN `do_not` WAS HONOURED, and the cheap half of its proposal declined: labelling the
+      sample "illustrative" would have been a rule with no completion test.
+      THE FIX NEEDED A FIX WITHIN THE HOUR, which is the part worth keeping. The first fixture
+      expired in 2026-03, so the generated sample carried "expired 176d ago" — a day count
+      measured from today, which would have rewritten the block every morning and failed the gate
+      for nobody's change. Caught by reading the output; the two --check runs that passed proved
+      nothing, because they ran in the same minute.
+
   - id: c-project-yaml-is-not-checked
     retired: "2026-09-12"
     how: settled
