@@ -23,6 +23,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import ritefs  # noqa: E402
 import riteyaml  # noqa: E402
 
 
@@ -75,6 +76,125 @@ def git_removed_lines(root: Path, rel: str) -> int | None:
     if out.returncode != 0:
         return None
     return sum(1 for ln in out.stdout.splitlines() if ln.startswith("-") and not ln.startswith("---"))
+
+
+# ── every YAML file a project carries, not only its declared artifacts ───────
+# WHY THIS IS HERE and not in the checker: the PostToolUse watcher asks the same question the
+# instant a file is written, and the checker asks it at session start. Two copies of "is this
+# file readable, and is it inside the subset?" would be free to disagree — the drift this project
+# attacks everywhere else, self-inflicted. One predicate, two consumers, like the append-only
+# and future-timestamp rules above.
+
+def git_known_files(root: Path) -> set[str] | None:
+    """Every path git knows about: tracked, plus untracked and not ignored. None if not a repo.
+
+    An IGNORED file is deliberately absent from this set. A project that has told git not to
+    publish a file has said it is not part of what the project claims about itself, and Rite has
+    no standing to grade it. Where there is no repository there is no such statement, so the
+    filesystem is used and ignored files do not exist as a category.
+    """
+    if not (root / ".git").is_dir():
+        return None
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z",
+             "--cached", "--others", "--exclude-standard"],
+            capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    return {p for p in out.stdout.split("\0") if p}
+
+
+def _glob_set(root: Path, patterns: list[str]) -> dict[str, None]:
+    """Case-exact matches for a list of globs, in declaration order, de-duplicated.
+
+    Path.glob alone matches case-insensitively on macOS and Windows, so docs/roadmap.yaml would
+    satisfy docs/*.yaml there and not on Linux — the same repo, two verdicts. Every hit is
+    re-verified through ritefs.exists_exactly, which is the one implementation of that rule.
+    """
+    out: dict[str, None] = {}
+    for pattern in patterns:
+        try:
+            found = sorted(root.glob(pattern))
+        except (ValueError, OSError):
+            continue  # a malformed glob is the project's declaration, not a crash of ours
+        for p in found:
+            if p.is_file() and ritefs.exists_exactly(p):
+                out[p.relative_to(root).as_posix()] = None
+    return out
+
+
+def project_yaml_globs(spec: dict, marker: dict | None) -> tuple[list[str], list[str], int]:
+    """(include, exclude, how many globs the project declared itself).
+
+    The default comes from the spec and is expanded over every documentation directory name the
+    standard knows, including the superseded ones — 11 projects still use docs-yaml/ and
+    migration is opt-in, so checking only the canonical name would check nothing on those.
+    """
+    cf = (spec.get("yaml_subset") or {}).get("checked_files") or {}
+    local = (spec.get("local") or {}).get("docs_dir") or {}
+    dirs = [local.get("default") or "docs", *(local.get("alternatives") or [])]
+    include = [str(pattern).replace("{docs_dir}", d)
+               for pattern in cf.get("include_default") or []
+               for d in dirs]
+    declared = (marker or {}).get("yaml_check") or {}
+    extra = [str(x) for x in (declared.get("include") or [])]
+    exclude = [str(x) for x in (declared.get("exclude") or [])]
+    return include + extra, exclude, len(extra)
+
+
+def project_yaml_files(root: Path, spec: dict,
+                       marker: dict | None) -> tuple[list[str], dict]:
+    """The YAML files in scope, and what narrowed the scope.
+
+    The second value is reported rather than kept quiet: a declared include or exclude that
+    nothing states is a silent opt-out, which is the rule threshold overrides already follow.
+    """
+    include, exclude, declared_globs = project_yaml_globs(spec, marker)
+    candidates = _glob_set(root, include)
+    known = git_known_files(root)
+    ignored = 0
+    if known is not None:
+        kept = {}
+        for rel in candidates:
+            if rel in known:
+                kept[rel] = None
+            else:
+                ignored += 1
+        candidates = kept
+    removed = set(_glob_set(root, exclude))
+    files = [rel for rel in candidates if rel not in removed]
+    return sorted(files), {
+        "declared_globs": declared_globs,
+        "excluded": len(candidates) - len(files),
+        "ignored_by_git": ignored,
+    }
+
+
+def yaml_verdict(path: Path, rel: str) -> tuple[str, str, str] | None:
+    """(kind, construct, message) when a YAML file cannot be read as declared, else None.
+
+    `kind` is riteyaml's: "invalid" for text that is not YAML, "unsupported" for valid YAML
+    outside the declared subset. The caller turns that into a verdict; deciding it here would put
+    the severity in two places.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return ("invalid", "not_utf8",
+                "not valid UTF-8 — YAML must be UTF-8, UTF-16 or UTF-32, and every file Rite "
+                "reads or writes declares UTF-8")
+    except OSError:
+        return None  # unreadable for a reason that is not about its content
+    try:
+        riteyaml.load(text, rel)
+    except riteyaml.RiteYamlError as e:
+        return e.kind, e.construct, f"{e.reason} (line {e.lineno})"
+    return None
 
 
 # ── LOG timestamps ───────────────────────────────────────────────────────────

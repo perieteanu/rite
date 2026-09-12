@@ -18,7 +18,7 @@
 # which belongs to project-tracker (d-evolution-out-of-scope).
 ---
 schema_version: "1.0.0"
-as_of: "2026-09-10"
+as_of: "2026-09-12"
 status: current
 
 # current_state below is the project's most consequential claim about its own tree, and on
@@ -187,8 +187,15 @@ current_state: >
   runs an external program instead of living in the engine. SessionStart emits ONE verdict
   covering the POST and the project standard, with a ported dedup that Rite's own hook never had.
   Costin's preflight still runs beside it, as the mirror does; retiring it is his call.
-  THE CHECKER IS AT FULL COVERAGE — 64 of 64 declared tests implemented, 0 NA on this project,
-  for the first time. deleted_ids_appear_in_milestones was the last, and it is what makes the
+  EVERY YAML FILE A PROJECT CARRIES IS NOW CHECKED, not only the 14 artifacts —
+  d-project-yaml-checked-against-declared-subset, from the first outside adoption. riteyaml
+  refuses in TWO KINDS (invalid is RED, outside-the-declared-subset is YELLOW), the subset is
+  declared in the spec with every construct id, and a gate holds the parser and the declaration
+  equal without needing PyYAML. Measured across all 478 YAML files on this machine: false accepts
+  12 to 0, and the 29 multi-document files it used to merge silently now refuse. The watcher
+  reports a third thing, invalid YAML at the moment of the write.
+  THE CHECKER IS AT FULL COVERAGE — 66 of 66 declared tests implemented, and 67 checks on this
+  project, whose one NA is the declared yaml_check scope reporting itself. deleted_ids_appear_in_milestones was the last, and it is what makes the
   deletion convention safe: closing an item by deleting it is only sound if the item is promoted
   rather than erased. required_any_of_sections was implemented all along and invoked by NOTHING,
   because the spec declared its data under `structure:` while no artifact listed the rule under
@@ -542,6 +549,31 @@ milestones:
       exposes THIRTY-THREE hook events where this project's locked findings named five.
       Only one project on this machine carries a marker, so in practice this will not fire until
       Rite is adopted somewhere else — which is itself the honest state of things.
+
+  - id: project-yaml-checked
+    what: "Every YAML file a project carries is checked, against a subset the standard declares"
+    closed: "2026-09-12"
+    log_ref: "12-09-2026 09:02:55"
+    note: >
+      Not a near_term item — it came from the first outside adoption, harvested as
+      c-project-yaml-is-not-checked and ruled by Costin the same evening. Recorded here on the
+      same footing as claim-surface, because milestones is the coarse record of what this project
+      delivered.
+      THE FINDING THAT PROMPTED IT WAS WRONG ABOUT ITS OWN FIX, which is why the measurement came
+      first. It said a pre-commit gate would have stopped the two broken commits; both files were
+      outside the inventory, so a gate would have passed them. The real gap was that Rite checked
+      nothing but its own artifacts.
+      THE PARSER COULD NOT HAVE SHIPPED THE CHECK AS IT STOOD, and reading it would never have
+      shown that. Measured against PyYAML across all 478 YAML files on this machine: it ACCEPTED
+      twelve that PyYAML rejects — ten of them a plain scalar containing a colon and a space — and
+      REFUSED six it should have read. Probing the oracle found six more, including a byte order
+      mark read into the first key and a mid-file `---` merging two documents into one. False
+      accepts are now zero, and 29 files that were silently merged refuse instead.
+      VERIFIED AGAINST THE INCIDENT rather than against a fixture alone: the two broken revisions
+      in peugeot307sw's history score RED, and both current versions are clean.
+      FIRST WRITTEN IN THE WRONG PLACE, which is worth keeping: it was inserted ABOVE
+      watcher-cwd-changed, and milestones_append_only went RED on the next run for a reordered
+      list. The rule caught its own author inside ten minutes.
 
 near_term:
   label: "EMPTY — the path from private to public is complete"

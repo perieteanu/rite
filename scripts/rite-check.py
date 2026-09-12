@@ -961,6 +961,11 @@ def check(root: Path, spec: dict,
     ctx = Ctx(root, spec, excluded_scopes)
     findings: list[Finding] = []
     declared = implemented = 0
+    # Paths an artifact already accounts for. The project-wide YAML rules skip these: an
+    # unparseable ROADMAP is one finding from `parseable`, and reporting it again as a project
+    # YAML failure would be two findings for one cause — the cascade d-unparseable-is-red-absent-
+    # is-na exists to prevent.
+    covered: set[str] = set()
 
     # Which version of the standard this project targets. Absent means "current", which is the
     # common case and is silent. A mismatch is YELLOW and never RED: Rite does not keep old
@@ -1006,6 +1011,9 @@ def check(root: Path, spec: dict,
         # so it stayed optional at EVERY stage and a project could publish with no licence —
         # the exact failure required_from_stage was introduced to prevent. Caught by the stage
         # progression fixture expecting 8 at `shipped` and seeing 7.
+        covered.add(art["path"])
+        covered.update(instances)
+
         stage_note = ctx.not_yet_required(art)
         stage_decides = art.get("required_from_stage") is not None and ctx.stage_index is not None
         if stage_decides:
@@ -1092,7 +1100,92 @@ def check(root: Path, spec: dict,
                 sev = severity_if_failed if sev != NA else NA
             findings.append(Finding(sev, "project", level, rule_name, art["path"], msg))
 
+    # ── the YAML the project carries that is not an artifact ──────────────────
+    # THE GAP THIS CLOSES, measured: peugeot307sw committed broken YAML twice while `rite check`
+    # scored it 0 RED, because docs/WORKLIST.yaml and docs/FAULTS.yaml are not in the inventory.
+    # A fixture with a broken docs/WORKLIST.yaml still scores 0 RED at every stage without this.
+    # c-project-yaml-is-not-checked, ruled by the user 2026-09-11: check them.
+    yaml_findings, yaml_declared, yaml_implemented = project_yaml_findings(ctx, covered)
+    findings.extend(yaml_findings)
+    declared += yaml_declared
+    implemented += yaml_implemented
+
     return findings, {"declared": declared, "implemented": implemented, "ctx": ctx}
+
+
+# The project-wide rules this checker implements, by the name the spec declares. A rule declared
+# in `yaml_subset.tests` and absent here is reported NA as unimplemented, exactly as an artifact
+# rule would be — the coverage line must never flatter the checker.
+PROJECT_RULES = frozenset({"yaml_parses", "yaml_within_subset"})
+_SEV = {"RED": RED, "YELLOW": YELLOW, "GREEN": GREEN, "NA": NA}
+
+
+def project_yaml_findings(ctx, covered: set[str]) -> tuple[list[Finding], int, int]:
+    """Check every YAML file in scope, not only the declared artifacts.
+
+    ONE FINDING PER PROBLEM FILE, and one summary finding per rule when nothing is wrong. Each
+    bad file is a distinct defect a reader must act on, unlike the stage-deferred wall where 46
+    lines carried one fact — so these are not collapsed. When every file is clean the rule still
+    lands in the totals, because a check that ran and a check that did not must not look alike.
+    """
+    section = ctx.spec.get("yaml_subset") or {}
+    tests = [t for t in (section.get("tests") or []) if t.get("rule")]
+    if not tests:
+        return [], 0, 0
+
+    files, stats = riterules.project_yaml_files(ctx.root, ctx.spec, ctx.marker)
+    checkable = [rel for rel in files if rel not in covered]
+    by_kind: dict[str, list[tuple[str, str, str]]] = {"invalid": [], "unsupported": []}
+    for rel in checkable:
+        verdict = riterules.yaml_verdict(ctx.root / rel, rel)
+        if verdict is None:
+            continue
+        kind, construct, message = verdict
+        by_kind.setdefault(kind, []).append((rel, construct, message))
+
+    out: list[Finding] = []
+    if stats["declared_globs"] or stats["excluded"]:
+        # Reported, never silent — the rule overrides_are_never_silent, applied to scope.
+        out.append(Finding(
+            NA, "project", "populated", "yaml_check", ritefs.MARKER,
+            f"scope declared in .rite.yaml: {stats['declared_globs']} extra glob(s), "
+            f"{stats['excluded']} file(s) excluded"))
+    elif not checkable:
+        # ONE line, not one per rule. Both rules had nothing to read and that is a single fact
+        # about the project; saying it twice is the wall of near-identical NAs that
+        # d-stage-deferred-checks-are-collapsed exists to prevent, in miniature. It is still said,
+        # because a check that found nothing to read and a check that passed must not look alike.
+        out.append(Finding(
+            NA, "project", "integrity", "yaml_check", ".",
+            "no YAML files in scope — yaml_parses and yaml_within_subset read nothing"))
+
+    declared = implemented = 0
+    for test in tests:
+        rule = str(test["rule"])
+        declared += 1
+        if rule not in PROJECT_RULES:
+            out.append(Finding(NA, "project", str(test.get("level", "integrity")), rule, ".",
+                               "declared in the spec, not implemented by this checker"))
+            continue
+        implemented += 1
+        level = str(test.get("level", "integrity"))
+        severity = _SEV.get(str(test.get("severity")), RED)
+        if rule in ctx.disabled:
+            out.append(Finding(NA, "project", level, rule, ritefs.MARKER,
+                               "disabled in .rite.yaml"))
+            continue
+        if not checkable:
+            continue  # already stated once above, for both rules together
+        kind = "invalid" if rule == "yaml_parses" else "unsupported"
+        hits = by_kind.get(kind) or []
+        if not hits:
+            out.append(Finding(GREEN, "project", level, rule, ".",
+                               f"{len(checkable)} file(s) checked"))
+            continue
+        for rel, construct, message in hits:
+            out.append(Finding(severity, "project", level, rule, rel,
+                               f"{construct} — {message}"))
+    return out, declared, implemented
 
 
 def report(root: Path, findings: list[Finding], meta: dict) -> int:

@@ -73,29 +73,25 @@ concerns:
     opened: "2026-09-07"
     what: >
       The spec says 60 days for ROADMAP and 90 for ARCHITECTURE. Both are guesses, never
-      calibrated against the 50-project corpus. Worse, `as_of_within_days_of_activity` is
-      measured against SOURCE mtime — and a docs-only project has no source, so the docs are
-      compared against themselves and pass forever.
+      calibrated against the 50-project corpus. And `activity` has no definition for a project
+      whose only artifacts ARE documents: when the checker finds no source, both freshness rules
+      report NA, so such a project's documents are never measured against anything.
     why_it_matters: >
-      That is mtime theatre arriving through a different door than the one the spec guards,
-      and it lands hardest on non-code projects (plumbing, plan-evacuare) — the exact category
-      d-noncode-first-class exists to protect. rite itself is currently in that category.
+      It lands hardest on non-code projects (plumbing, plan-evacuare) — the exact category
+      d-noncode-first-class exists to protect.
     proposal: "Calibrate the windows against the corpus, and define `activity` for a project whose only artifacts ARE documents."
     partially_resolved_2026_09_08: >
       The MECHANISM half is settled (d-verdicts-and-participation): the three windows are
       per-project overridable via .rite.yaml, and overrides are reported rather than silent.
-      The CALIBRATION half is untouched — the defaults are still guesses, and the degeneracy
-      stands: as_of_within_days_of_activity measures against SOURCE mtime, so a documents-only
-      project compares its docs against themselves and passes forever. rite is currently such a
-      project and deliberately takes NO override, so the defect surfaces here rather than being
-      tuned away locally.
-    no_longer_self_demonstrating_2026_09_08: >
-      "rite itself is currently in that category" has gone FALSE. scripts/ now holds real
-      source, so this project has a source mtime and no longer compares its docs against
-      themselves. The defect is untouched — it simply stopped biting the one project positioned
-      to notice it. That makes calibration MORE urgent, not less: the remaining victims
-      (plumbing, plan-evacuare) are projects nobody is actively developing, which is exactly
-      where a silent pass goes unnoticed.
+      The CALIBRATION half is untouched — the defaults are still guesses.
+    corrected_2026_09_11: >
+      This entry said a documents-only project "compares its docs against themselves and passes
+      forever". Against the checker today that is false: it reports NA, "documents-only project
+      — no source to measure against". Measuring that NA found a worse problem than the one
+      described here, and it is its own concern because it is about what SOURCE means, not about
+      the windows: c-source-is-filesystem-mtime. In short, almost no real project reaches the
+      NA, because a .gitignore alone counts as source. The HANDOFF written 2026-09-10 repeats
+      "pass forever"; it is write-once and is superseded by the next one, not edited.
 
   - id: c-ai-collab-interaction-boundary
     title: "Is ai-collab-interaction/session-frame.yaml usable as the basis for the start-session protocol?"
@@ -163,7 +159,215 @@ concerns:
       the viewer earlier than d-plugin-is-the-product assumed) or a plugin-native statusLine,
       which renders text only and has no hover.
 
+  # ── harvested 2026-09-11 from the first non-code adoption (peugeot307sw, 2026-09-10) ──
+  # Harvested with the whole list in view, one entry per ROOT CAUSE rather than per finding, and
+  # each finding falsified before it was kept. The field notes were never committed
+  # (d-tests-folders-never-committed), so these entries are the record. Finding 1 was not
+  # harvested: the report already answers it. Why is in LOG.md.
+
+  - id: c-source-is-filesystem-mtime
+    title: "Source means every file on disk, dated by mtime — so no real project is documents-only, and freshness follows the clock on a file"
+    status: open
+    severity: high
+    opened: "2026-09-11"
+    what: >
+      newest_source_mtime() in scripts/rite-check.py walks root.rglob("*") and takes filesystem
+      mtimes, skipping only .git, docs, a root-level __pycache__, .rite.yaml and four named
+      Markdown files. Both freshness rules, newest_entry_within_days_of_activity and
+      as_of_within_days_of_activity, measure against it, and both report NA "documents-only
+      project" only when it finds nothing at all.
+    measured: >
+      On a synthetic documents-only fixture, each of these ALONE turns both rules from NA to
+      YELLOW (253d) with no document changed: a .gitignore; one untracked sources/x.pdf that git
+      excludes and git status does not show; one shell script. Backdating that script's mtime to
+      the documents' date, content unchanged, silences both again. The verdict follows the clock
+      on a file, not the content of the tree.
+    how_it_surfaced: >
+      Finding 2 of the adoption blamed the project's own tools/ scripts. Falsifying it showed the
+      cause is wider. The adopting project also has gitignored sources/, media/ and secrets/ and
+      a .gitignore, every one of which counts as source, and every real git repository has a
+      .gitignore — so the documents-only branch is effectively unreachable.
+    why_it_matters: >
+      This is the mtime theatre CLAUDE.md warns would hollow out the freshness tests, arriving
+      through the definition of source rather than the definition of as_of. Two consequences are
+      INFERRED and not yet measured: a fresh clone sets every mtime to clone time, so CI and any
+      new clone turn YELLOW once a window passes with nothing changed; and a project that improves
+      the tools policing its own documents makes those documents look stale.
+    proposal:
+      - "Source = files git tracks, outside the documentation paths, dated by the last commit that touched them. Fall back to mtime only where there is no repository, per d-git-is-a-capability-not-a-prerequisite, and say so in the finding."
+      - "Let .rite.yaml declare source exclusions — tools that only police the documents — reported the way threshold overrides are, never silently."
+      - "Skip __pycache__ at any depth. Today only a root-level one is skipped."
+    edge_cases:
+      - "A shallow checkout (actions/checkout defaults to depth 1) dates every file by the one commit it holds. Detect a shallow repository and report NA with that reason rather than a date the checker cannot know."
+      - "Uncommitted edits to source carry no commit date. Decide whether a dirty working tree counts as activity today."
+    related: [c-freshness-thresholds-are-guesses]
+
+  - id: c-commit-is-not-gated
+    title: "The checker reports, and nothing consults it before a commit"
+    status: open
+    severity: medium
+    opened: "2026-09-11"
+    what: >
+      rite check runs at SessionStart and on request. A commit never consults it, so a failing
+      check and a successful commit can sit on adjacent shell lines — which is a discipline that
+      has to be remembered, in the project whose thesis is that such disciplines fail.
+    how_it_surfaced: >
+      Finding 3 of the adoption. The adopting project committed broken YAML twice, then wrote its
+      own .git/hooks/pre-commit.
+    corrected_before_harvest: >
+      The finding implied a Rite gate would have stopped both commits. It would not have. Both
+      broken files, docs/WORKLIST.yaml and then docs/FAULTS.yaml, sit outside Rite's artifact
+      inventory, and the checker scores a fixture with a broken docs/WORKLIST.yaml at 0 RED. The
+      adopting project's hook runs its own tools, not rite check. The incident is evidence for
+      c-project-yaml-is-not-checked first and for this concern second.
+    edge_cases:
+      - "session_closed is RED by design for the whole working life of a session that logs as it works. A gate running the full check refuses every mid-session commit; it needs --exclude-scope=session, exactly as CI does."
+      - "d-never-instruct-installation forbids modifying the environment. .git/hooks/pre-commit is inside the project, not the machine, but it is still a write the user did not make, and hooks are per clone and untracked."
+      - "core.hooksPath would version the hook, but it is git config, which that decision names outright."
+    do_not: "Install a hook from /rite:init by default. Offering one is a DECISIONS entry either way."
+
+  - id: c-yaml-values-are-misread-in-ways-that-still-parse
+    title: "Five silent misreads survive: the file parses, and the value is wrong"
+    status: open
+    severity: medium
+    opened: "2026-09-12"
+    what: >
+      Found by the same 478-file measurement that settled c-project-yaml-is-not-checked, and
+      deliberately left out of that work because they are a different defect: both parsers accept
+      the file and disagree about what it CONTAINS. An unquoted 0600 is 600 where YAML 1.1 means
+      octal 384. Date-shaped and number-shaped KEYS stay strings. Three block literals differ from
+      PyYAML in ways not yet diagnosed. Unquoted date VALUES stay strings, which is the known and
+      harmless case — the freshness rules parse dates themselves.
+    why_it_matters: >
+      Validity is now checked and these do not affect it. They affect every rule that READS a
+      field, and a wrong value read confidently is the failure class this project exists to
+      attack. The three block literals are the part worth fearing, because nobody knows yet what
+      they are.
+    proposal: "Diagnose the three block literals first — an undiagnosed difference is not a known limitation. Then decide per case: fix, or declare in yaml_subset.honest_limits."
+    do_not: "Widen the subset for these without a differential case each. The test is the correctness claim."
+
+  - id: c-project-yaml-is-not-checked
+    title: "Rite checks that its own artifacts parse, and no other YAML in the project"
+    status: settled
+    severity: high
+    opened: "2026-09-11"
+    settled: "2026-09-12 — d-project-yaml-checked-against-declared-subset. Retired below; kept here until the next rewrite of this file so the measurement stays beside its outcome."
+    what: >
+      parse_failure() runs on the inventory's YAML artifacts only. Every other YAML file in a
+      project is invisible to Rite: a fixture with a broken docs/WORKLIST.yaml scores 0 RED at
+      every stage.
+    how_it_surfaced: >
+      Finding 3 of the adoption, re-read. Broken YAML was committed twice there, and both files
+      were outside the inventory, so no gate Rite could have offered would have caught either.
+    user_ruling: "2026-09-11 — check them. Either extend the parser or limit the YAML Rite accepts by declaring it; find the solution that way."
+    measured: >
+      riteyaml against PyYAML as oracle, over all 478 YAML files on this machine, 302 of them
+      under a docs*/ directory.
+      THE TWO REAL BREAKS are both refused with syntax reasons, and the valid third file is
+      accepted. The parser can do this job.
+      22 FILES ARE INVALID YAML TODAY, all under docs-yaml/, across ten projects, and riteyaml
+      rejects every one.
+      12 FALSE ACCEPTS, where PyYAML rejects and riteyaml accepts. Ten are one construct: a plain
+      scalar containing ': ', which YAML forbids and riteyaml reads as text. One is `- *.log`, an
+      invalid alias that riteyaml's alias pattern does not match. One is a sequence indentation
+      error.
+      7 GAPS, where valid YAML is refused with a syntax-shaped reason. Six are quoted scalars
+      continued onto a second line, which YAML allows.
+      77 REFUSALS OF DECLARED CONSTRUCTS, ambiguous booleans and flow sets. 62 of them are `on:`
+      in .github/workflows, a dialect GitHub owns rather than the project.
+      SILENT MISREADS were also found, where both parsers accept and the values differ. They do
+      not affect validity, but they are riteyaml bugs for anything that READS a field: an
+      unquoted 0600 read as 600 where YAML 1.1 means octal 384; unquoted date and number-shaped
+      KEYS kept as strings; block literals differing in three files, not yet diagnosed. Unquoted
+      date values returned as strings (40 files) are the known, harmless case, and multi-document
+      files (29) differ only because the measurement read them as lists.
+    what_a_solution_must_settle:
+      - "RiteYamlError must say WHICH kind it is: invalid YAML, or valid YAML outside the declared subset. One class carries both today, and the two deserve different verdicts."
+      - "The subset must be DECLARED in the spec, so that refusing a construct is the standard speaking rather than the parser's limit showing."
+      - "False accepts must reach zero before this ships. A validity check that can say GREEN about a broken file is worse than none."
+      - "Scope. Checking all tracked YAML would flag rite's own workflow for `on:`. The standard's documentation directory plus globs a project declares avoids a dialect the project does not own."
+    related: [c-commit-is-not-gated]
+
+  - id: c-copier-ignores-the-project-it-writes-into
+    title: "The copier writes the memory mirror into docs/ unasked, and prints every other project's plans"
+    status: open
+    severity: medium
+    opened: "2026-09-11"
+    what: >
+      One root, two symptoms: scripts/rite_copy.py behaves identically in every project. The
+      mirror path is a constant (MIRROR_NAME, under docs/) with no .rite.yaml opt-out, and
+      SessionEnd runs the copier automatically, so the file arrives without any command being
+      typed. And --plans prints one `elsewhere` line per plan belonging to another project — 14
+      of 17 output lines on a brand-new fixture, naming other projects' slugs on every run.
+    how_it_surfaced: >
+      Findings 5 and 6 of the adoption. The adopting project's CLAUDE.md declares that docs/ holds
+      only files the user and Claude write, and the mirror is neither.
+    stale_claim_found: >
+      spec/project-standard.yaml still says memory_mirror is generated_by claude-mirror-memory.py
+      as a PostToolUse hook. The producer is scripts/rite_copy.py, and the global hook is retired.
+    proposal:
+      - "A .rite.yaml key for the mirror, a path or off, reported when set like a threshold override."
+      - "Collapse `elsewhere` into one counted line, listed only on request."
+    tension: >
+      The mirror is how agent memory becomes auditable from the repository, and this repo's own
+      .gitignore says ignoring it would restore the problem. An opt-out trades that away for one
+      project. That is the project's call, which is the point of making it a declaration.
+
+  - id: c-memory-has-no-cross-project-lane
+    title: "/rite:end files every lesson under the project, and never asks whether it belongs to the user"
+    status: open
+    severity: medium
+    opened: "2026-09-11"
+    what: >
+      Claude Code keeps memory per project slug, and /rite:end step 5 writes there without asking
+      whether a lesson is about the project or about the user. The storage for the second kind
+      already exists — ~/.claude/CLAUDE.md loads in every project — so the gap is not a lane. It is
+      that nothing prompts the promotion.
+    evidence: >
+      Finding 4 of the adoption: two general lessons about editing files safely sat in rite's
+      project memory, and the adoption notes report the adopting session damaging two files in
+      exactly that way. Verifying it found the failure repeating in the session that reported it:
+      BOTH memories that session wrote are preferences about how Costin wants to work
+      (feedback-report-findings-flat-not-dramatised, feedback-teach-do-not-silently-cure), and both
+      are filed under the adopting project, where no other project will read them.
+    proposal: >
+      One question in /rite:end step 5: is this lesson about the project, or about the user? If the
+      user, PROPOSE the user-level destination and write nothing without consent.
+    constraint: "MISSION: never silently mutate ~/.claude. Recommend, and require consent."
+
+  - id: c-roadmap-vocabulary-assumes-building
+    title: "ROADMAP's vocabulary invites confusing work ON the repository with work the repository is ABOUT"
+    status: open
+    severity: low
+    opened: "2026-09-11"
+    what: >
+      current_state, near_term and milestones describe software being built. A project that
+      accumulates knowledge about an external subject keeps its own ranked queue of work on that
+      subject, and the two lists look alike: things to do, ranked, with costs.
+    how_it_surfaced: "Finding 7 of the adoption. Keeping them apart took a deliberate decision there."
+    proposal: "One sentence on the ROADMAP artifact in spec/project-standard.yaml saying it describes work on the repository, not work the repository is about. Then regenerate."
+
 retired_ids:
+  - id: c-project-yaml-is-not-checked
+    retired: "2026-09-12"
+    how: settled
+    outcome: d-project-yaml-checked-against-declared-subset
+    why: >
+      Opened 2026-09-11 from the first outside adoption and settled the next day, with the user's
+      ruling — "check them" — already recorded in it. Rite now checks every YAML file in scope
+      against a subset the standard declares, in two kinds: invalid is RED, outside-the-subset is
+      YELLOW.
+      WHAT THE CONCERN GOT RIGHT was insisting on the measurement before the mechanism. The
+      parser could not have shipped this check as it stood: it ACCEPTED twelve files PyYAML
+      rejects and refused six it should have read, and neither number was visible from reading
+      the code. Probing the oracle afterwards found six more defects, including a BOM read into
+      the first key and a mid-file document marker merging two documents into one.
+      ITS OWN MEASUREMENT SETTLED THE HARDEST QUESTION, which was scope: 62 of 65
+      ambiguous-boolean refusals on this machine are `on:` in GitHub workflow files, a dialect
+      Rite has no standing to grade. That is why the default stops at the documentation directory.
+      The MISREADS it recorded are not covered and did not quietly vanish with it:
+      c-yaml-values-are-misread-in-ways-that-still-parse.
+
   - id: c-log-timestamps-must-be-machine-read
     retired: "2026-09-10"
     how: settled

@@ -141,6 +141,40 @@ with tempfile.TemporaryDirectory() as tmp:
     if cwd_event("s2", str(outside), stamp):
         fail("spoke about a directory carrying no .rite.yaml marker")
 
+# ── YAML that just stopped parsing ───────────────────────────────────────────
+# The third thing the watcher reports, added 2026-09-12. Both broken files in Rite's first outside
+# adoption were produced by in-session edits and committed before anything looked at them, so the
+# write itself is the earliest honest moment to speak.
+#
+# THE INVALID-ONLY CONTRACT IS TESTED HERE, not just documented: a file using an anchor is valid
+# YAML the project wrote on purpose, and interrupting that write is how a watcher gets disabled.
+with tempfile.TemporaryDirectory() as tmp:
+    box = pathlib.Path(tmp)
+    (box / "docs").mkdir()
+    (box / ".rite.yaml").write_text("stage: idea\n", encoding="utf-8", newline="\n")
+
+    def write(rel: str, body: str) -> list[str]:
+        (box / rel).write_text(body, encoding="utf-8", newline="\n")
+        return rite_watch.findings_for(box, rel)
+
+    broke = write("docs/WORKLIST.yaml", "items:\n  - a: [unclosed\n")
+    if len(broke) != 1:
+        fail(f"a write that left a checked YAML file unreadable produced {len(broke)} note(s), "
+             f"expected 1")
+    elif "WORKLIST.yaml" not in broke[0] or "unterminated_flow" not in broke[0]:
+        fail(f"the note names neither the file nor the construct: {broke[0][:90]}")
+
+    if write("docs/FAULTS.yaml", "faults:\n  - id: one\n"):
+        fail("spoke about a well-formed YAML file — silence on success is the contract")
+
+    if write("docs/PARTS.yaml", "base: &defaults\n  a: 1\n"):
+        fail("spoke about an anchor: valid YAML outside the subset is the checker's conformance "
+             "note, not an interruption at the moment of writing")
+
+    if write("scratch.yaml", "a: [unclosed\n"):
+        fail("graded a YAML file outside the checked scope — the default scope is the "
+             "documentation directory, and reaching beyond it is the project's call to declare")
+
 if failures:
     print(f"FAIL  {len(failures)} defect(s) in the write-discipline watcher:")
     for f in failures:

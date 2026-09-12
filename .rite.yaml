@@ -39,3 +39,17 @@
 # whether it is CHECKED when present — LICENSE exists, so min_lines and no_provenance_header
 # always ran. The stage decides only whether a MISSING LICENSE is RED or NA.
 stage: shipped
+
+# Rite checks every YAML file under docs/ by default (yaml_subset.checked_files in the spec).
+# The files most worth checking HERE live outside docs/: the standard itself, the session
+# protocol, and the gate declarations CI reads. Declared rather than assumed, because a default
+# that quietly reached outside the documentation directory would judge files on other people's
+# projects that Rite has no standing to judge.
+#
+# NOT .github/workflows/*.yml, deliberately: `on:` is an ambiguous boolean in YAML 1.1 and a
+# string in 1.2, so every workflow file on this machine would report a construct outside the
+# subset. That dialect is GitHub's, and this one is the measured case behind why_not_everything.
+yaml_check:
+  include:
+    - "spec/*.yaml"
+    - ".github/gates.yaml"

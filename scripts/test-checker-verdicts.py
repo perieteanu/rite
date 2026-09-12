@@ -318,6 +318,93 @@ with tempfile.TemporaryDirectory() as d:
             fail(f"collapsing lost a check — {nums[0]} declared but "
                  f"{sum(nums[1:])} accounted for: {total[0].strip()}")
 
+# ── every YAML file, not only the artifacts ─────────────────────────────────
+# THE MEASURED GAP: peugeot307sw committed broken YAML twice while `rite check` scored it 0 RED,
+# because neither file was in the inventory. These cases are that incident reduced to fixtures,
+# plus the three ways the fix could go wrong — double-reporting, judging a dialect the project
+# does not own, and narrowing the scope in silence. c-project-yaml-is-not-checked.
+
+GOOD_ROADMAP = HEADER + "current_state: >\n  fine\n"
+
+
+def with_doc(tmp: pathlib.Path, name: str, body: str, marker: str = "# marker\n") -> str:
+    """A scaffolded project carrying one extra, NON-ARTIFACT document under docs/."""
+    scaffold(tmp, GOOD_ROADMAP, marker=marker)
+    (tmp / "docs" / name).write_text(body, encoding="utf-8", newline="\n")
+    return run(tmp)
+
+
+# 18. A broken file that is NOT an artifact: exactly one RED, naming the file, the construct and
+#     the line. This is the peugeot307sw incident.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = with_doc(tmp, "WORKLIST.yaml", "items:\n  - a: [unclosed\n")
+    hits = [ln.strip() for ln in out.splitlines() if "WORKLIST.yaml" in ln]
+    reds = [ln for ln in hits if ln.startswith("RED")]
+    if len(reds) != 1:
+        fail(f"a broken non-artifact YAML file must be exactly 1 RED, got {len(reds)}: {hits}")
+    elif "yaml_parses" not in reds[0]:
+        fail(f"the RED does not name the rule: {reds[0]}")
+    elif "unterminated_flow" not in reds[0]:
+        fail(f"the RED does not name the construct: {reds[0]}")
+
+# 19. Valid YAML outside the declared subset is YELLOW, not RED. Calling a working file broken is
+#     a false accusation; the two verdicts answer different questions.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = with_doc(tmp, "PARTS.yaml", "base: &defaults\n  a: 1\n")
+    hits = [ln.strip() for ln in out.splitlines() if "PARTS.yaml" in ln]
+    if not any(ln.startswith("YELLOW") and "yaml_within_subset" in ln for ln in hits):
+        fail(f"an out-of-subset construct must be YELLOW on yaml_within_subset, got {hits}")
+    if any(ln.startswith("RED") for ln in hits):
+        fail(f"valid YAML outside the subset must never be RED: {hits}")
+
+# 20. A healthy extra document says nothing at all. A rule that fires on clean files is a rule
+#     that gets switched off.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = with_doc(tmp, "FAULTS.yaml", "faults:\n  - id: one\n")
+    if any("FAULTS.yaml" in ln for ln in out.splitlines()):
+        fail("a well-formed extra document was reported anyway")
+
+# 21. NO DOUBLE REPORTING. An unparseable ARTIFACT is `parseable`'s single RED; the project-wide
+#     rule must not add a second finding for the same file and the same cause.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp, HEADER + "base: &defaults\n  a: 1\n")
+    out = run(tmp)
+    dupes = [ln.strip() for ln in out.splitlines()
+             if "docs/ROADMAP.yaml" in ln and ("yaml_parses" in ln or "yaml_within_subset" in ln)]
+    if dupes:
+        fail(f"an artifact was reported twice for one cause: {dupes}")
+
+# 22. A declared exclude narrows the scope AND SAYS SO. An unbounded, silent narrowing is the
+#     same defect as an unbounded threshold override.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    out = with_doc(tmp, "WORKLIST.yaml", "items:\n  - a: [unclosed\n",
+                   marker='yaml_check:\n  exclude:\n    - "docs/WORKLIST.yaml"\n')
+    if any("WORKLIST.yaml" in ln and ln.strip().startswith("RED") for ln in out.splitlines()):
+        fail("an excluded file was checked anyway")
+    if not any("yaml_check" in ln for ln in out.splitlines()):
+        fail("a declared exclude was applied in silence — it must be reported and counted")
+
+# 23. In a repository, a file git ignores is not graded. A project that told git not to publish a
+#     file has said it is not part of what it claims about itself.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp, GOOD_ROADMAP)
+    (tmp / ".gitignore").write_text("docs/SCRATCH.yaml\n", encoding="utf-8", newline="\n")
+    (tmp / "docs" / "SCRATCH.yaml").write_text("a: [unclosed\n", encoding="utf-8", newline="\n")
+    git = subprocess.run(["git", "init", "-q", str(tmp)], capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
+    if git.returncode != 0:
+        print("SKIP  case 23 needs git, which did not initialise here")
+    else:
+        out = run(tmp)
+        if any("SCRATCH.yaml" in ln for ln in out.splitlines()):
+            fail("a git-ignored file was graded — git's own statement about the file was ignored")
+
 # ── the CLI contract ─────────────────────────────────────────────────────────
 # Until 2026-09-10 every unrecognised flag was silently discarded: `--help` ran a full check,
 # and a typo'd `--exclude-scpoe=session` scored at FULL strength while the caller believed a
