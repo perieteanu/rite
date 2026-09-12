@@ -1929,3 +1929,124 @@ decisions:
       declared on a build-stage artifact. Both assertions now check the invariant they meant.
     chosen_by_user: true
     proposed_by: claude
+
+  - id: d-tests-folders-never-committed
+    date: "2026-09-11"
+    title: "tests/<name>/ folders are internal and short-lived, and are never committed"
+    context: >
+      tests/peugeot307sw/ was made to carry field notes and reproductions from the first non-code
+      adoption into this repository, so a session here could see what Rite got wrong. It was
+      untracked, and whether to commit it to a repository with a public remote was asked.
+    user_ruling: "NO. no folders in the tests folder will ever be commited. this is internal only and short lived"
+    decision: >
+      No folder under tests/ is ever committed. Each is working material for one harvest.
+      Whatever is worth keeping goes into docs/CONCERNS.yaml or LOG.md, which are committed, and
+      the folder is then disposable.
+    rationale:
+      - "Stated by the user: internal only, short lived."
+      - >
+        MEASURED, the day after it was written: verifying tests/peugeot307sw found two of its
+        numbers already wrong (28 commits for 27, three scripts for four) and one reproduction
+        filtering out the very line that answered its own finding. Material that stale is a
+        source for a harvest, not a record.
+    consequences:
+      - "/tests/*/ is in .gitignore, so the rule is a check rather than a thing to remember. `git add -f` still bypasses it, and nothing gates that."
+      - "A harvest must be finished before a tests folder is deleted, because the folder is not the record."
+    stated_by_user: true
+    proposed_by: claude
+
+  - id: d-project-yaml-checked-against-declared-subset
+    date: "2026-09-12"
+    title: "Rite checks every YAML file a project carries, against a subset the standard declares"
+    context: >
+      peugeot307sw committed broken YAML twice during the first outside adoption, and `rite check`
+      scored it 0 RED both times: docs/WORKLIST.yaml and docs/FAULTS.yaml are not in the artifact
+      inventory, and parse_failure() only ever ran on artifacts. The finding written at the time
+      blamed the missing commit gate; verifying it showed a gate would have passed both commits.
+      c-project-yaml-is-not-checked.
+    user_ruling: "2026-09-11 — check them. Either extend the parser, or limit the YAML Rite accepts by declaring it."
+    decision: >
+      BOTH halves of the ruling, because either alone is wrong. The parser now refuses in two
+      kinds — YamlInvalid for text that is not YAML, YamlUnsupported for valid YAML outside the
+      subset — and the subset is DECLARED in spec/project-standard.yaml under `yaml_subset`, with
+      every construct id, an example and a reason. Two rules run over every YAML file in scope:
+      `yaml_parses` (RED) and `yaml_within_subset` (YELLOW). Scope is the documentation directory
+      by default, plus globs a project declares in `.rite.yaml`; a file an artifact already covers
+      is never reported twice.
+    rationale:
+      - >
+        THE KINDS ARE THE WHOLE DESIGN. Judging files Rite does not own means it will meet valid
+        YAML it cannot read — an anchor in a compose file, `on:` in a GitHub workflow. Calling
+        those broken is a false accusation, and passing over a genuinely corrupt document because
+        the parser cannot tell the difference is a silent wrong answer. One error class could not
+        express the difference, so the verdicts could not either.
+      - >
+        MEASURED BEFORE AND AFTER, across all 478 YAML files on this machine with PyYAML as the
+        oracle. Before: 12 files the parser ACCEPTED that PyYAML rejects, ten of them a plain
+        scalar containing ": " read as text; 6 valid files refused for a quoted scalar continued
+        onto a second line; 29 multi-document files silently merged into one. After: false accepts
+        ZERO, and every remaining refusal of a PyYAML-valid file is one of the declared constructs.
+      - >
+        THE DECLARATION IS NOT A SECOND COPY. The parser reads nothing from the spec at runtime;
+        scripts/test-riteyaml.py asserts that every construct the parser raises is declared and
+        every construct declared is raised, and that assertion needs no oracle — so it runs in CI
+        where PyYAML is absent. A gate, not a convention.
+      - >
+        THE ORACLE DECIDES THE KIND, not the author of the test. Each case asserts PyYAML's verdict
+        too: invalid cases must be rejected by PyYAML, unsupported cases must be accepted. A
+        snippet filed under the wrong heading fails the test instead of shipping a wrong verdict.
+      - >
+        SCOPE IS DECLARED RATHER THAN TOTAL. 62 of 65 ambiguous-boolean refusals on this machine
+        are `on:` in .github/workflows — GitHub's dialect, which Rite has no standing to grade.
+        The documentation directory is the ground this standard covers; anything beyond it is the
+        project's own declaration, reported as a counted line so a narrowed scope is never silent.
+      - >
+        NOT STAGE-GATED. Broken YAML is broken at `idea`. Stage decides which documents a project
+        is ASKED for, never whether the ones it has may be corrupt.
+    verified:
+      - "The two broken revisions from peugeot307sw's history score RED yaml_parses; both current versions are clean."
+      - "A fixture with a broken docs/WORKLIST.yaml went from 0 RED to 1 RED, and the same file excluded in .rite.yaml reports a counted NA instead."
+      - "An unparseable ARTIFACT is still exactly one RED — no double reporting, asserted as a fixture."
+      - "rite dogfoods it: spec/*.yaml and .github/gates.yaml are declared in its own marker, and 15 gates still pass bar installed-copy."
+    consequences:
+      - "Coverage is 66 of 66 declared tests; the two new rules are counted like any other, and one declared but unimplemented would read as a gap rather than be hidden."
+      - "A non-UTF-8 file is RED as `not_utf8` rather than a crash — Ctx.read only ever guarded OSError."
+      - "riteyaml is 775 lines, up from 502. The differential test carries 35 in-subset constructs, 13 unsupported and 25 invalid snippets."
+      - "Two honest limits are declared rather than fixed: a file that is one bare scalar, and a %YAML directive, are both valid YAML reported invalid. Neither shape appears in this standard."
+    not_done: >
+      The silent MISREADS the same measurement found are untouched and recorded in
+      c-project-yaml-is-not-checked's successor notes: YAML 1.1 octal read as decimal, date and
+      number-shaped keys kept as strings, three block literals differing from PyYAML. They change
+      what a value MEANS, never whether a file parses, so they are a separate piece of work.
+    stated_by_user: true
+    proposed_by: claude
+
+  - id: d-watcher-reports-invalid-yaml
+    date: "2026-09-12"
+    title: "The watcher reports a write that leaves a checked YAML file unparseable — invalid only"
+    context: >
+      d-write-discipline-watcher said the watcher reports two things and nothing else, and that
+      restraint is why it survives. This adds a third, on measured evidence rather than because it
+      was available: BOTH broken files in the first outside adoption were produced by in-session
+      edits and committed before anything looked at them.
+    decision: >
+      On PostToolUse, a write that leaves a YAML file in the checked scope unreadable is reported
+      once, naming the construct and the line. INVALID only — a construct merely outside the
+      declared subset is never reported here.
+    rationale:
+      - >
+        THE WRITE IS THE CHEAPEST MOMENT. The checker catches it at the next session start, which
+        is after the commit; the watcher catches it while the edit is still in hand. That is the
+        gap the protocol's honest_limits named — every completion test is an end-of-session test.
+      - >
+        INVALID ONLY, AND THAT LINE MATTERS. An out-of-subset construct is something the project
+        wrote deliberately; interrupting that write is how a watcher earns the reputation that gets
+        it switched off. A file that has stopped being YAML is not a matter of taste.
+      - >
+        ONE PREDICATE, THREE CONSUMERS NOW. riterules.yaml_verdict is what the checker calls, so
+        the watcher cannot disagree with it about what "invalid" means. Scope is asked only for a
+        .yaml or .yml path, so an ordinary edit costs one string test rather than a git call.
+    verified:
+      - "A broken write produces exactly one note naming file and construct; a valid file, an anchor, and a YAML file outside the scope all produce silence."
+    chosen_by_user: true
+    proposed_by: claude

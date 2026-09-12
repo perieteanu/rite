@@ -81,10 +81,24 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
   `—` go out as cp1252 there and a UTF-8 parent dies on byte 0x97. CI proved this on 2026-09-10.
   Full list: `portability:` in the spec.
 - **Stdlib only. There is no PyYAML dependency and nothing to `pip install`.** YAML is read by
-  a subset parser shipped with Rite — measured: the project uses no anchors, aliases, tags,
-  flow mappings, block literals or merge keys. The parser **refuses rather than guesses**, and
-  its test is differential against PyYAML as an oracle. Do not "simplify" it into guessing, and
-  do not reintroduce the dependency. See `d-stdlib-only-yaml-subset`.
+  a subset parser shipped with Rite. The parser **refuses rather than guesses**, and its test is
+  differential against PyYAML as an oracle. Do not "simplify" it into guessing, and do not
+  reintroduce the dependency. This bullet used to say the project "uses no anchors, aliases,
+  tags, flow mappings, block literals or merge keys" — the last two became false on 2026-09-09
+  when the subset was widened to cover real files, which is why the enumeration is gone rather
+  than corrected. The subset is declared in one place: `yaml_subset` in the spec. See
+  `d-stdlib-only-yaml-subset`.
+- **The parser refuses in TWO KINDS, and the verdicts differ.** `YamlInvalid` means the text is
+  not YAML — the project's defect, RED. `YamlUnsupported` means valid YAML outside the declared
+  subset — Rite's limit, YELLOW, naming the construct. Never collapse them: judging files Rite
+  does not own means meeting valid YAML it cannot read, and calling that broken is a false
+  accusation. Every construct id is declared in the spec and a gate fails if the parser and the
+  declaration disagree, so **add a construct in both places or neither**.
+- **Rite checks EVERY YAML file in scope, not only its 14 artifacts.** Scope is the documentation
+  directory plus globs a project declares in `.rite.yaml`, enumerated through git so an ignored
+  file is never graded. It is NOT stage-gated — broken YAML is broken at `idea`. The default
+  deliberately stops short of `.github/workflows`, because `on:` is GitHub's dialect and not
+  Rite's business. See `d-project-yaml-checked-against-declared-subset`.
 - **The artifact inventory is FROZEN at 14** (13 on 2026-09-07; `script_copy` added 2026-09-10
   by `d-session-scripts-are-the-fourteenth-artifact`, which is the process working rather than
   the freeze failing). A 15th requires a DECISIONS entry.
@@ -179,7 +193,7 @@ is to stop an agent producing plausible-but-wrong output. Correction paragraphs 
 appended beneath it rather than the false paragraph being deleted, so the document contradicted
 itself and the first thing a reader met was the lie.
 
-What is genuinely not built, as of 2026-09-10:
+What is genuinely not built, as of 2026-09-12:
 
 - **CI runs the gates declared in `.github/gates.yaml`, and not all of them on a runner.**
   The count is deliberately NOT repeated here — it went 9 to 13 in one day and falsified four
@@ -189,10 +203,12 @@ What is genuinely not built, as of 2026-09-10:
   The runner reports that coverage instead of showing an unqualified green — a skip is never
   folded into a pass. It runs on **ubuntu, macos and windows** with `fail-fast: false`.
 - **TWO of the eight watchers**, both in `scripts/rite_watch.py`, which dispatches on the event.
-  `watcher-write-discipline` (PostToolUse) reports an append-only file rewritten or a LOG entry
-  dated in the future. `watcher-cwd-changed` reports a mid-session move to a DIFFERENT marked
-  project, once — because Rite assumes one project per session and every artifact resolves from
-  one root. Both are silent otherwise, which is a contract and not politeness.
+  `watcher-write-discipline` (PostToolUse) reports THREE things: an append-only file rewritten, a
+  LOG entry dated in the future, or a write that leaves a checked YAML file unparseable — the
+  third added 2026-09-12, invalid only, never merely out-of-subset (`d-watcher-reports-invalid-yaml`).
+  `watcher-cwd-changed` reports a mid-session move to a DIFFERENT marked project, once — because
+  Rite assumes one project per session and every artifact resolves from one root. Both are silent
+  otherwise, which is a contract and not politeness.
   The other six are unbuilt, and **two have lost their premise**: `watcher-plan-copy-on-create`
   bought attribution that transcript-reading now does exactly, and `watcher-precompact-distiller`
   still rests on an unverified claim about `PreCompact`.
@@ -206,9 +222,11 @@ What is genuinely not built, as of 2026-09-10:
   `LOG.md`, per `d-publish-main-in-full-no-export`. This bullet said "Nothing published" until
   that commit. What is still true: **nobody but this machine has run Rite**, so every claim
   about how it behaves elsewhere rests on CI, not on a user.
-- **One declared rule unimplemented**: `deleted_ids_appear_in_milestones`. This bullet said
-  "seven ... of which mirror_not_stale and source_plans_all_copied are the ones that matter";
-  both of those were implemented on 2026-09-10 with the copier port.
+- **NO declared rule is unimplemented.** Coverage is 66 of 66, including the two project-wide
+  YAML rules added 2026-09-12. This bullet claimed `deleted_ids_appear_in_milestones` was
+  outstanding, which stopped being true on 2026-09-10 in the commit that implemented it — and
+  before that it claimed seven were. A count of what is missing is the single most rot-prone
+  sentence in this file; the checker prints the real one on every run.
 
 **`status.json` is DROPPED, not pending** — `d-status-json-dropped-not-deferred`. Every
 candidate consumer is unbuilt and the verdict it was to carry already reaches the model live.

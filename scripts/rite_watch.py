@@ -11,7 +11,7 @@ rate rather than a plausible rationale. ROADMAP records 100% on this project's o
 failures — a milestones entry inserted mid-list, and roughly thirty LOG entries with
 extrapolated timestamps, some ahead of real time.
 
-WHAT IT CHECKS, both against predicates the checker already uses:
+WHAT IT CHECKS, all against predicates the checker already uses:
 
   1. APPEND-ONLY DISCIPLINE — a write that removes or changes an existing line in a file the
      standard declares append_only. Measured against git HEAD, so it needs no state of its own
@@ -19,6 +19,10 @@ WHAT IT CHECKS, both against predicates the checker already uses:
   2. FUTURE LOG TIMESTAMPS — an entry dated later than now, which is what extrapolating from an
      earlier clock reading produces. c-log-timestamps-must-be-machine-read, which has had
      nowhere to run since 2026-09-08.
+  3. YAML THAT JUST STOPPED PARSING — a write that leaves a checked YAML file unreadable. Added
+     2026-09-12 on measured evidence: both broken files in Rite's first outside adoption were
+     produced by in-session edits and committed before anything looked at them. INVALID only,
+     never merely out-of-subset — see findings_for.
 
 IT IS SILENT ON SUCCESS, and that is a hard requirement rather than a preference: it fires on
 every Write and Edit, and a watcher that speaks when nothing is wrong is one the user disables
@@ -47,6 +51,7 @@ import riteyaml  # noqa: E402
 ritefs.use_utf8_stdio()
 
 SPEC_PATH = HERE.parent / "spec" / "project-standard.yaml"
+_SPEC: dict | None = None
 
 
 def append_only_paths() -> set[str]:
@@ -63,8 +68,62 @@ def append_only_paths() -> set[str]:
             if a.get("write_discipline") == "append_only" and a.get("path")}
 
 
+def load_spec() -> dict:
+    """The standard, or an empty mapping. Read once per process, not once per question."""
+    global _SPEC
+    if _SPEC is None:
+        try:
+            _SPEC = riteyaml.load(SPEC_PATH.read_text(encoding="utf-8"), str(SPEC_PATH)) or {}
+        except (OSError, riteyaml.RiteYamlError):
+            _SPEC = {}
+    return _SPEC
+
+
+def marker_of(root: Path) -> dict:
+    """The project's .rite.yaml, or an empty mapping. An unreadable marker is the checker's
+    finding to report, not the watcher's — here it simply means no declared scope."""
+    try:
+        return riteyaml.load((root / ".rite.yaml").read_text(encoding="utf-8"), ".rite.yaml") or {}
+    except (OSError, riteyaml.RiteYamlError):
+        return {}
+
+
+def yaml_in_scope(root: Path, rel: str) -> bool:
+    """Is this a YAML file the standard would grade?
+
+    Scope is asked ONLY for a .yaml/.yml path, so the ordinary case — a write to a .py or .md
+    file — costs one string test. Anything else would put a git call behind every edit in the
+    session, and a watcher with a visible cost is a watcher that gets turned off.
+    """
+    if not rel.endswith((".yaml", ".yml")):
+        return False
+    spec = load_spec()
+    if any(str(a.get("path")) == rel for a in spec.get("artifacts") or []):
+        return True
+    files, _ = riterules.project_yaml_files(root, spec, marker_of(root))
+    return rel in set(files)
+
+
 def findings_for(root: Path, rel: str) -> list[str]:
     notes: list[str] = []
+
+    # ── YAML that just stopped being YAML ─────────────────────────────────────
+    # MEASURED, and the reason this is at write time rather than only at session start: both
+    # broken files in the first outside adoption were produced by in-session edits, and both were
+    # committed before anything looked at them. The earliest honest moment to say so is now.
+    #
+    # INVALID ONLY, deliberately. An out-of-subset construct is a conformance note the checker
+    # reports at leisure; saying it here would mean interrupting a write the project made on
+    # purpose, which is how a watcher earns the reputation that gets it disabled.
+    if yaml_in_scope(root, rel):
+        verdict = riterules.yaml_verdict(root / rel, rel)
+        if verdict is not None and verdict[0] == "invalid":
+            _, construct, message = verdict
+            notes.append(
+                f"{rel} is no longer valid YAML — {construct}: {message}. The write that just "
+                f"landed is where it broke, so this is the cheapest moment to fix it. Everything "
+                f"that reads this file, Rite included, now knows nothing about its contents."
+            )
 
     if rel in append_only_paths():
         removed = riterules.git_removed_lines(root, rel)
@@ -202,7 +261,7 @@ def main() -> int:
         # item. additionalContext is the only channel that reaches the model here.
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": "rite — write discipline:\n  " + "\n  ".join(notes),
+            "additionalContext": "rite — on the file just written:\n  " + "\n  ".join(notes),
         }}))
     return 0
 

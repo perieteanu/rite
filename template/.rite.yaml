@@ -34,3 +34,19 @@ stage: idea
 # computed with an override reports the override AND the default alongside it.
 # thresholds:
 #   roadmap_as_of_days: 60
+
+# Which YAML files Rite reads. By DEFAULT it reads every .yaml/.yml file under your documentation
+# directory: broken YAML there is broken whatever your stage says, and a file it cannot parse is a
+# file nothing knows the contents of.
+#
+# Declare more if the files worth checking live elsewhere, and exclude what Rite has no standing
+# to judge — a GitHub workflow, a compose file, a generated fixture. Both are reported as a
+# counted line, never applied in silence.
+#
+# In a git repository, files git ignores are not checked at all: telling git not to publish a file
+# is a statement that it is not part of what the project claims about itself.
+# yaml_check:
+#   include:
+#     - "config/*.yaml"
+#   exclude:
+#     - "docs/generated-*.yaml"

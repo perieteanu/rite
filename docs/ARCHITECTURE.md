@@ -1,6 +1,6 @@
 ---
 schema_version: "1.0.0"
-as_of: "2026-09-10"
+as_of: "2026-09-12"
 status: current
 # The file tree below is a claim about the repository, and this is the falsifiable half of it.
 # ARCHITECTURE is must_be_current and rotted hardest: on 2026-09-08 it omitted the checker
@@ -103,12 +103,15 @@ stage, naming the artifacts waiting there. They remain in the findings list and 
 collapsing is a display choice, and the moment it changes a count it is a verdict change in
 disguise. See `d-stage-deferred-checks-are-collapsed`.
 
-Built, as of 2026-09-10:
+Built, as of 2026-09-12:
 
 ```
 scripts/
   rite-check.py      THE CHECKER. Reads spec/project-standard.yaml and runs the completion
-                     tests. 64 checks on this project; 64 of 64 declared tests implemented.
+                     tests. 67 checks on this project; 66 of 66 declared tests implemented.
+                     Two of those rules are PROJECT-WIDE rather than per-artifact: every YAML
+                     file in scope must parse (RED) and stay inside the declared subset
+                     (YELLOW). A file an artifact already covers is never reported twice.
   rite_copy.py       THE COPIER. Brings in what Claude writes OUTSIDE the project: the memory
                      mirror (free_replace, one file), plan copies and session scratchpad
                      scripts (write_once, many). Attribution is AUTHORSHIP — a Write or
@@ -126,26 +129,40 @@ scripts/
   ritededup.py       Suppresses the extension's double-dispatched SessionStart. Fail-open: a
                      duplicated line is cheaper than a silently missing verdict.
   riterules.py       Predicates SHARED by the checker and the watcher — git_show, zone_of,
-                     git_removed_lines, log_future_timestamps. One implementation, because two
-                     would be free to disagree.
+                     git_removed_lines, log_future_timestamps, and since 2026-09-12
+                     git_known_files, project_yaml_files and yaml_verdict. One implementation,
+                     because two would be free to disagree about what "invalid" means.
   rite_watch.py      THE WATCHER, dispatching on the event. PostToolUse: an append-only file
-                     rewritten, or a LOG entry dated in the future. CwdChanged: a mid-session
-                     move to a DIFFERENT marked project, once. Silent on success — it fires on
-                     every write and every cd, and a watcher that speaks when nothing is wrong
-                     gets disabled.
+                     rewritten, a LOG entry dated in the future, or a write that leaves a
+                     checked YAML file unparseable. CwdChanged: a mid-session move to a
+                     DIFFERENT marked project, once. Silent on success — it fires on every
+                     write and every cd, and a watcher that speaks when nothing is wrong gets
+                     disabled. The YAML half is INVALID only: an out-of-subset construct the
+                     project wrote deliberately is the checker's note, not an interruption.
   rite_issue.py      Records what RITE got wrong, from any project, into plugin storage rather
                      than into the project you are in. Append-only and untriaged on purpose.
-  test-watch-discipline.py  That the watcher catches both, and stays silent otherwise.
+  test-watch-discipline.py  That the watcher catches all three, and stays silent otherwise —
+                     including on valid YAML, on an anchor, and on a YAML file out of scope.
   test-preflight-port-parity.py  The port still agrees with the engine it came from. Temporary.
-  riteyaml.py        Stdlib-only parser for the YAML subset this project uses. 358 lines.
-                     REFUSES rather than guesses on anything outside the subset.
-  test-riteyaml.py   Differential test against PyYAML as ORACLE, not dependency.
+  riteyaml.py        Stdlib-only parser for the declared YAML subset. 775 lines. REFUSES rather
+                     than guesses, in TWO KINDS: YamlInvalid (not YAML — the project's defect)
+                     and YamlUnsupported (valid YAML outside the subset — Rite's limit). Each
+                     carries a stable construct id that the spec declares.
+  test-riteyaml.py   Differential test against PyYAML as ORACLE, not dependency. Three classes:
+                     must-support, must-refuse-as-unsupported, must-reject-as-invalid — and the
+                     ORACLE decides which class a snippet belongs in, so a case filed under the
+                     wrong heading fails here instead of shipping a wrong verdict. Its parity
+                     assertion (every construct raised is declared, and vice versa) needs no
+                     oracle, so it runs in CI where PyYAML is absent.
   ritefs.py          Case-exact filesystem predicates. ONE implementation of
                      case_sensitive_name_matching; rite-check and both hooks route through it.
   test-hook-output.py  Contract test: the SessionStart hook's stdout must nest its verdict
                      under hookSpecificOutput. Asserts SHAPE, not content — see below.
   test-checker-verdicts.py  The checker's own test: unparseable is RED, absent stays NA, a
-                     broken marker is reported, and a false claim is caught.
+                     broken marker is reported, a false claim is caught, and every YAML file in
+                     scope is checked — a broken non-artifact is RED, an out-of-subset one is
+                     YELLOW, an artifact is never reported twice, and a git-ignored file is not
+                     graded at all.
   rite_init.py       Seeds a project to stage `idea` from template/: .rite.yaml, LOG.md,
                      HANDOFF.md. Substitutes date tokens from the machine clock. NEVER
                      overwrites — an existing file is skipped and reported.
@@ -248,10 +265,20 @@ installed version, never the working tree. `scripts/test-installed-current.py` e
 see `d-installed-copy-checked-by-test-not-by-rule` for why it is a test and not a checker rule.
 
 **The YAML subset was widened on 2026-09-09** after the first run against outside projects
-found block literals and flow mappings in real files. `riteyaml.py` now covers those, plus
-chomping indicators and multi-line plain scalars, and still refuses anchors, aliases, tags,
-merge keys and complex keys. Stdlib only; PyYAML remains the test oracle and is imported
-nowhere. See the `widened_2026_09_09` block inside `d-stdlib-only-yaml-subset`.
+found block literals and flow mappings in real files. `riteyaml.py` covers those, plus
+chomping indicators, multi-line plain scalars and — since 2026-09-12 — multi-line quoted
+scalars. Stdlib only; PyYAML remains the test oracle and is imported nowhere. See the
+`widened_2026_09_09` block inside `d-stdlib-only-yaml-subset`.
+
+**It was re-measured on 2026-09-11, and the subset became part of the standard.** Rite now
+checks every YAML file a project carries rather than only its own artifacts, so the rules it
+judges by are declared in `spec/project-standard.yaml` under `yaml_subset` — every construct,
+with an example and a reason, split into the two kinds. Measured across all 478 YAML files on
+this machine: the parser had ACCEPTED twelve that PyYAML rejects, ten of them a plain scalar
+containing a colon and a space; it had REFUSED six it should have read; and it had silently
+MERGED 29 multi-document files into one. False accepts are now zero. The parser still reads
+nothing from the spec at runtime — a gate holds the two lists equal instead. See
+`d-project-yaml-checked-against-declared-subset`.
 
 **`PostToolUse` exists as of 2026-09-10**, and the objection that kept it absent is gone
 rather than overruled. It was absent because the obvious implementation called
