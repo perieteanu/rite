@@ -72,7 +72,73 @@ status: draft | current | superseded
 
 This project's own spec exists in both forms with byte-identical content: 25287 bytes as YAML, 19275 as Markdown — 24% smaller — because YAML charges a `key:` and an indent for every line of prose. The saving reverses for genuinely structured data, where Markdown must reinvent nesting that YAML gives for free.
 
-Markdown needs no parser, degrades gracefully, and cannot fail to load on a bad indent. YAML needs PyYAML. That argues for Markdown everywhere EXCEPT where the alternative is hand-writing a Markdown-structure parser — trading an installed dependency for a worse bespoke one. Hence the split rather than a single answer.
+Markdown needs no parser, degrades gracefully, and cannot fail to load on a bad indent. YAML needs one — scripts/riteyaml.py, stdlib only, whose subset is declared below. That argues for Markdown everywhere EXCEPT where the alternative is hand-writing a Markdown-structure parser, which trades a small declared subset for a worse undeclared one. Hence the split rather than a single answer. CORRECTED 2026-09-12: this said "YAML needs PyYAML", which stopped being true on 2026-09-08 when d-stdlib-only-yaml-subset dropped the dependency. PyYAML is the differential test's ORACLE and is imported nowhere in the product.
+
+## The YAML subset
+
+**Rule.** Rite reads a deliberately small subset of YAML and REFUSES the rest rather than guessing. A refusal declares one of two kinds, because they are different facts about different things: `invalid` means the text is not YAML, which is the project's defect; `unsupported` means valid YAML using a construct outside this subset, which is Rite's limit.
+
+One error class carrying both was tolerable while only Rite's own artifacts were parsed, and became wrong the moment every YAML file in a project was. Calling a working docker-compose broken because it uses an anchor is a false accusation; passing over a genuinely corrupt document because Rite cannot tell the difference is a silent wrong answer. So `invalid` is RED and names the construct, `unsupported` is YELLOW and names the construct, and neither is reported in the register of the other.
+
+Re-measured 2026-09-11 across all 478 YAML files on this machine with PyYAML as oracle, and the numbers are the reason this section exists. TWELVE files the parser accepted are rejected by PyYAML — ten of them a plain scalar containing a colon and a space, read as text. SIX valid files were refused for a quoted scalar continued onto a second line. Both directions are fixed; after the fix, false accepts are ZERO and every remaining refusal of a PyYAML-valid file is one of the declared constructs below.
+
+**Supported.**
+
+- block mappings and block sequences, nested, including sequences of mappings
+- plain, single-quoted and double-quoted scalars, INCLUDING quoted scalars continued across lines
+- block literals and folded blocks, with strip and keep chomping indicators
+- flow sequences and flow mappings, nested, wrapped across lines, with quoted values
+- comments, one leading document marker, a trailing document end marker
+- null, true, false, integers, floats
+- a leading byte order mark, and CRLF line endings
+
+**Refused — valid YAML outside the subset, reported YELLOW**
+
+| construct | looks like | why |
+|---|---|---|
+| `anchor` | `&name` | An anchor names a node for reuse. Rite has no use for reuse inside a document it only reads once. |
+| `tag` | `!!type` | A tag forces a type. Rite infers the types it supports and refuses to implement the rest. |
+| `merge_key` | `<<:` | A merge key splices one mapping into another, so the document no longer says what it contains. |
+| `complex_key` | `? key` | An explicit key may itself be a collection, which nothing in this standard has a use for. |
+| `ambiguous_boolean` | `enabled: yes` | YAML 1.1 reads yes/no/on/off as booleans and YAML 1.2 reads them as strings. Guessing which one a reader meant is exactly what this parser refuses to do. Quote it, or write true/false. |
+| `flow_set` | `{a, b}` | An entry with no colon is a set, not a mapping, and Rite would have to invent its values. |
+| `multi_document` | `--- after content` | Valid as a STREAM. Rite reads one document per file everywhere, so the second was silently merged into the first until 2026-09-12 — 29 files on this machine. A file holding two documents is a file whose second half Rite would ignore. |
+| `nested_list_under_plain_item` | `- a then a more-indented - b` | YAML folds it into the single string "a - b". It is valid and it is almost always a nested list whose parent key was forgotten, so it is reported rather than quietly turned into prose. |
+
+**Rejected — not YAML at all, reported RED**
+
+| construct | looks like | why |
+|---|---|---|
+| `mapping_value_in_plain_scalar` | `a: x: y` | A plain scalar cannot contain a colon followed by a space, or end in a colon. TEN of the twelve false accepts. |
+| `unterminated_quote` | `a: "one` | A quoted scalar with no closing quote, or one whose continuation runs into a document marker. |
+| `text_after_quote` | `a: "x" y` | A closing quote followed by more text is not a scalar and not a mapping. |
+| `unterminated_flow` | `a: {b: 1` | A flow collection whose bracket never closes. |
+| `bad_indentation` | `a key indented deeper than its siblings` | An over-indented key, or a sequence under a value that already ended. |
+| `tab_indentation` | `a tab before content` | YAML forbids tabs in indentation. Accepted until 2026-09-12, and the document came out mis-structured as well — the worse half, because it read as a document that had parsed. |
+| `content_after_root` | `a mapping, then a sequence, at column 0` | The top-level structure ends and the file keeps going. The reader used to return what it had and DROP the rest, so a truncated document read as a complete one. |
+| `expected_key_value` | `a line in a mapping that is not a key` | Inside a mapping, a line that is neither a key nor a continuation of the value above it. |
+| `undefined_alias` | `*name` | An alias with no anchor before it. Anchors are refused on sight, so reaching an alias proves no anchor was ever defined, which makes it unresolvable rather than merely unsupported. |
+| `reserved_indicator` | `a: @x` | The characters @ ` % cannot start a plain scalar, and neither can a bare & or * with no name. |
+
+**Which files are checked.** Every YAML file under the project's documentation directory, plus any glob the project declares in `.rite.yaml` under `yaml_check.include`, minus anything in `yaml_check.exclude`. A file that is also a declared artifact is checked once, by the artifact's own parse precondition, and never reported twice.
+
+Where the project is a git repository, the files git knows about: tracked, plus untracked ones that are not ignored. Elsewhere, a case-exact filesystem glob. An ignored file is therefore not checked in a repository, which is deliberate — an ignored file is not part of what the project publishes about itself.
+
+MEASURED 2026-09-11: of 65 ambiguous-boolean refusals across this machine, 62 are `on:` in GitHub workflow files — a dialect GitHub owns rather than the project, and one Rite has no standing to judge. The same is true of anchors in a compose file and tags in a CloudFormation template. The documentation directory is the ground this standard actually covers; anything further is the project's own declaration to make.
+
+Broken YAML is broken at `idea`. The stage decides which DOCUMENTS a project is asked for, never whether the ones it has may be corrupt.
+
+An include or exclude declared in .rite.yaml is reported as a counted line, the same rule threshold overrides follow. A narrowed scope that nothing states is a silent opt-out.
+
+- **`yaml_parses`** (RED) — Every checked file is YAML, and a file that is not names the construct and the line.
+- **`yaml_within_subset`** (YELLOW) — Every checked file stays inside the declared subset, naming the construct where it does not.
+
+**Honest limits.**
+
+- A file whose entire content is one bare scalar is valid YAML and is reported `invalid` (expected_key_value). Nothing in this standard is shaped that way, and the alternative is teaching the reader a document form it would never otherwise meet.
+- A `%YAML` directive is valid and is reported `invalid`. Same reasoning, same trade.
+- Values are read as YAML 1.2 where the two versions disagree: an unquoted date stays a string and `0600` is six hundred, not octal 384. This affects what a value MEANS, never whether the file parses, and the freshness rules parse dates themselves.
+- `invalid` is riteyaml's judgement, not a YAML validator's. It is proven by the differential test against PyYAML for every construct declared above, and that is the whole of the claim — a construct nobody wrote a case for is a construct Rite may still get wrong.
 
 ## Write discipline
 
@@ -137,7 +203,7 @@ Migration of existing projects is explicitly opt-in (d-audience-public-standard,
 `.rite.yaml` is CONFIG, not a documentation artifact, so it does not count against the inventory frozen at 13. The inventory covers what a cold human or agent READS to understand the project; this file is operational, in the same family as .gitignore or phpstan.neon. Recorded explicitly because the freeze exists precisely to stop additions being absorbed without argument — see d-verdicts-and-participation.
 
 - minimal: an empty file is a valid marker — presence is the signal
-- optional keys: `standard_version`, `fail_on`, `thresholds`, `disabled_checks`
+- optional keys: `standard_version`, `fail_on`, `thresholds`, `disabled_checks`, `yaml_check`
 
 ### Thresholds
 

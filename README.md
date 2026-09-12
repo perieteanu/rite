@@ -124,12 +124,20 @@ fails if anyone hand-edits the generated copy. A standard that cannot catch its 
 business asking that of anyone else.
 
 <!-- rite:generated gate-counts -->
-15 gates run on every push, across Linux, macOS and Windows. 4 cannot run on a CI runner — `test-riteyaml.py` (PyYAML is its oracle and CI does not install it), `test-preflight-port-parity.py` (a runner has no copy of preflight.py), `test-mirror-port-parity.py` (a runner has no copy of the script Rite ported from) and `test-installed-current.py` (a runner has no installed plugin) — so the runner reports **`11 of 15 gates ran`** and names the 4 it skipped rather than showing an unqualified green.
+15 gates run on every push, across Linux, macOS and Windows. 4 cannot run on a CI runner — `test-riteyaml.py` (PyYAML is its oracle for the structures; the kinds and spec parity still run), `test-preflight-port-parity.py` (a runner has no copy of preflight.py), `test-mirror-port-parity.py` (a runner has no copy of the script Rite ported from) and `test-installed-current.py` (a runner has no installed plugin) — so the runner reports **`11 of 15 gates ran`** and names the 4 it skipped rather than showing an unqualified green.
 <!-- /rite:generated -->
 
 The YAML is read by a subset parser shipped with Rite, so there is no dependency to install. It
-**refuses rather than guesses** on anything outside the subset it was measured against, and its
-correctness claim rests on a differential test against PyYAML rather than on a docstring.
+**refuses rather than guesses**, and its correctness claim rests on a differential test against
+PyYAML rather than on a docstring.
+
+It refuses in **two kinds**, because they are different facts. *Invalid* means the file is not
+YAML — your defect, reported RED. *Unsupported* means valid YAML using a construct outside the
+subset the standard declares — Rite's limit, reported YELLOW, naming the construct. Both are
+declared in the standard, and a gate fails if the parser and the standard disagree about what
+either list contains. That distinction is what lets Rite check **every** YAML file a project
+carries rather than only its own: re-measured across 478 real files, the parser accepted twelve
+that PyYAML rejects and refused six it should have read. Both directions are now zero.
 
 ## Honest limits
 
@@ -147,9 +155,13 @@ correctness claim rests on a differential test against PyYAML rather than on a d
 - **The freshness windows are guesses** — 60 days for a roadmap, 90 for architecture — never
   calibrated against a real corpus. They are overridable per project, and an override is always
   reported alongside the default rather than applied silently.
-- **One of the standard's declared rules is unimplemented** — `deleted_ids_appear_in_milestones`
-  — and the report says so on every run instead of quietly scoring what it can.
-- The `preflight.py` port and the continuous watcher layer do not exist.
+- **YAML validity is judged by a declared subset, not by a YAML validator.** Rite reads YAML with
+  its own stdlib parser, so "invalid" is that parser's judgement — proven construct by construct
+  against PyYAML, and no wider than the constructs someone wrote a case for. A file using an
+  anchor is reported as outside the subset, never as broken.
+- **Six of the eight watchers do not exist**, and two of those have lost the premise they were
+  scoped on. The three things the built ones report are in
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 Full list, including what is deliberately deferred and what will never be built:
 [`docs/ROADMAP.yaml`](docs/ROADMAP.yaml) and [`docs/MISSION.md`](docs/MISSION.md).

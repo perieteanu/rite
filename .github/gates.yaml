@@ -43,11 +43,17 @@ gates:
   - id: riteyaml
     command: [scripts/test-riteyaml.py]
     what: "riteyaml parses this project's YAML identically to PyYAML"
-    skip_short: "PyYAML is its oracle and CI does not install it"
+    skip_short: "PyYAML is its oracle for the structures; the kinds and spec parity still run"
     skip_means: >
       PyYAML is absent, and PyYAML is the ORACLE for this test rather than a dependency of the
-      product. CI deliberately does not install it, so riteyaml's correctness claim is NOT
-      enforced here. It is enforced on a developer machine, where PyYAML is present.
+      product. CI deliberately does not install it, so the half that compares PARSED STRUCTURES
+      against PyYAML is not enforced here; it is enforced on a developer machine, where PyYAML is
+      present.
+      WHAT STILL RUNS, and fails on a runner like any other gate: every refusal's KIND
+      (invalid versus unsupported), its construct id, and the assertion that those ids match the
+      constructs spec/project-standard.yaml declares under `yaml_subset`. Those need no oracle,
+      and they are what stops the parser and the published standard drifting apart. A skip here
+      has meant "nothing was checked" since 2026-09-12 and no longer does.
 
   - id: hook-shape
     command: [scripts/test-hook-output.py]
