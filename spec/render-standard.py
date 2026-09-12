@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -902,10 +904,53 @@ def _gate_list(data: dict, target: dict) -> str:
     return "\n".join(out)
 
 
+def _sample_verdict(data: dict, target: dict) -> str:
+    """A REAL checker run, produced at render time from a fixture declared in the YAML.
+
+    WHY IT IS GENERATED. This was the last hand-maintained copy in the repository and it rotted
+    on schedule: the pasted run said 61 checks and 57 of 64 while the real numbers were 67 and
+    66 of 66 (c-readme-sample-output-is-a-copy). Inventing the output instead would be worse —
+    the previous rewrite of that README section found a genuine defect precisely BECAUSE the
+    example was generated rather than imagined, and a plausible one would have hidden it.
+
+    DETERMINISM IS THE CONSTRAINT. A block that changes on its own makes `--blocks --check` a
+    gate that always fails, and a gate that always fails gets switched off. The fixture is
+    therefore documents-only with fixed dates and a fixed directory name, so every line of the
+    verdict is reproducible on any machine: freshness reports NA for want of a source, and the
+    one RED is a stale handoff computed from two fixed dates.
+    """
+    block = next((b for b in (data.get("generated_blocks") or {}).get("blocks") or []
+                  if _s(b.get("id")) == "sample-verdict"), None)
+    fixture = (block or {}).get("fixture") or {}
+    if not fixture:
+        raise ValueError("sample-verdict declares no `fixture` to run the checker against")
+    name = _s(block.get("project_name")) or "sample"
+    checker = ROOT / "scripts" / "rite-check.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        project = Path(tmp) / name
+        project.mkdir()
+        for rel, body in fixture.items():
+            (project / str(rel)).write_text(str(body), encoding="utf-8", newline="\n")
+        run = subprocess.run(
+            [sys.executable, str(checker), str(project)],
+            capture_output=True, text=True, timeout=60,
+            encoding="utf-8", errors="replace",
+        )
+    # Exit 1 is EXPECTED and is the point: the fixture carries a deliberate RED so the sample
+    # shows what a finding looks like. Only a usage error or a missing verdict means this
+    # generator is broken, and then it must fail loudly rather than fence an empty block.
+    if run.returncode not in (0, 1) or "checks ·" not in run.stdout:
+        raise ValueError(
+            f"the checker produced no verdict for the sample project (exit {run.returncode}): "
+            f"{(run.stderr or run.stdout).strip()[:300]}")
+    return "```\n" + run.stdout.replace("\r\n", "\n").rstrip("\n") + "\n```"
+
+
 BLOCK_GENERATORS = {
     "stage-table": _stage_table,
     "gate-counts": _gate_counts,
     "gate-list": _gate_list,
+    "sample-verdict": _sample_verdict,
 }
 
 
