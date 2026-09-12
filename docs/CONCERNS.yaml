@@ -90,9 +90,19 @@ concerns:
       forever". Against the checker today that is false: it reports NA, "documents-only project
       — no source to measure against". Measuring that NA found a worse problem than the one
       described here, and it is its own concern because it is about what SOURCE means, not about
-      the windows: c-source-is-filesystem-mtime. In short, almost no real project reaches the
-      NA, because a .gitignore alone counts as source. The HANDOFF written 2026-09-10 repeats
+      the windows: c-source-is-filesystem-mtime. The HANDOFF written 2026-09-10 repeats
       "pass forever"; it is write-once and is superseded by the next one, not edited.
+    corrected_2026_09_12: >
+      The sentence above said "almost no real project reaches the NA, because a .gitignore alone
+      counts as source". That was true when written and is now false: the source half was settled
+      the next day (d-source-is-recorded-change-not-file-timestamps), so a documents-only project
+      reaches the NA again, and reaches it for the right reason — nothing non-documentary has ever
+      been committed.
+      WHAT REMAINS HERE IS THE CALIBRATION, which is the half this concern has always been about:
+      30, 60 and 90 days are still uncalibrated guesses, never measured against the corpus. The
+      other half of the original proposal — "define `activity` for a project whose only artifacts
+      ARE documents" — is answered: such a project has no activity to measure against, and the
+      finding now says so in those words rather than passing silently.
 
   - id: c-ai-collab-interaction-boundary
     title: "Is ai-collab-interaction/session-frame.yaml usable as the basis for the start-session protocol?"
