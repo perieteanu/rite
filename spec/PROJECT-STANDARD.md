@@ -203,7 +203,7 @@ Migration of existing projects is explicitly opt-in (d-audience-public-standard,
 `.rite.yaml` is CONFIG, not a documentation artifact, so it does not count against the inventory frozen at 13. The inventory covers what a cold human or agent READS to understand the project; this file is operational, in the same family as .gitignore or phpstan.neon. Recorded explicitly because the freeze exists precisely to stop additions being absorbed without argument — see d-verdicts-and-participation.
 
 - minimal: an empty file is a valid marker — presence is the signal
-- optional keys: `standard_version`, `fail_on`, `thresholds`, `disabled_checks`, `yaml_check`, `source_exclude`
+- optional keys: `standard_version`, `fail_on`, `thresholds`, `disabled_checks`, `yaml_check`, `source_exclude`, `legacy_layout`
 
 ### Thresholds
 
@@ -717,6 +717,8 @@ Everything below is this machine's convention. Rite reads it from config; anyone
 
 - `default` — docs
 - `alternatives` — `docs-yaml`, `doc`, `documentation`
+- `formats` — `md`, `yaml`
+- `formats_note` — The extensions an artifact may be found under when it is not at its canonical name. DECLARED HERE because it was a literal ("yaml", "md") written twice inside rite-check.py's artifact lookup and nowhere else — a value the standard depends on with no human-visible home, which is the class of defect the no-hardcoded-values rule names. Order is the search order.
 - `note` — Format-neutral by rule. A directory named for a file format becomes a false claim the moment one file inside it changes form — the exact class of stale statement Rite exists to catch. Renamed docs-yaml -> docs on 2026-09-07 for that reason.
 
 **`log_line_format`**

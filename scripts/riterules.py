@@ -29,6 +29,78 @@ import ritefs  # noqa: E402
 import riteyaml  # noqa: E402
 
 
+# ── where a project's documents live ─────────────────────────────────────────
+# THE ONE RESOLVER. Before 2026-09-12 this question was answered in four places: twice in this
+# file with byte-identical lines, once in rite-check.py, and a fourth time in rite_copy.py as a
+# bare `DOCS = "docs"` that had diverged — so the PRODUCER of three artifacts and the CHECKER of
+# those same three artifacts held independent copies of every path. That is the drift this module
+# was extracted to prevent, reproduced inside the module itself.
+#
+# scripts/test-docs-path-literals.py is the gate. It permits the fallback below to exist ONCE,
+# here, and fails on any other documentation path written as a literal.
+
+DOCS_DIR_FALLBACK = "docs"
+
+
+def docs_dirs(spec: dict, marker: dict | None = None) -> list[str]:
+    """Every documentation directory name to look under, most specific first.
+
+    A project's own `legacy_layout.docs_dir` leads, because a declaration beats a default — the
+    same rule `stage` follows. The spec's canonical name and its superseded alternatives follow,
+    since migration is opt-in and eleven projects still use one of them.
+    """
+    local = (spec.get("local") or {}).get("docs_dir") or {}
+    ordered = [
+        (marker or {}).get("legacy_layout", {}).get("docs_dir")
+        if isinstance((marker or {}).get("legacy_layout"), dict) else None,
+        local.get("default") or DOCS_DIR_FALLBACK,
+        *(local.get("alternatives") or []),
+    ]
+    seen: dict[str, None] = {}
+    for name in ordered:
+        if isinstance(name, str) and name:
+            seen[name] = None
+    return list(seen)
+
+
+def canonical_docs_dir(spec: dict) -> str:
+    """The name the STANDARD uses, irrespective of what any project declares.
+
+    Distinct from docs_dirs()[0], which is what this project actually uses. Both are needed at
+    once: the checker searches the project's directory and reports the canonical one, so
+    collapsing them would make the finding say "canonical is docs-yaml/MISSION.md".
+    """
+    local = (spec.get("local") or {}).get("docs_dir") or {}
+    return local.get("default") or DOCS_DIR_FALLBACK
+
+
+def docs_formats(spec: dict) -> list[str]:
+    """The extensions an artifact may carry when it is not at its canonical name."""
+    local = (spec.get("local") or {}).get("docs_dir") or {}
+    return [str(f) for f in (local.get("formats") or [])]
+
+
+def artifact_path(spec: dict, artifact_id: str, marker: dict | None = None) -> str | None:
+    """The path this project should write `artifact_id` to, per the spec and its declaration.
+
+    Producers call this instead of composing a path from constants. Returns None for an artifact
+    the spec does not declare — the caller decides what that means, because a missing artifact id
+    is a spec defect and guessing a destination is exactly what rite_copy.py promises not to do.
+    """
+    for art in spec.get("artifacts") or []:
+        if art.get("id") != artifact_id:
+            continue
+        declared = art.get("path")
+        if not isinstance(declared, str):
+            return None
+        head, sep, tail = declared.partition("/")
+        if not sep:
+            return declared
+        chosen = docs_dirs(spec, marker)[0]
+        return f"{chosen}/{tail}"
+    return None
+
+
 def git_show(root: Path, rel: str) -> str | None:
     """The committed version of a file at HEAD, or None if unavailable."""
     try:
@@ -138,8 +210,7 @@ def project_yaml_globs(spec: dict, marker: dict | None) -> tuple[list[str], list
     migration is opt-in, so checking only the canonical name would check nothing on those.
     """
     cf = (spec.get("yaml_subset") or {}).get("checked_files") or {}
-    local = (spec.get("local") or {}).get("docs_dir") or {}
-    dirs = [local.get("default") or "docs", *(local.get("alternatives") or [])]
+    dirs = docs_dirs(spec, marker)
     include = [str(pattern).replace("{docs_dir}", d)
                for pattern in cf.get("include_default") or []
                for d in dirs]
@@ -203,8 +274,7 @@ class SourceActivity(NamedTuple):
 def _source_exclusions(spec: dict, marker: dict | None) -> list[str]:
     """Every path that is not source, from the spec plus whatever the project declares."""
     sd = spec.get("source_definition") or {}
-    local = (spec.get("local") or {}).get("docs_dir") or {}
-    dirs = [local.get("default") or "docs", *(local.get("alternatives") or [])]
+    dirs = docs_dirs(spec, marker)
     out: list[str] = []
     for raw in sd.get("excluded_paths") or []:
         pattern = str(raw)

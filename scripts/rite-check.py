@@ -84,6 +84,66 @@ class Ctx:
         self.thresholds = (self.marker or {}).get("thresholds") or {}
         self.disabled = set((self.marker or {}).get("disabled_checks") or [])
         self.fail_on = (self.marker or {}).get("fail_on", "red")
+        self.legacy = self._legacy_layout()
+        # What the declaration covered, counted so it can be REPORTED. A suppression nobody can
+        # see is a silent opt-out, which is the rule overrides_are_never_silent already sets.
+        self.legacy_suppressed: list[str] = []
+
+    def _legacy_layout(self) -> dict | None:
+        """The project's declared legacy layout, or None.
+
+        None covers three cases that behave identically: nothing declared, something declared
+        that is not a mapping, and a declaration naming a directory this project does not use.
+        The last matters — a stale declaration left behind after a migration must not go on
+        suppressing findings about a layout that is no longer there.
+        """
+        declared = (self.marker or {}).get("legacy_layout")
+        if not isinstance(declared, dict):
+            return None
+        docs_dir = declared.get("docs_dir")
+        if not isinstance(docs_dir, str) or not docs_dir:
+            return None
+        if not (self.root / docs_dir).is_dir():
+            return None
+        by = declared.get("migrate_by")
+        lapsed, over = False, 0
+        if isinstance(by, str) and by:
+            try:
+                due = dt.date.fromisoformat(by.strip())
+            except ValueError:
+                # An unparseable date is not a deferral. Treat it as lapsed rather than as
+                # absent: a date nobody can read must not be more permissive than no date.
+                return {"docs_dir": docs_dir, "formats": declared.get("formats") or {},
+                        "migrate_by": by, "lapsed": True, "days_over": None}
+            lapsed = due < self.today
+            over = (self.today - due).days
+        return {"docs_dir": docs_dir, "formats": declared.get("formats") or {},
+                "migrate_by": by if isinstance(by, str) else None,
+                "lapsed": lapsed, "days_over": over}
+
+    def legacy_excuses(self, art_id: str, actual: str, rule: str | None = None) -> bool:
+        """Would the declaration excuse this finding? A pure predicate — it counts nothing.
+
+        Layout only — where a file is and what extension it carries. A format-shaped rule is
+        excused ONLY for an artifact the project actually named in `formats`, so forgetting one
+        still reports it. A blanket suppression would be the "define away the standard" failure
+        the thresholds block warns about, arriving through a different door.
+        """
+        legacy = self.legacy
+        if not legacy or legacy["lapsed"]:
+            return False
+        if not actual.startswith(f"{legacy['docs_dir']}/"):
+            return False
+        if rule is None:
+            return True
+        declared_format = (legacy["formats"] or {}).get(art_id)
+        if not isinstance(declared_format, str) or not declared_format:
+            return False
+        return actual.endswith(f".{declared_format}")
+
+    def legacy_suppress(self, actual: str, rule: str) -> None:
+        """Record one finding the declaration excused, so it can be reported in the summary."""
+        self.legacy_suppressed.append(f"{actual}:{rule}")
 
     def not_yet_required(self, art: dict) -> str | None:
         """Why this artifact is not required at the project's declared stage, or None.
@@ -165,22 +225,26 @@ class Ctx:
         """
         if self.exists_exactly(rel):
             return rel, None
-        local = (self.spec.get("local") or {}).get("docs_dir") or {}
-        canonical_dir = local.get("default", "docs")
-        alts = local.get("alternatives") or []
+        # The directory names and the extension list both come from the spec through the one
+        # resolver. They were three literals here until 2026-09-12 — a "docs" default and the
+        # pair ("yaml", "md") written twice — which is a value the standard depends on with no
+        # human-visible home. See riterules.docs_dirs and local.docs_dir.formats.
+        dirs = riterules.docs_dirs(self.spec, self.marker)
+        formats = riterules.docs_formats(self.spec)
+        canonical_dir = riterules.canonical_docs_dir(self.spec)
         head, _, tail = rel.partition("/")
         if head != canonical_dir or not tail:
             return rel, None
         stem, dot, ext = tail.rpartition(".")
-        for d in alts:
-            for e in ([ext] + [x for x in ("yaml", "md") if x != ext]) if dot else [ext]:
+        for d in dirs:
+            for e in ([ext] + [x for x in formats if x != ext]) if dot else [ext]:
                 cand = f"{d}/{stem}.{e}"
-                if self.exists_exactly(cand):
+                if cand != rel and self.exists_exactly(cand):
                     return cand, f"found as {cand}; canonical is {rel}"
-        for e in ("yaml", "md"):
+        for e in formats:
             if dot and e != ext:
                 cand = f"{canonical_dir}/{stem}.{e}"
-                if self.exists_exactly(cand):
+                if cand != rel and self.exists_exactly(cand):
                     return cand, f"found as {cand}; canonical is {rel}"
         return rel, None
 
@@ -248,6 +312,16 @@ RULES = {}
 # handled by an explicit branch, never by a RULES entry. They are excluded from the coverage
 # denominator, because "unimplemented" should mean work outstanding.
 MARKER_RULES = frozenset({"optional"})
+
+# Rules whose SHAPE assumes the canonical format — they read Markdown headings, so against a
+# YAML document they can only ever fail. A project that declares the format in `legacy_layout`
+# has them excused and counted; everyone else sees them as before. They are NOT read from the
+# spec because the coupling is to the RULE'S IMPLEMENTATION rather than to any declaration: the
+# list changes when a rule is rewritten to read structure, not when the standard changes.
+FORMAT_SHAPED_RULES = frozenset({
+    "required_sections", "no_empty_sections",
+    "min_content_sections", "required_any_of_sections",
+})
 
 
 def rule(name):
@@ -799,7 +873,9 @@ def _source_plans_all_copied(ctx, art, test):
         return NA, f"cannot load the copier — {exc}"
     if not rite_copy.PLANS_DIR.is_dir():
         return NA, "no plans directory on this machine"
-    missing = rite_copy.uncopied_plans(ctx.root)
+    # The checker's own spec and marker, so the copier and the checker can never disagree about
+    # where this project's plan copies belong — the same reason uncopied_plans is shared at all.
+    missing = rite_copy.uncopied_plans(ctx.root, ctx.spec, ctx.marker)
     if missing is None:
         return NA, "no session transcripts to attribute against"
     if missing:
@@ -990,8 +1066,13 @@ def check(root: Path, spec: dict,
             actual, note = ctx.resolve(art["path"])
             if note:
                 art = dict(art, path=actual)
-                findings.append(Finding(YELLOW, "project", "populated", "canonical_name",
-                                        actual, note))
+                # A declared legacy layout excuses the NAME. It is counted and reported once,
+                # below, rather than repeated per file — d-stage-deferred-checks-are-collapsed.
+                if ctx.legacy_excuses(str(art.get("id")), actual):
+                    ctx.legacy_suppress(actual, "canonical_name")
+                else:
+                    findings.append(Finding(YELLOW, "project", "populated", "canonical_name",
+                                            actual, note))
             present = ctx.exists_exactly(art["path"])
         # A DECLARATION BEATS TIER; tier is only the fallback. Where the artifact declares
         # required_from_stage AND the project declares a stage, the stage decides outright:
@@ -1072,6 +1153,17 @@ def check(root: Path, spec: dict,
                 continue
             if rule_name in ("optional",):
                 continue
+            # A rule whose SHAPE assumes the canonical format cannot run against a document in
+            # another one: `required_sections: [Mission, Constraints, Non-goals]` names Markdown
+            # headings, and no valid YAML contains them. Where the project declared that format,
+            # a FAILURE is excused; reporting YELLOW would be a false accusation.
+            #
+            # THE RULE STILL RUNS, and a PASS is still reported. Suppressing it wholesale was the
+            # first implementation and it threw away three true greens on the measurement fixture
+            # — a document that satisfies the rule anyway is evidence, and an excuse must not
+            # consume it. Only a finding that could never have been satisfied is deferred.
+            format_excused = (rule_name in FORMAT_SHAPED_RULES
+                              and ctx.legacy_excuses(str(art.get("id")), art["path"], rule_name))
             if optional_absent:
                 findings.append(Finding(
                     NA, "project", level, rule_name, art["path"],
@@ -1092,7 +1184,34 @@ def check(root: Path, spec: dict,
                 continue
             if sev in (RED, YELLOW):
                 sev = severity_if_failed if sev != NA else NA
+            if format_excused and sev in (RED, YELLOW):
+                ctx.legacy_suppress(art["path"], rule_name)
+                continue
             findings.append(Finding(sev, "project", level, rule_name, art["path"], msg))
+
+    # ── the legacy layout, said ONCE ─────────────────────────────────────────
+    # Bounded by overrides_are_never_silent: a declaration that nothing states is a silent
+    # opt-out. So it is condensed, never omitted — and when the date passes, nothing is
+    # suppressed at all and the lapse is its own finding. A deadline that does nothing when it
+    # arrives is not a deadline.
+    if ctx.legacy:
+        by = ctx.legacy["migrate_by"]
+        if ctx.legacy["lapsed"]:
+            over = ctx.legacy["days_over"]
+            when = (f"migrate_by {by} passed {over}d ago" if over is not None
+                    else f"migrate_by {by!r} is not a readable date")
+            findings.append(Finding(
+                YELLOW, "project", "populated", "legacy_layout", ritefs.MARKER,
+                f"{when} — the deferral has lapsed and every finding it covered is "
+                f"reported in full again"))
+        else:
+            names = sum(1 for s in ctx.legacy_suppressed if s.endswith(":canonical_name"))
+            shaped = len(ctx.legacy_suppressed) - names
+            when = f"migration due {by}" if by else "no migration date set"
+            findings.append(Finding(
+                NA, "project", "populated", "legacy_layout", ritefs.MARKER,
+                f"declared: {ctx.legacy['docs_dir']}/ — {names} name finding(s) and "
+                f"{shaped} format-shaped rule(s) deferred, {when}"))
 
     # A project may declare that some of its files are not the thing its documents describe —
     # tooling written to police the documentation, most often. Reported as a counted line for the

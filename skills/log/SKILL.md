@@ -10,6 +10,14 @@ transcripts are pruned by the harness within weeks, so whatever is not written h
 Log **as work happens**, not only at the end. If the session dies before `/end`, everything
 written up to that point survives.
 
+## This project, resolved
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+
+The steps below name the canonical `docs/…` locations. **Where the block above shows something
+different, that is the truth** — a project predating the standard keeps its documents elsewhere.
+An empty block means skill shell execution is disabled; fall back to the canonical names.
+
 ## Steps
 
 1. **Read the machine clock. Every time. Before composing anything.**

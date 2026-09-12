@@ -18,12 +18,13 @@ $leaf = switch ($Action) {
     'copy'          { 'rite_copy.py' }
     'watch'         { 'rite_watch.py' }
     'issue'         { 'rite_issue.py' }
+    'paths'         { 'rite_paths.py' }
     default         { $null }
 }
 $script = if ($leaf) { Join-Path $here ("../scripts/" + $leaf) } else { $null }
 
 if (-not $script -or -not (Test-Path $script)) {
-    [Console]::Error.WriteLine("rite: no such action '$Action' (session-start, session-end, check, copy, watch, issue)")
+    [Console]::Error.WriteLine("rite: no such action '$Action' (session-start, session-end, check, copy, watch, issue, paths)")
     exit 2
 }
 

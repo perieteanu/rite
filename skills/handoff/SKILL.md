@@ -13,6 +13,14 @@ The file always exists. "Nothing to hand off" is written down as `genre: none`, 
 absent file — an explicit nothing and a missing file look identical from the next session's
 side, except that one proves somebody decided.
 
+## This project, resolved
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+
+The steps below name the canonical `docs/…` locations. **Where the block above shows something
+different, that is the truth.** An empty block means skill shell execution is disabled; fall back
+to the canonical names and check each exists before editing it.
+
 ## Steps
 
 1. Decide the outcome and record it in the front matter as `session_end:`

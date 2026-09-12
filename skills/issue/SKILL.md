@@ -33,8 +33,10 @@ On Windows without Git Bash, `pwsh "${CLAUDE_PLUGIN_ROOT}/hooks/rite.ps1" issue 
 bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" issue --list
 ```
 
-Harvesting into rite's `docs/CONCERNS.yaml` is a **separate, deliberate act** — done in rite,
-with the whole list in view, when someone has decided to work on Rite itself.
+Harvesting into Rite's own `CONCERNS.yaml` is a **separate, deliberate act** — done in the rite
+repository, with the whole list in view, when someone has decided to work on Rite itself. That
+file belongs to Rite, not to the project you are in; nothing here writes to the project you hit
+this from.
 
 ## Don't
 

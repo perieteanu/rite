@@ -10,10 +10,12 @@
 # absence. This runs BEFORE Python exists, so it is the only code that can say Python is
 # missing.
 #
-# Usage:  rite.sh <session-start|session-end|check|copy|watch|issue> [args...]
+# Usage:  rite.sh <session-start|session-end|check|copy|watch|issue|paths> [args...]
 #         The session actions take hook JSON on stdin. `check` takes [PATH] [--force] and is
 #         what the skills call, so that no prompt has to name an interpreter — the rule
 #         python_invocation_differs, which two SKILL.md files broke until 2026-09-10.
+#         `paths` takes [PATH] and prints participation plus the project's real document set;
+#         the skills inject its output, so no prompt hardcodes a documentation path either.
 set -euo pipefail
 
 action="${1:-}"
@@ -31,11 +33,12 @@ case "$action" in
   copy)          script="$here/../scripts/rite_copy.py" ;;
   watch)         script="$here/../scripts/rite_watch.py" ;;
   issue)         script="$here/../scripts/rite_issue.py" ;;
+  paths)         script="$here/../scripts/rite_paths.py" ;;
   *)             script="" ;;
 esac
 
 if [ -z "$script" ] || [ ! -f "$script" ]; then
-  echo "rite: no such action '${action}' (session-start, session-end, check, copy, watch, issue)" >&2
+  echo "rite: no such action '${action}' (session-start, session-end, check, copy, watch, issue, paths)" >&2
   exit 2
 fi
 
