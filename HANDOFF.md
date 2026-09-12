@@ -2,69 +2,82 @@
 genre: task_brief
 written: "2026-09-12"
 session_end: written
-supersedes: "the 2026-09-10 close, which handed off to human testing that had not yet started"
+supersedes: "the 2026-09-12 morning close, which handed off to testing — the testing happened"
 expires: "2026-12-11"
 status: live
 ---
 
 # HANDOFF — rite
 
-State is in `ROADMAP.current_state`, corrected against the host today. This is what the docs do
+State is in `ROADMAP.current_state`, rewritten against the host today. This is what the docs do
 not say.
 
-**The next thing is testing, and it starts with a restart.** Two plugin updates landed today and
-both printed *"Restart to apply changes"*. A session that has not restarted since is exercising
-the OLD hooks — so the write-time YAML watcher and the new freshness rules would not be what a
-test measured. Reload first, then adopt.
+## The one thing to verify first, because this session could not
 
-## Testing another project: what the session before you learned the hard way
+**The resolver injection has never actually run.** `/rite:end` was invoked at the close of this
+session and the harness handed over the **pre-edit skill body** — no `## This project, resolved`
+block, no `!` command. The plugin had updated to 0.25.0 mid-session and printed *"Restart to
+apply changes"*, so the session was still running the old prompt. The step was performed by
+hand instead.
 
-- **Start a NEW session in the other project. Do not `cd`.** Rite assumes one project per session
-  and resolves `LOG.md`, `HANDOFF.md` and every copy destination from one root;
-  `watcher-cwd-changed` reports the move once, which is a warning and not a fix.
-- **Preview read-only before adopting**: `rite.sh check <path> --force` scores a project with no
-  marker and writes nothing.
-- **Write two or three predictions before the first run.** This project's record keeps earning it:
-  "hwprivacy near-clean, 2-4 findings" turned out to be 17, and today's parser work was decided by
-  probing PyYAML rather than by reading code. A vague expectation gets scored as correct afterwards.
-- **Expect `yaml_parses` REDs immediately.** 22 YAML files on this machine are invalid right now,
-  across ten projects. Those are true findings about the documents, not Rite misbehaving.
-- **Expect the `docs-yaml/` wall on an existing project** — hwprivacy opens at 2 RED / 27 YELLOW,
-  plumbing at 1 RED / 23 YELLOW, almost all `canonical_name`. Whether that is tolerable or whether
-  the check should be dropped is STILL the real unknown, unchanged since 2026-09-10.
-- **`/rite:issue` captures; do not fix Rite mid-test.** A tool that rewrites itself the instant it
-  annoys someone cannot be evaluated, because the thing being measured keeps moving.
-- **Field notes go in `tests/<name>/`** — gitignored and never committed
-  (`d-tests-folders-never-committed`), harvested into `CONCERNS.yaml`, then deleted.
+So `rite_paths.py` is tested, and the five SKILL.md files are edited and gated, but the
+**delivery path between them is unexercised**. Restart, run `/rite:end` or `/rite:log` in this
+project, and confirm the resolved block actually appears above the steps. If it does not,
+dynamic context injection is not doing what the documentation says, and two concerns retired
+today were retired on an untested mechanism.
 
-## Traps, two of them mine from today
+The previous handoff opened with the same warning about the same trap. It was right, and it
+still got us.
 
-- **An `Edit` aimed at the wrong anchor modified a committed entry in an append-only file**, and
-  the decision it was meant to add went nowhere — leaving four documents citing an id that did not
-  exist. Nothing caught it; reading the tool result did. Verify an append landed where you meant.
-- **A generated block can rewrite itself.** The README sample's first fixture carried an expiry in
-  the past, so the output held a day count measured from today. Two `--check` runs passed and
-  proved nothing, because they ran in the same minute.
-- **Running the gates from a `git worktree` can silently downgrade one to SKIP** —
-  mirror-port-parity resolves state from the path-derived project slug. Verify in the main tree.
-- **`spec/` is not compared by `test-installed-current.py`**, so the installed plugin's copy of the
-  standard can drift from the repository while the gate stays green — and the running checker reads
-  the installed one. That is `c-installed-spec-is-not-compared`.
+## What is built but has no user
 
-## Open, and the two cheapest next
+- **`legacy_layout` has never been declared by a real project.** Every measurement came from a
+  fixture. hwprivacy still carries no `.rite.yaml` at all, so adopting it is the obvious next
+  test — and it is the project the feature was designed from.
+- **`rite.sh paths` is new.** It is the first action added since the port, and the only one the
+  skills depend on rather than the hooks.
 
-- **`c-installed-spec-is-not-compared`** — plausibly one line in `COMPARED` plus a test, and today's
-  own reinstall is what exposed it.
-- **`c-commit-is-not-gated`** — worth having now in a way it was not yesterday: `yaml_parses` gives
-  a pre-commit gate something real to catch. Its edge cases are already written down there, including
-  that the gate must run with `--exclude-scope=session`.
-- Also open: `c-yaml-values-are-misread-in-ways-that-still-parse` (three block literals undiagnosed),
-  `c-copier-ignores-the-project-it-writes-into`, `c-memory-has-no-cross-project-lane`,
-  `c-roadmap-vocabulary-assumes-building`, and `c-ai-collab-interaction-boundary`, which has waited
-  on a ruling since 2026-09-07 and is not work.
+## Open, and what each is waiting on
+
+- **`c-watcher-cannot-see-shell-writes`** (high) is the biggest hole and is NOT blocked on
+  effort — it is blocked on one lookup. The proposal rests on `FileChanged` firing for writes
+  made by a Bash call, which nobody has verified. Read the hooks reference before designing
+  against it; this project has already scoped a watcher layer against a list of four events when
+  thirty-three exist.
+- **`c-session-post-is-gated-by-participation`** needs a RULING, not code, and its `do_not` says
+  so. The question sharpened today: does participation distinguish a hook firing unbidden from a
+  CLI invoked by name? `/rite:end` now *reports* the silence, but the tools are still silent.
+- **`c-copier-has-no-read-only-preview`** — `check` has `--force`, `copy` has none, and the
+  copier is the one with files at stake. The constraint is recorded: on a writer that flag can
+  only mean preview, never write.
+
+## Bookkeeping nobody has ruled on
+
+- **Three concerns sit in BOTH `concerns` and `retired_ids`** — `c-source-is-filesystem-mtime`,
+  `c-project-yaml-is-not-checked`, `c-readme-sample-output-is-a-copy`. All three are
+  `status: settled` and were marked done in place rather than moved, which is what the file's own
+  lifecycle forbids and what `unique_ids` cannot see, since it only checks within `concerns`.
+  Raised twice today and deliberately not fixed: it is a decision about someone else's
+  bookkeeping, not a defect to quietly tidy.
+- **`tests/hwprivacy/` is harvested and can go.** The convention is harvest into `CONCERNS.yaml`
+  then delete. Everything in it is now either a concern, a decision, or a correction recorded
+  against it. It is gitignored, so nothing depends on the timing.
+
+## Traps this session paid for
+
+- **A measurement contaminated by its own harness.** Parking the marker as `off.yaml` INSIDE the
+  fixture made a stray root-level YAML count as source, so the baseline described a different
+  project and an unexplained verdict change appeared. Move the file OUT of the tree. This is the
+  second time the act of measuring changed what was measured; the first was plan attribution.
+- **Totals hide the wrong kind of improvement.** The first `legacy_layout` build destroyed three
+  true GREENs while the summary line looked better. Diff the verdicts line by line; comparing
+  `checks · RED · YELLOW` tells you nothing about which findings moved.
+- **A finding can be confidently wrong about its own cause.** The corpus blamed `DOCS = "docs"`
+  for a silent copy; the participation gate returns first and that line is never reached. Both
+  were real bugs, but fixing the named one would have changed nothing about the reported symptom.
 
 ## Do not re-litigate
 
-Settled today, with measurements and tests behind both: what a YAML refusal MEANS (two kinds, and
-the subset is declared in the spec), and what "source" means for freshness (recorded change, never
-file timestamps). Both have their reasoning in `DECISIONS.yaml` and their evidence in `LOG.md`.
+Settled today, with tests behind both: a legacy layout is a DECLARATION that suppresses layout
+findings only and reports itself once (`migrate_by` optional, by Costin's ruling), and no
+documentation path is written as a literal. Reasoning in `DECISIONS.yaml`, evidence in `LOG.md`.

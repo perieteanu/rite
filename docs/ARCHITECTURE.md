@@ -27,6 +27,10 @@ claims:
     - hooks/hooks.json
     - hooks/rite.sh
     - hooks/rite.ps1
+    - scripts/rite_paths.py
+    - scripts/test-docs-path-literals.py
+    - scripts/test-legacy-layout.py
+    - scripts/riterules.py
 ---
 
 # ARCHITECTURE — rite
@@ -117,11 +121,29 @@ scripts/
                      scripts (write_once, many). Attribution is AUTHORSHIP — a Write or
                      ExitPlanMode naming the file in a transcript — never mention. Refuses
                      rather than guesses. Also the PostToolUse entry point, via --hook.
+                     Since 2026-09-12 it RESOLVES its three destinations through riterules
+                     rather than composing them from constants, so it honours a declared
+                     legacy layout and can no longer create a second documentation directory
+                     beside the one a project has.
+  rite_paths.py      THE RESOLVER. Prints whether this project participates and where its
+                     documents actually are. The four judgement skills inject its output
+                     before Claude reads them, so a prompt never names a path that a project
+                     predating the standard does not have — and a project that has not opted
+                     in says so above step 1 instead of reporting silent no-ops as success.
   test-copy-attribution.py  Synthetic-fixture test that writing and mentioning stay distinct.
                      Encodes a defect that shipped for twenty minutes.
   test-mirror-port-parity.py  The port still renders identically to the script it replaced.
                      TEMPORARY: delete it when the fallback is retired.
   test-stage-table-guard.py  No document restates the stage mapping outside a generated block.
+  test-docs-path-literals.py  No documentation path is written as a literal: code resolves it
+                     through riterules, prompts are handed it by the resolver. Its vocabulary
+                     is read from the spec at run time, so a new artifact extends it for free.
+                     Watched failing on ten sites before any were fixed.
+  test-legacy-layout.py  That a declared legacy layout suppresses LAYOUT findings and nothing
+                     else, reports itself exactly once, keeps a rule the document passes
+                     anyway, lapses on its date, holds undated, ignores a declaration whose
+                     directory is gone, and moves what the COPIER writes as well as what the
+                     checker reads.
   rite_preflight.py  THE SESSION POST. Eleven checks across claude/project/machine, two tiers
                      (local runs automatically, full touches the network and never does). A
                      PORT of claude-preflight, with a `command:` form so a check too personal
@@ -133,6 +155,10 @@ scripts/
                      git_known_files, project_yaml_files, yaml_verdict and newest_source_date.
                      One implementation, because two would be free to disagree about what
                      "invalid" or "activity" means.
+                     It is also WHERE A DOCUMENTATION PATH COMES FROM — docs_dirs,
+                     canonical_docs_dir, docs_formats and artifact_path. That question used to
+                     be answered in four places, twice here with byte-identical lines, and a
+                     fifth site had diverged into a bare constant.
   rite_watch.py      THE WATCHER, dispatching on the event. PostToolUse: an append-only file
                      rewritten, a LOG entry dated in the future, or a write that leaves a
                      checked YAML file unparseable. CwdChanged: a mid-session move to a
@@ -140,6 +166,11 @@ scripts/
                      write and every cd, and a watcher that speaks when nothing is wrong gets
                      disabled. The YAML half is INVALID only: an out-of-subset construct the
                      project wrote deliberately is the checker's note, not an interruption.
+                     ITS COVERAGE IS PARTIAL AND THE LIMIT IS STRUCTURAL: the hook matches
+                     Write|Edit|MultiEdit and reads tool_input.file_path, and a Bash call has
+                     neither. Measured on one real session, 22 of 37 writes to the artifacts it
+                     polices went through a shell and were invisible to it, including all four
+                     that did damage. c-watcher-cannot-see-shell-writes.
   rite_issue.py      Records what RITE got wrong, from any project, into plugin storage rather
                      than into the project you are in. Append-only and untriaged on purpose.
   test-watch-discipline.py  That the watcher catches all three, and stays silent otherwise —
