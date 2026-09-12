@@ -2155,3 +2155,104 @@ decisions:
       - "c-freshness-thresholds-are-guesses keeps the calibration half: this fixed what the windows measure against, not whether 30, 60 and 90 days are right."
     stated_by_user: true
     proposed_by: claude
+
+  - id: d-legacy-layout-is-declared-not-tolerated
+    date: "2026-09-12"
+    status: settled
+    title: "A project predating the standard DECLARES its layout; Rite reports the declaration, not the layout"
+    context: >
+      The standard names docs/. Eleven projects predate it and use docs-yaml/, with YAML where the
+      standard names Markdown. Rite tolerated that and nagged about it on every run: measured on
+      hwprivacy, 10 of its 27 YELLOW findings were the transition — 6 canonical_name, one per file
+      forever, plus 4 Markdown section rules against YAML documents that NO valid YAML can satisfy.
+      None was fixable without migrating, and migration is opt-in by standing rule. The project had
+      no way to say "this is what I have, and I will convert it": local.docs_dir called itself
+      configurable, but .rite.yaml had no key for it and no script read one from the marker, so the
+      only way to configure it was to edit Rite's own installed spec.
+    decision: >
+      A project may declare `legacy_layout` in .rite.yaml — docs_dir, a per-artifact `formats` map,
+      and an OPTIONAL migrate_by date. Rite then suppresses the LAYOUT findings and reports the
+      DECLARATION instead, as one counted line. New projects are unaffected: /rite:init never
+      writes the block, and a project scaffolded by Rite has nothing to declare.
+    the_shape_it_borrows: >
+      d-stage-is-the-gating-axis, exactly: a declaration beats a default, and absence is not a
+      claim. Deleting the block reverts to the stricter behaviour rather than switching anything
+      off, which is the same property that makes deleting `stage:` unrewarding.
+    bounded_by:
+      - "overrides_are_never_silent — a declaration that nothing states is a silent opt-out, so it is COLLAPSED to one line, never omitted. Visibility is the control, not a limit."
+      - "LAYOUT ONLY: where a file is and what extension it carries. Nothing about content, freshness, structure or integrity. A project cannot declare its way out of an empty ROADMAP or unparseable YAML."
+      - "`formats` is per artifact and deliberately not a blanket. An artifact left off the list is still reported, so the deferral stays specific to what the author actually looked at."
+      - "A declaration naming a directory that is not there excuses nothing — a marker left behind after a migration must stop covering a layout that no longer exists."
+    migrate_by_is_optional: >
+      RULED BY THE USER, against Claude's recommendation of a required date. With a date the
+      deferral LAPSES when it passes: every finding returns and the missed date is named, because a
+      deadline that does nothing when it arrives is not a deadline. Without one it holds
+      indefinitely AND SAYS SO in those words — the wording is the safeguard, so an open-ended
+      deferral cannot read like a dated one still in hand.
+    what_the_first_implementation_got_wrong: >
+      It suppressed every format-shaped rule wholesale, and that destroyed three true GREEN
+      findings on the measurement fixture. A document that satisfies the rule anyway is evidence,
+      and an excuse must not consume it. The rule now RUNS and only a FAILURE is deferred — the
+      distinction was invisible until the before/after counts were diffed line by line rather than
+      compared as totals.
+    the_measurement_was_contaminated_first: >
+      Worth keeping because it is this project's own recurring lesson. The first before/after
+      comparison showed an unexplained GREEN turning NA, and the cause was the harness: the marker
+      was being parked as off.yaml INSIDE the fixture, so a stray root-level YAML counted as source
+      and the baseline measured a different project. The act of measuring changed what was
+      measured, exactly as it had for plan attribution on 2026-09-10.
+    deferred_deliberately: >
+      Grading YAML documents on SUBSTANCE — checking MISSION.yaml for mission/constraints/non_goals
+      keys rather than declining to check it. No artifact declares a `format:` today; which rules
+      apply is implicit in which tests each artifact lists, so a per-format rule set is its own
+      build. Recorded so a later session reads it as deferred rather than overlooked.
+    verified:
+      - "scripts/test-legacy-layout.py, seven cases, and TWO of them were proved to FAIL before being trusted: suppressing a passing format-shaped rule, and a lapse that still suppressed."
+      - "Measured on a docs-yaml fixture: 27 YELLOW undeclared -> 17 declared, GREEN unchanged at 23, one NA added. The 10 removed are exactly the 10 suppressed."
+      - "The copier moves with it — riterules.artifact_path resolves memory_mirror, plan_copy and script_copy into the declared directory, so the checker cannot accept a file the copier never wrote."
+    stated_by_user: true
+    proposed_by: claude
+
+  - id: d-documentation-paths-are-never-literals
+    date: "2026-09-12"
+    status: settled
+    title: "Code resolves a documentation path from the spec; prompts are handed it; a gate fails on a literal"
+    context: >
+      An audit asked of every module constant in scripts/ not "does this value appear in the spec"
+      but "does the code READ it from the spec". For rite_copy.py and rite_init.py the answer was
+      NOTHING. Every destination they wrote was re-typed from a value the spec already declares, so
+      the PRODUCER of three artifacts and the CHECKER of those same three artifacts held
+      independent copies of every path — the drift riterules.py was extracted to prevent,
+      reproduced inside the same codebase. Alongside it: "docs" re-typed three times with two of
+      the lines byte-identical, the pair ("yaml", "md") twice in rite-check.py with no declared
+      home at all, and 12 docs/ paths across five SKILL.md prompts.
+    decision: >
+      One resolver — riterules.docs_dirs, canonical_docs_dir, docs_formats and artifact_path — and
+      every consumer calls it. The format alternatives gain a declared home at
+      local.docs_dir.formats. Skill prompts receive the resolved set through dynamic context
+      injection rather than naming paths. scripts/test-docs-path-literals.py fails on any
+      documentation path written as a literal, and its vocabulary is read from the spec at run
+      time, so adding an artifact extends the gate for free.
+    the_worst_literal_was_a_username: >
+      rite_copy.py carried GLOBAL_HOME_SLUG = "-home-perieteanu", inherited from
+      claude-mirror-memory.py where it had been correct for months on ONE machine. In a published
+      plugin that guard — "the home-root slug is GLOBAL memory, never a project" — could not fire
+      for anybody else, so their global memory would mirror into whichever project they ran from.
+      It is now derived from Path.home(). Nobody but this machine has run Rite, which is precisely
+      why it survived being read.
+    the_prompts_needed_a_mechanism_not_discipline: >
+      A SKILL.md cannot read the spec, so "remember the paths may differ" would have been another
+      rule with no completion test. Dynamic context injection runs the resolver BEFORE Claude reads
+      the prompt and substitutes its output, so the agent is handed the project's real paths rather
+      than asked to doubt the ones it was given. The canonical names stay in the step text as the
+      degradation path for an environment with skill shell execution disabled.
+    honest_limits:
+      - "The gate cannot police the format pair. 'yaml' and 'md' occur legitimately all over a codebase that reads both, so scanning for them would be noise — and noise is what gets a gate switched off. Their protection is a declared home, not a check."
+      - "Docstrings are exempt: a docstring is prose for a reader, the same standing the skills' fallback text has. Only operational literals fail."
+      - "One last-resort fallback is permitted, in riterules.py alone, and the gate asserts it appears exactly once. A second copy would be free to disagree with the first."
+    consequences:
+      - "Proved failing on 10 sites before any were fixed, including two constants — MIRROR_NAME and SCRIPTS_SUBDIR — that the first version of the gate missed because they contain no directory name and only become a path once joined."
+      - "The gate caught its own author twice within the hour: a python3 invocation quoted into a CONCERNS entry, and the new test file printing without declaring UTF-8 stdio."
+      - "`spec` joined COMPARED in test-installed-current.py, settling c-installed-spec-is-not-compared. The running checker reads the INSTALLED spec, and that spec now carries per-project policy, so a stale copy silently changes what a project is asked for while every other gate is green."
+    stated_by_user: true
+    proposed_by: claude

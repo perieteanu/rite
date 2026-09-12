@@ -45,6 +45,19 @@ concerns:
     why_it_is_not_urgent: >
       Costin's own preflight hook still runs beside the port and covers every directory, so
       nothing is lost today. It becomes real when he retires it.
+    widened_2026_09_12: >
+      THE TITLE UNDERSTATES THE GATE. It is not only the POST: rite_copy.py, rite-check.py and
+      rite_watch.py all return 0 silently on the same marker test, so `copy --all` and `check`
+      no-op in an unadopted project too. That was measured in the hwprivacy session — see
+      c-end-ritual-runs-where-its-tools-are-silent.
+      AND why_it_is_not_urgent ABOVE DOES NOT TRANSFER TO THE COPIER. It rests on Costin's
+      preflight covering every directory as a fallback; nothing is a fallback for the copier,
+      because no other tool on this machine rescues a session scratchpad from /tmp. The POST half
+      of this concern can wait for him to retire preflight. The copy half cannot, and the stake is
+      files rather than a report.
+      The severity is left at medium deliberately: the argument recorded above is about whether the
+      GATE is right, and widening the evidence does not settle it. What changes is that a ruling
+      that keeps the gate must then say what /rite:end prints instead.
     do_not: "Resolve it by editing the hook. It is a DECISIONS entry either way."
 
   - id: c-readme-sample-output-is-a-copy
@@ -238,34 +251,6 @@ concerns:
       - "core.hooksPath would version the hook, but it is git config, which that decision names outright."
     do_not: "Install a hook from /rite:init by default. Offering one is a DECISIONS entry either way."
 
-  - id: c-installed-spec-is-not-compared
-    title: "The installed plugin's copy of the standard can drift from the repository, unchecked"
-    status: open
-    severity: medium
-    opened: "2026-09-12"
-    what: >
-      scripts/test-installed-current.py compares four paths — scripts, skills, hooks,
-      .claude-plugin — and excludes documents on purpose, because a cache carrying a stale LOG.md
-      is untidy rather than broken. spec/ is NEITHER of those things.
-      spec/project-standard.yaml is EXECUTABLE INPUT: rite-check.py reads it on every session
-      start, resolved relative to the script's own location, which in an installed plugin is the
-      cache copy. A spec-only change is therefore live in the repository and absent from what
-      actually runs.
-    how_it_surfaced: >
-      Found 2026-09-12 while reinstalling at 0.23.0. The gate went green on the reinstall, then
-      spec/ changed twice more in the same session — the not_utf8 line in yaml_subset, and the
-      sample fixture — and the gate stayed green with the installed spec already stale.
-    why_it_matters: >
-      Every rule, threshold, construct id and scope default lives in that file. A session would be
-      graded against an older standard than the repository states, and the report would look
-      entirely normal: a silent wrong answer rather than a visible gap, which is the failure class
-      this project exists to attack. It is also the same shape as the defect the test itself was
-      written for — an equal version with unequal bytes, which "looks current".
-    proposal:
-      - "Add spec/ to COMPARED. Smallest change, and honest: a stale spec is not untidy, it is wrong."
-      - "Or have the verdict state the spec it was computed from — path and schema_version — so a stale installed copy is visible rather than inferred."
-    do_not: "Assume the version bump covers it. A bump is what makes `update` act at all; only a comparison catches equal versions with unequal bytes."
-
   - id: c-yaml-values-are-misread-in-ways-that-still-parse
     title: "Five silent misreads survive: the file parses, and the value is wrong"
     status: open
@@ -345,9 +330,38 @@ concerns:
     stale_claim_found: >
       spec/project-standard.yaml still says memory_mirror is generated_by claude-mirror-memory.py
       as a PostToolUse hook. The producer is scripts/rite_copy.py, and the global hook is retired.
+    widened_2026_09_12: >
+      A THIRD SYMPTOM OF THE SAME ROOT, from the hwprivacy corpus. The constant is not merely
+      "under docs/" — it is `DOCS = "docs"` at rite_copy.py:69, consumed unconditionally at :308,
+      :328, :403 and :515, so on a project whose documents live in docs-yaml/ the copier creates a
+      SECOND documentation directory rather than writing into the one that exists.
+      THE INCONSISTENCY IS INSIDE RITE, which is what makes this cheap. rite-check.py:168 already
+      resolves the directory through local.docs_dir — default plus every superseded alternative —
+      with a comment at :157 naming this exact situation. The checker learned and the copier did
+      not, so one tool grades docs-yaml/ARCHITECTURE.yaml while the other cannot find the folder
+      it is in. The fix is to read the same spec key, not to add a second constant.
+      LATENT, NOT PROXIMATE. It did not cause the silent copy the corpus reported — the
+      participation gate returns before DOCS is read — so it is invisible until a docs-yaml/
+      project adopts, and then it is a wrong write rather than a missing one. Diagnosis corrected
+      in c-end-ritual-runs-where-its-tools-are-silent.
+      AND IT SHOULD REFUSE RATHER THAN GUESS where the directory is genuinely ambiguous, per the
+      rule rite_copy.py:33 states about itself. Refusing is a third behaviour, distinct from
+      succeeding and from silently doing nothing.
+    partially_resolved_2026_09_12: >
+      THE DIRECTORY HALF IS SETTLED — d-documentation-paths-are-never-literals. DOCS, MIRROR_NAME
+      and SCRIPTS_SUBDIR are gone; all three destinations resolve through riterules.artifact_path,
+      which honours a declared legacy_layout, and the copier refuses rather than guessing when the
+      spec declares no path for an artifact. A docs-yaml project no longer gets a second
+      documentation directory created beside the one it has.
+      THIS CONCERN IS NOT RETIRED, and the plan that fixed the directory half assumed it would be.
+      Two of its three symptoms are untouched: there is still no .rite.yaml opt-out for the mirror
+      arriving unasked, and --plans still prints one `elsewhere` line per plan belonging to another
+      project. Retiring it here would have buried both, so the entry stays open with its proposal
+      list intact minus the third item.
     proposal:
       - "A .rite.yaml key for the mirror, a path or off, reported when set like a threshold override."
       - "Collapse `elsewhere` into one counted line, listed only on request."
+      - "Resolve the documentation directory through local.docs_dir, the way the checker already does, and refuse where it is ambiguous."
     tension: >
       The mirror is how agent memory becomes auditable from the repository, and this repo's own
       .gitignore says ignoring it would restore the problem. An opt-out trades that away for one
@@ -387,7 +401,106 @@ concerns:
     how_it_surfaced: "Finding 7 of the adoption. Keeping them apart took a deliberate decision there."
     proposal: "One sentence on the ROADMAP artifact in spec/project-standard.yaml saying it describes work on the repository, not work the repository is about. Then regenerate."
 
+  - id: c-watcher-cannot-see-shell-writes
+    title: "The write-discipline watcher matches Write|Edit|MultiEdit, and the damage it exists to catch arrives by Bash"
+    status: open
+    severity: high
+    opened: "2026-09-12"
+    what: >
+      hooks/hooks.json registers the watcher on `Write|Edit|MultiEdit`, and rite_watch.py reads
+      the target from `tool_input.file_path`. A Bash tool call has neither — its input is a
+      `command` string — so an append made with `cat >>` or `python3 - <<PY` is invisible to the
+      only mid-session enforcement Rite has. The gate is not participation this time; it is the
+      matcher, and a marker would not have helped.
+    evidence: >
+      MEASURED over the hwprivacy session transcript, counting writes to the artifacts the watcher
+      polices (LOG.md, HANDOFF.md, CLAUDE.md, docs-yaml/*.yaml): 22 by Bash against 15 by
+      Write/Edit, inside 168 Bash calls to 47 Write+Edit overall. ALL FOUR damaging appends were
+      Bash — the three malformed ones that failed loudly, and the section-merge that silently
+      promoted ten deferred items into near-term work. The watcher observed none of them.
+      This is not one project's habit. skills/log/SKILL.md warns against writing log entries
+      through a shell precisely because agents reach for a shell to append structured text, so the
+      class of write most likely to damage an append-only file is the class the watcher cannot see.
+      d-watcher-reports-invalid-yaml therefore shipped 2026-09-12 into a hook that cannot observe
+      the writes which produce invalid YAML.
+    proposal:
+      - "FileChanged, if it fires for writes inside the project root regardless of which tool made them. That is the shape the watcher actually wants — it asks what changed, not who changed it."
+      - "If FileChanged cannot serve, write the hole into the protocol's honest_limits rather than leaving the coverage implied. A watcher believed to cover writes and covering 40% of them is worse than one whose limit is stated."
+    rejected: >
+      Adding `Bash` to the matcher and deriving the target from the command string. Finding the
+      written path in an arbitrary shell command means parsing shell, which is guessing, and
+      riteyaml's rule — refuse rather than guess — is not suspended because the caller is a hook.
+      A watcher that misses a redirect it did not understand reports silence, and silence here
+      reads as a pass.
+    unverified: "that FileChanged fires on writes made by a Bash tool call, and what its payload names. Read the hooks reference before designing against it — the locked findings already record thirty-three events where this project once assumed four."
+
+  - id: c-copier-has-no-read-only-preview
+    title: "check has --force and copy has none, so nothing can show what adoption would rescue"
+    status: open
+    severity: medium
+    opened: "2026-09-12"
+    what: >
+      rite-check.py takes --force to score a project with no marker, and that is the documented
+      way to evaluate Rite before adopting it. rite_copy.py has no equivalent. Its -n exists but
+      sits BEHIND the participation gate, so it is unreachable in exactly the situation a preview
+      is for.
+    evidence: >
+      Passing --force to the copier answers
+      "rite_copy.py: error: unrecognized arguments: --force".
+      The asymmetry is inverted against the stakes. The checker only reports, and it has the
+      preview; the copier is the one holding a session's scratchpad in /tmp, which does not
+      survive a reboot, and it has none. In the hwprivacy session four harness scripts — the
+      evidence that 14 new tests were verified against their reintroduced defect — were rescued
+      by hand because nothing could say they were there.
+    proposal: "`copy --force`, implying -n and never writing."
+    constraint: >
+      --force MUST NOT mean the same thing on a writer that it means on a reader. On the checker
+      it means "read anyway", which participation permits. On the copier the literal reading is
+      "write into a project that did not opt in", which participation forbids outright. The only
+      honest form is preview-only, and the flag has to refuse to write rather than document that
+      it does not.
+
 retired_ids:
+  - id: c-end-ritual-runs-where-its-tools-are-silent
+    retired: "2026-09-12"
+    how: settled
+    outcome: d-documentation-paths-are-never-literals
+    why: >
+      Opened and settled the same day, from the hwprivacy corpus. /rite:end is a Markdown prompt
+      and runs anywhere, while every tool it calls returns 0 silently without a marker — so the
+      judgement half ran in full and the mechanical half did nothing, indistinguishably from
+      success.
+      SETTLED BY A MECHANISM RATHER THAN A REMINDER, which is the only kind of fix this project
+      accepts. scripts/rite_paths.py prints participation and the resolved document set, and the
+      four judgement skills inject its output BEFORE Claude reads them. A project that has not
+      opted in now says so above step 1, in those words, with the --force preview named.
+      IT CLOSED THE OTHER HALF TOO. The same block hands over the project's real document paths,
+      so the four mid-ritual translations the corpus reported — docs-yaml/ARCHITECTURE.yaml for
+      docs/ARCHITECTURE.md, a DECISIONS sequence rather than a mapping, an absent CONCERNS.yaml, a
+      HANDOFF with no front matter — are done before the ritual starts rather than improvised
+      during it. Improvisation is where that session corrupted a file.
+      THE LIMIT, stated: an environment with disableSkillShellExecution set gets an empty block and
+      falls back to the canonical names, which is today's behaviour rather than a broken prompt.
+      The GATE half of it is untouched and stays in c-session-post-is-gated-by-participation: the
+      tools are still silent, the ritual merely stops reporting their silence as success.
+
+  - id: c-installed-spec-is-not-compared
+    retired: "2026-09-12"
+    how: settled
+    outcome: d-documentation-paths-are-never-literals
+    why: >
+      Its own proposal named the fix — "Add spec/ to COMPARED. Smallest change, and honest: a
+      stale spec is not untidy, it is wrong" — and it was one list entry, because the installed
+      plugin already ships spec/.
+      WHAT MADE IT URGENT rather than tidy: the same day, the spec started carrying per-project
+      POLICY. local.docs_dir.formats and the whole legacy_layout contract live there, and the
+      running checker reads the INSTALLED copy. A stale installed spec would therefore change what
+      a project is asked for, silently, while every other gate showed green — which is the
+      "equal version, unequal bytes" failure the test was written for, arriving through the one
+      directory it did not look at.
+      Verified by the gate going FAIL on a spec-only divergence and PASS after `claude plugin
+      update rite` at 0.25.0.
+
   - id: c-source-is-filesystem-mtime
     retired: "2026-09-12"
     how: settled

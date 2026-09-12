@@ -55,6 +55,9 @@ claims:
     - hooks/rite.ps1
     - skills/end/SKILL.md
     - .claude-plugin/plugin.json
+    - scripts/rite_paths.py
+    - scripts/test-docs-path-literals.py
+    - scripts/test-legacy-layout.py
 
 # ── WRITE-ONCE ───────────────────────────────────────────────────────────────
 # What this project set out to do, as first agreed. Set once, never edited. This is the only
@@ -83,7 +86,7 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin at version 0.24.0 — rite@rite, SEVEN skills reachable as
+  Rite is an installed, running plugin at version 0.25.0 — rite@rite, SEVEN skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -231,6 +234,29 @@ current_state: >
   template/ and a scaffolded project scores 0 RED, 0 YELLOW, 8 GREEN. It writes nothing beyond
   stage `idea` on purpose: a document nobody has written cannot be seeded honestly, so the
   refusal is the feature — d-scaffold-only-what-can-be-honest.
+  A PROJECT PREDATING THE STANDARD CAN NOW DECLARE ITS LAYOUT instead of being nagged about it —
+  d-legacy-layout-is-declared-not-tolerated, from the second outside adoption. `legacy_layout` in
+  .rite.yaml names the documentation directory, the format of each artifact, and an OPTIONAL
+  migrate_by date; Rite then suppresses the LAYOUT findings and reports the DECLARATION, once.
+  Measured on a docs-yaml fixture: 27 YELLOW to 17, GREEN unchanged at 23, one NA added, and the
+  ten removed are exactly the ten suppressed. With a date it LAPSES when the date passes and every
+  finding returns; without one it holds and says it is undated. It excuses layout and nothing else,
+  and a declaration naming a directory that is not there excuses nothing at all. New projects are
+  untouched: /rite:init never writes the block. The first implementation suppressed passing rules
+  too and destroyed three true GREENs — the rule now runs and only a FAILURE is deferred.
+  NO DOCUMENTATION PATH IS A LITERAL ANY MORE — d-documentation-paths-are-never-literals. An audit
+  asked of every module constant not "is this value in the spec" but "does the code READ it from
+  the spec", and rite_copy.py and rite_init.py read NOTHING from it: the producer of three
+  artifacts and the checker of those same three held independent copies of every path. One
+  resolver now serves both, the format alternatives gained a declared home, and the skills are
+  HANDED their paths through dynamic context injection rather than naming them. The worst literal
+  was not a path but a USERNAME — GLOBAL_HOME_SLUG was "-home-perieteanu", so a guard protecting
+  global memory could not fire on anybody else's machine; it is derived now. The gate was proved
+  failing on ten sites before any were fixed, and it caught its own author twice within the hour.
+  THE INSTALLED SPEC IS COMPARED AT LAST. spec/ joined COMPARED in test-installed-current.py,
+  which was tidy until the same day made it urgent: the spec now carries per-project POLICY, and
+  the running checker reads the INSTALLED copy, so a stale one would change what a project is
+  asked for while every other gate stayed green.
   NOTE, because this paragraph is the standing example: the claims block above passed GREEN
   while every NUMBER in this text was stale. That is the declared limit of claims_match_filesystem
   working as specified — it checks paths, not counts — and it is why the block supplements the
@@ -621,6 +647,57 @@ milestones:
       the block every morning and failed its own gate for nobody's change. The two --check runs
       meant to prove determinism both passed, because they ran in the same minute.
 
+  - id: legacy-layout-declared
+    what: "A project predating the standard declares its documentation layout instead of being nagged about it"
+    closed: "2026-09-12"
+    log_ref: "12-09-2026"
+    note: >
+      Not a near_term item — it came from the SECOND outside adoption, a full hwprivacy session
+      captured under tests/ and harvested the same evening. Recorded here on the same footing as
+      claim-surface and project-yaml-checked, because milestones is the coarse record of what this
+      project delivered.
+      THE MEASUREMENT IS WHAT MADE IT A FEATURE RATHER THAN A COMPLAINT. 10 of hwprivacy's 27
+      YELLOW findings were the docs-yaml transition and NONE was fixable without migrating, which
+      is opt-in by standing rule — 6 canonical_name, one per file forever, plus 4 Markdown section
+      rules against YAML documents that no valid YAML can satisfy. local.docs_dir called itself
+      configurable while .rite.yaml had no key for it and no script read one.
+      THE USER OVERRULED THE RECOMMENDATION on migrate_by, and the design is better for it: a
+      required date would have forced eleven projects to invent deadlines, so the date is optional
+      and the REPORT carries the honesty instead — an undated deferral says it is undated.
+      THE FIRST IMPLEMENTATION WAS WRONG IN A WAY TOTALS HID. It suppressed every format-shaped
+      rule, destroying three true GREENs, and the counts still looked like an improvement. Diffing
+      the two verdicts line by line found it; comparing the summary lines never would have.
+      AND THE MEASUREMENT WAS CONTAMINATED FIRST, which is this project's own recurring lesson
+      landing again: the marker was being parked as off.yaml INSIDE the fixture, so a stray
+      root-level YAML counted as source and the baseline described a different project. Same shape
+      as the plan-attribution contamination of 2026-09-10 — the act of measuring changed what was
+      measured.
+
+  - id: documentation-paths-resolved
+    what: "Every documentation path resolves from the spec; a gate fails on a literal; a username stops being compiled in"
+    closed: "2026-09-12"
+    log_ref: "12-09-2026"
+    note: >
+      Came out of the same adoption, from a finding that was WRONG ABOUT ITS OWN CAUSE. The corpus
+      blamed rite_copy.py's DOCS constant for a silent copy; the participation gate returns first,
+      so that line is never reached. Proving the real cause took one command against two trees and
+      turned a one-line fix into the right question: which values does the code re-type rather than
+      read? For rite_copy.py and rite_init.py the answer was ALL of them — neither read the spec at
+      all, so the producer and the checker of three artifacts held independent copies of every path.
+      THE WORST LITERAL WAS A USERNAME. GLOBAL_HOME_SLUG = "-home-perieteanu", inherited from the
+      script Rite ported, meant the "home-root slug is GLOBAL memory" guard could not fire for
+      anybody else — in a PUBLISHED plugin. Nobody but this machine has run Rite, which is exactly
+      why it survived being read.
+      THE PROMPTS NEEDED A MECHANISM, NOT A REMINDER. A SKILL.md cannot read the spec, so twelve
+      hardcoded paths across five prompts were sending agents at files that do not exist on a
+      legacy project. Dynamic context injection runs a resolver BEFORE Claude reads the prompt, so
+      the paths arrive already correct — and the same block states participation, which is what
+      retired c-end-ritual-runs-where-its-tools-are-silent.
+      THE GATE CAUGHT ITS OWN AUTHOR TWICE inside an hour: a python3 invocation quoted into a
+      CONCERNS entry, and the new test file printing without declaring UTF-8 stdio. It was proved
+      failing on ten sites first, and its first version MISSED two of them — MIRROR_NAME and
+      SCRIPTS_SUBDIR contain no directory name and only become a path once joined.
+
 near_term:
   label: "EMPTY — the path from private to public is complete"
   # Emptied 2026-09-10, and empty ON PURPOSE rather than by omission. All four items —
@@ -677,6 +754,16 @@ long_term:
     why: "Quality-gated, and a far better CV line than a self-hosted repo."
 
 deferred_deliberately:
+  - what: "Grading YAML documents on SUBSTANCE, so a docs-yaml project is checked rather than excused"
+    why: >
+      d-legacy-layout-is-declared-not-tolerated lets a project declare that its MISSION and
+      ARCHITECTURE are YAML, and Rite then DEFERS the rules that read Markdown headings rather than
+      running an equivalent — a YAML MISSION is not checked for mission/constraints/non_goals keys,
+      it is simply not checked for those. That is honest (a check that cannot run must not read
+      like one that passed) but it is less than the standard could do.
+      NOT DONE BECAUSE NO ARTIFACT DECLARES A `format:`. Which rules apply is implicit in which
+      tests each artifact lists, so per-format rule sets are their own build rather than a
+      parameter. Recorded here so a later session reads it as deferred, not overlooked.
   - what: "Stale-on-touch — flag docs whose as_of predates a source change"
     why: >
       Proposed 2026-09-08 and NOT taken. It would repair the degeneracy in

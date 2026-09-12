@@ -50,3 +50,28 @@ stage: idea
 #     - "config/*.yaml"
 #   exclude:
 #     - "docs/generated-*.yaml"
+
+# FOR PRE-EXISTING PROJECTS ONLY, and unset here because a project Rite scaffolded has nothing to
+# declare — it starts at docs/ with Markdown where the standard names Markdown.
+#
+# A project built BEFORE this standard may already keep its documents somewhere else, in another
+# format. Declaring that stops Rite reporting the layout as a defect on every file, every run, and
+# reports the DECLARATION instead — one line, naming what it covers. It is a deferral of migration,
+# never a substitute: the standard still says docs/, and still says so.
+#
+# It excuses LAYOUT ONLY — where a file is and what extension it carries. Nothing about content,
+# freshness, structure or integrity is affected, and a format-shaped rule your document satisfies
+# anyway is still reported as passing.
+#
+# `formats` is per artifact and deliberately not a blanket: an artifact you forget to list is still
+# reported, so the deferral stays specific to what you actually looked at.
+#
+# `migrate_by` is optional. Give it a date and the deferral LAPSES when that date passes — every
+# finding returns and the missed date is named. Leave it out and the declaration holds
+# indefinitely, and the report says in so many words that no date was set.
+# legacy_layout:
+#   docs_dir: docs-yaml
+#   formats:
+#     mission: yaml
+#     architecture: yaml
+#   migrate_by: "2026-12-31"

@@ -78,6 +78,22 @@ gates:
     command: [scripts/test-portability-rules.py]
     what: "UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no hardcoded python3"
 
+  - id: legacy-layout
+    command: [scripts/test-legacy-layout.py]
+    what: "a declared legacy layout suppresses layout findings only, reports itself once, keeps passes, and lapses on its date"
+    # Both halves were proved to FAIL before being trusted: suppressing a format-shaped rule that
+    # PASSES destroyed a true green, and a lapse that suppressed anything made the deadline
+    # decorative. Synthetic fixtures only — a test that reads another project's tree breaks when
+    # that project is tidied.
+
+  - id: docs-path-literals
+    command: [scripts/test-docs-path-literals.py]
+    what: "no documentation path is written as a literal — code resolves it, prompts are handed it"
+    # Opened 2026-09-12 by an audit that asked of every module constant not "is this value in the
+    # spec" but "does the code READ it from the spec". rite_copy.py and rite_init.py read NOTHING
+    # from the spec, so the producer of three artifacts and the checker of those same three held
+    # independent copies of every path. Proved failing on 10 sites before any were fixed.
+
   - id: stage-table
     command: [scripts/test-stage-table-guard.py]
     what: "no document restates the stage mapping outside a rite:generated block"

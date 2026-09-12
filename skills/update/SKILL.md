@@ -19,6 +19,15 @@ is normal and costs nothing.
 which are what make an ending. If you are finishing for the day, run `/rite:end` instead — this
 command is not a substitute for it and will not record that the session closed.
 
+## This project, resolved
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+
+**Use the paths above, not the canonical ones in the steps below** — they differ on a project
+that predates the standard. If the block is empty, skill shell execution is disabled here: fall
+back to the canonical names and check each exists before editing it. If it says NOT
+PARTICIPATING, the copy and check steps will do nothing; say so rather than reporting them done.
+
 ## Steps
 
 1. **Distil the log.** Add what happened since the last checkpoint and is not yet written —

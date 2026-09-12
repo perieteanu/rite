@@ -52,6 +52,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import ritefs  # noqa: E402
+import riterules  # noqa: E402
+import riteyaml  # noqa: E402
 
 ritefs.use_utf8_stdio()
 
@@ -59,15 +61,9 @@ HOME = Path.home()
 CLAUDE_DIR = HOME / ".claude"
 PROJECTS_DIR = CLAUDE_DIR / "projects"
 PLANS_DIR = CLAUDE_DIR / "plans"
-
-# The home-root slug is the GLOBAL memory, never a project. Inherited from
-# claude-mirror-memory.py, where it has been correct for months.
-GLOBAL_HOME_SLUG = "-home-perieteanu"
+SPEC_PATH = HERE.parent / "spec" / "project-standard.yaml"
 
 MIRROR_SIGNATURE = "claude-mirror-memory/v1"
-MIRROR_NAME = "claude-memory.md"
-DOCS = "docs"
-SCRIPTS_SUBDIR = "session-scripts"
 
 # What counts as a session helper script. Deliberately narrow: today's scratchpad also held
 # README.md.bak and a shipped-probe/ tree, and neither is a script.
@@ -86,6 +82,73 @@ PLAN_PROVENANCE = re.compile(r"Copied from ~/\.claude/plans/(?P<name>[^\s]+\.md)
 def encode_slug(path: Path | str) -> str:
     """Encode a path the way Claude Code names its project session dirs."""
     return re.sub(r"[^A-Za-z0-9]", "-", str(path))
+
+
+def global_home_slug() -> str:
+    """The slug of the HOME directory, whose memory is GLOBAL and never a project's.
+
+    DERIVED, not configured, and until 2026-09-12 it was neither: the literal
+    "-home-perieteanu" was compiled in, inherited from claude-mirror-memory.py where it had been
+    correct for months on ONE machine. In a published plugin that guard could not fire for anyone
+    else — their global memory would mirror into whichever project they ran from. Nobody but this
+    machine had run Rite, which is exactly why it survived.
+    """
+    return encode_slug(HOME)
+
+
+# ── the destinations, resolved rather than composed ──────────────────────────
+# Every path this tool writes is DECLARED in spec/project-standard.yaml. It used to be composed
+# here from DOCS + MIRROR_NAME + SCRIPTS_SUBDIR, so the producer of three artifacts and the
+# checker of those same three artifacts held independent copies of each path — and a project
+# using docs-yaml/ got a second documentation directory created beside the one it had.
+
+def load_spec() -> dict:
+    """The standard, or an empty mapping if it cannot be read.
+
+    Empty rather than fatal: this tool never blocks a session, and a caller that gets no
+    destination reports that it could not resolve one instead of guessing.
+    """
+    try:
+        return riteyaml.load(SPEC_PATH.read_text(encoding="utf-8"), str(SPEC_PATH))
+    except (OSError, riteyaml.RiteYamlError):
+        return {}
+
+
+def read_marker(root: Path) -> dict | None:
+    """The project's .rite.yaml, for its legacy_layout declaration. None if unreadable."""
+    path = root / ritefs.MARKER
+    if not ritefs.exists_exactly(path):
+        return None
+    try:
+        loaded = riteyaml.load(path.read_text(encoding="utf-8"), str(path))
+    except (OSError, riteyaml.RiteYamlError):
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
+def destination(root: Path, artifact_id: str, spec: dict, marker: dict | None) -> Path | None:
+    """Where `artifact_id` belongs in THIS project, honouring a declared legacy layout."""
+    rel = riterules.artifact_path(spec, artifact_id, marker)
+    return None if rel is None else root / rel
+
+
+def docs_root(root: Path, spec: dict, marker: dict | None) -> Path:
+    """The project's documentation directory — the one it uses, not the canonical name."""
+    dirs = riterules.docs_dirs(spec, marker)
+    return root / dirs[0]
+
+
+def _resolved(root: Path, spec: dict | None,
+              marker: dict | None) -> tuple[dict, dict | None]:
+    """(spec, marker), loading both when the caller supplied no spec.
+
+    The checker already holds both and passes them in, so the two never disagree about where a
+    project's documents live — and the spec is parsed once per run rather than three times. A
+    direct CLI call supplies neither and gets them loaded here.
+    """
+    if spec is None:
+        return load_spec(), read_marker(root)
+    return spec, marker
 
 
 def slug_candidates(root: Path) -> list[str]:
@@ -295,7 +358,8 @@ def _plan_header(name: str, today: str) -> str:
     )
 
 
-def uncopied_plans(root: Path) -> list[str] | None:
+def uncopied_plans(root: Path, spec: dict | None = None,
+                   marker: dict | None = None) -> list[str] | None:
     """Plans this project's session AUTHORED that have no copy in docs/.
 
     The read-only half of copy_plans, shared so the checker and the copier can never disagree
@@ -305,7 +369,8 @@ def uncopied_plans(root: Path) -> list[str] | None:
     """
     if not _transcripts():
         return None
-    docs = root / DOCS
+    spec, marker = _resolved(root, spec, marker)
+    docs = docs_root(root, spec, marker)
     plans = sorted(PLANS_DIR.glob("*.md")) if PLANS_DIR.is_dir() else []
     index = build_attribution_index({q.name for q in plans})
     mine = set(slug_candidates(root))
@@ -323,9 +388,11 @@ def uncopied_plans(root: Path) -> list[str] | None:
     return missing
 
 
-def copy_plans(root: Path, dry_run: bool) -> Report:
+def copy_plans(root: Path, dry_run: bool, spec: dict | None = None,
+               marker: dict | None = None) -> Report:
     report = Report()
-    docs = root / DOCS
+    spec, marker = _resolved(root, spec, marker)
+    docs = docs_root(root, spec, marker)
     if not PLANS_DIR.is_dir():
         report.add("skip", str(PLANS_DIR), "no plans directory on this machine")
         return report
@@ -388,19 +455,31 @@ def scratchpad_dirs(root: Path) -> list[Path]:
     return out
 
 
-def copy_scripts(root: Path, dry_run: bool) -> Report:
+def copy_scripts(root: Path, dry_run: bool, spec: dict | None = None,
+                 marker: dict | None = None) -> Report:
     report = Report()
     pads = scratchpad_dirs(root)
     if not pads:
         report.add("skip", "scratchpad", "none found for this project")
         return report
 
+    spec, marker = _resolved(root, spec, marker)
+    # The spec declares "<docs>/session-scripts/<ISO date>/<name>"; the dated directory and the
+    # filename are per-copy, so only the stem is resolved here.
+    declared = riterules.artifact_path(spec, "script_copy", marker)
+    if declared is None:
+        report.add("REFUSED", "script_copy",
+                   "the standard declares no path for this artifact — nothing to resolve, and a "
+                   "destination is never guessed")
+        return report
+    stem = root / declared.split("/<")[0]
+
     for pad in pads:
         for src in sorted(pad.iterdir()):
             if not src.is_file() or src.suffix not in SCRIPT_SUFFIXES:
                 continue
             date = dt.date.fromtimestamp(src.stat().st_mtime).isoformat()
-            dest_dir = root / DOCS / SCRIPTS_SUBDIR / date
+            dest_dir = stem / date
             dest = dest_dir / src.name
             if ritefs.exists_exactly(dest):
                 report.add("have", src.name, "write_once — never overwritten")
@@ -496,14 +575,15 @@ def mirror_is_stale(root: Path, text: str, files: list[Path]) -> bool | None:
     return newest > (stamp + STAMP_RESOLUTION).timestamp()
 
 
-def mirror_memory(root: Path, dry_run: bool) -> Report:
+def mirror_memory(root: Path, dry_run: bool, spec: dict | None = None,
+                  marker: dict | None = None) -> Report:
     report = Report()
     memdir = memory_dir_for(root)
     if memdir is None:
         report.add("skip", "memory", "no memory folder for this project")
         return report
     slug = memdir.parent.name
-    if slug == GLOBAL_HOME_SLUG:
+    if slug == global_home_slug():
         report.add("skip", slug, "the home-root slug is GLOBAL memory, never a project")
         return report
 
@@ -512,7 +592,12 @@ def mirror_memory(root: Path, dry_run: bool) -> Report:
         report.add("skip", "memory", "no memory files")
         return report
 
-    target = root / DOCS / MIRROR_NAME
+    spec, marker = _resolved(root, spec, marker)
+    target = destination(root, "memory_mirror", spec, marker)
+    if target is None:
+        report.add("REFUSED", "memory",
+                   "the standard declares no memory_mirror path — a destination is never guessed")
+        return report
     text = generate_mirror(slug, files)
 
     if ritefs.exists_exactly(target):

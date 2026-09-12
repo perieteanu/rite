@@ -942,7 +942,7 @@ participation:
     to check is noise on first contact, and noise is what gets a plugin uninstalled.
   marker_contents:
     minimal: "an empty file is a valid marker — presence is the signal"
-    optional_keys: [standard_version, fail_on, thresholds, disabled_checks, yaml_check, source_exclude]
+    optional_keys: [standard_version, fail_on, thresholds, disabled_checks, yaml_check, source_exclude, legacy_layout]
 
   thresholds:
     rule: >
@@ -987,6 +987,51 @@ participation:
       A check silenced via `disabled_checks` is reported as NA with "disabled in .rite.yaml",
       never omitted from the output. A check that vanishes and one that passed must never look
       alike.
+
+  legacy_layout:
+    rule: >
+      A project that PREDATES this standard may declare the documentation layout it already has.
+      Rite then stops reporting that layout as a defect and reports the DECLARATION instead, once
+      per run. It is a deferral of migration, never an alternative to it: the standard still says
+      `docs/` and still says so, one line at a time rather than ten.
+    keys:
+      docs_dir: "the directory this project actually uses — one of local.docs_dir.alternatives"
+      formats: "artifact id -> the extension that artifact actually carries here, e.g. {mission: yaml}"
+      migrate_by: "OPTIONAL. The date by which the project intends to be converted."
+    for_existing_projects_only: >
+      /rite:init never writes this block. A project scaffolded by Rite starts at `docs/` with
+      Markdown where the standard names Markdown, so it has nothing to declare. The block exists
+      for the eleven projects that were built before the standard was written, and migration of
+      those stays explicitly opt-in — the standing don't-migrate rule.
+    what_it_suppresses:
+      - "canonical_name, on every artifact found under the declared directory"
+      - >
+        rules whose SHAPE assumes the canonical format — required_sections, no_empty_sections,
+        min_content_sections, required_any_of_sections — on an artifact whose declared format is
+        not the one the rule reads.
+    why_those_become_na_not_green: >
+      A YAML MISSION cannot satisfy `required_sections: [Mission, Constraints, Non-goals]`,
+      because those are Markdown headings and no valid YAML contains them. Reporting YELLOW is a
+      false accusation, and reporting GREEN would claim a check ran that did not. NA naming the
+      declared format is the only honest verdict — the same rule the freshness work settled: a
+      check that cannot know something must never read like one that found nothing wrong.
+    reported_once: >
+      Every suppression collapses into ONE counted NA line naming the directory, how many
+      findings it covers and the migration date. That is d-stage-deferred-checks-are-collapsed
+      applied here, and it is bounded by overrides_are_never_silent above: a declaration that
+      nothing states is a silent opt-out, so the line is never omitted, only condensed.
+    when_migrate_by_passes: >
+      The deferral LAPSES. Every suppressed finding returns at its normal severity, plus one
+      YELLOW naming the date that passed and by how much. A deadline that does nothing when it
+      arrives is not a deadline.
+    when_migrate_by_is_absent: >
+      The declaration holds indefinitely and the line says so, in those words. Permitted by the
+      user's ruling 2026-09-12, and the wording is the safeguard: an undated deferral is visible
+      as undated rather than reading like a dated one that is still in hand.
+    not_a_way_to_lower_the_standard: >
+      It suppresses findings about LAYOUT — where a file is and what extension it carries.
+      Nothing about content, freshness, structure or integrity is affected. A project cannot
+      declare its way out of an empty ROADMAP or an unparseable YAML file.
   not_an_artifact: >
     `.rite.yaml` is CONFIG, not a documentation artifact, so it does not count against the
     inventory frozen at 13. The inventory covers what a cold human or agent READS to understand
@@ -1972,6 +2017,13 @@ local:
   docs_dir:
     default: "docs"
     alternatives: ["docs-yaml", "doc", "documentation"]
+    formats: ["md", "yaml"]
+    formats_note: >
+      The extensions an artifact may be found under when it is not at its canonical name.
+      DECLARED HERE because it was a literal ("yaml", "md") written twice inside rite-check.py's
+      artifact lookup and nowhere else — a value the standard depends on with no human-visible
+      home, which is the class of defect the no-hardcoded-values rule names. Order is the search
+      order.
     note: >
       Format-neutral by rule. A directory named for a file format becomes a false claim the
       moment one file inside it changes form — the exact class of stale statement Rite exists

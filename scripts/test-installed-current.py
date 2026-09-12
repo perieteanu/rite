@@ -34,7 +34,15 @@ ritefs.use_utf8_stdio()
 
 # The executable surface. Documents are excluded on purpose: the cache carrying a stale LOG.md
 # is untidy, not broken, and failing on it would train people to ignore this test.
-COMPARED = ["scripts", "skills", "hooks", ".claude-plugin"]
+#
+# `spec` JOINED THEM 2026-09-12, closing c-installed-spec-is-not-compared. It is not a document
+# in the sense the exclusion above means: the running checker READS it, so the standard being
+# enforced is whatever the installed copy says, not what this tree says. That was already true
+# when the spec only held rules; it became sharper the moment the spec started carrying
+# per-project POLICY — local.docs_dir.formats and the legacy_layout contract — because a stale
+# installed spec now changes what a project is asked for, silently, while every other gate is
+# green. The install already ships spec/, so this costs one list entry.
+COMPARED = ["scripts", "skills", "hooks", ".claude-plugin", "spec"]
 CACHE = pathlib.Path.home() / ".claude" / "plugins" / "cache"
 
 manifest = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))

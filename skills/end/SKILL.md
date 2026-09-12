@@ -15,6 +15,23 @@ recorded reason. The ritual scales by content, not by exemption.
 
 Only the user invokes this. Claude never decides that a session is over.
 
+## This project, resolved
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+
+**Use the paths above, not the canonical ones in the steps below.** They are the same on a
+project that follows the standard and different on one that predates it — `docs-yaml/` instead of
+`docs/`, YAML where the standard names Markdown, a CONCERNS file that does not exist. A session
+in September 2026 translated four such paths by hand mid-ritual and corrupted a file doing it, so
+the translation is done above rather than left to you.
+
+If that block is empty, this environment has skill shell execution disabled: fall back to the
+canonical names in the steps, and check each one exists before editing it.
+
+**If it says NOT PARTICIPATING, say so before step 1.** Steps 6 and 7 will exit 0 having done
+nothing — not because there was nothing to do, but because the project has not opted in.
+Reporting them as done would be false.
+
 ## Steps
 
 1. **Distil the log.** Review the entries written during the session. Add what is missing —
