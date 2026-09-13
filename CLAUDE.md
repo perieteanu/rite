@@ -82,8 +82,11 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
 - **Cross-platform rules are load-bearing, not hygiene.** Never `Path.exists()` for an
   artifact (macOS/Windows are case-insensitive, so `readme.md` passes there and fails on
   Linux — same repo, two verdicts). Generated files write `newline="\n"`. Normalize line
-  endings before any byte comparison. Every read/write names `encoding="utf-8"`. Never write
-  `python3` in docs — Windows has `py`. **Every entry point calls `ritefs.use_utf8_stdio()`
+  endings before any byte comparison. Every read/write names `encoding="utf-8"`. **Never name
+  an interpreter in a command anyone runs — not `python3`, not `python`, not `py`**; route it
+  through `hooks/rite.sh`, and write `<python>` in a developer docstring. This bullet banned only
+  `python3` until 2026-09-13, which is how `/rite:init` shipped bare `python` under a green gate
+  and failed on the first command of an adoption. **Every entry point calls `ritefs.use_utf8_stdio()`
   before printing, and every read of another process names `encoding="utf-8"` AND
   `errors="replace"`** — Python picks the console codepage for stdout on Windows, so `·` and
   `—` go out as cp1252 there and a UTF-8 parent dies on byte 0x97. CI proved this on 2026-09-10.

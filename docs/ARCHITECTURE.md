@@ -202,7 +202,9 @@ scripts/
                      graded at all.
   rite_init.py       Seeds a project to stage `idea` from template/: .rite.yaml, LOG.md,
                      HANDOFF.md. Substitutes date tokens from the machine clock. NEVER
-                     overwrites — an existing file is skipped and reported.
+                     overwrites — an existing file is skipped and reported. Reached through
+                     `rite.sh init`, which is what /rite:init runs, so no prompt names an
+                     interpreter or a path that exists only inside the plugin.
   test-scaffold.py   Scaffolds into a temp dir and checks the RESULT: 0 RED, 0 YELLOW. The
                      seed's "valid smallest instance" claim is untestable in template/ itself,
                      since those paths are not canonical and the checker never sees them.
@@ -240,9 +242,9 @@ showing an unqualified green:
 | `freshness-source` | freshness measures recorded change, not file timestamps, and names what it cannot know | **skips** |
 | `hook-shape` | the SessionStart hook nests its verdict under hookSpecificOutput | runs |
 | `verdicts` | unparseable is RED, absent stays NA, and a false claim is caught | runs |
-| `portability-rules` | UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no hardcoded python3 | runs |
+| `portability-rules` | UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no interpreter named in a command | runs |
 | `legacy-layout` | a declared legacy layout suppresses layout findings only, reports itself once, keeps passes, and lapses on its date | runs |
-| `docs-path-literals` | no documentation path is written as a literal — code resolves it, prompts are handed it | runs |
+| `docs-path-literals` | no documentation path is written as a literal — code resolves it, prompts run the resolver as a step, and no skill injects a command at load time | runs |
 | `stage-table` | no document restates the stage mapping outside a rite:generated block | runs |
 | `preflight-port-parity` | the ported session POST still agrees with preflight.py on status and side | **skips** |
 | `mirror-port-parity` | rite's memory mirror still renders identically to the script it ported | **skips** |

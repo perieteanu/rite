@@ -76,7 +76,7 @@ gates:
 
   - id: portability-rules
     command: [scripts/test-portability-rules.py]
-    what: "UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no hardcoded python3"
+    what: "UTF-8 stdio where a module prints, encoding+errors on every subprocess.run, and no interpreter named in a command"
 
   - id: legacy-layout
     command: [scripts/test-legacy-layout.py]
@@ -88,7 +88,7 @@ gates:
 
   - id: docs-path-literals
     command: [scripts/test-docs-path-literals.py]
-    what: "no documentation path is written as a literal — code resolves it, prompts are handed it"
+    what: "no documentation path is written as a literal — code resolves it, prompts run the resolver as a step, and no skill injects a command at load time"
     # Opened 2026-09-12 by an audit that asked of every module constant not "is this value in the
     # spec" but "does the code READ it from the spec". rite_copy.py and rite_init.py read NOTHING
     # from the spec, so the producer of three artifacts and the checker of those same three held
