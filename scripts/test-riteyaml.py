@@ -27,7 +27,7 @@ WITHOUT PyYAML the oracle half is skipped and the rest STILL RUNS — the kinds,
 and their parity with the spec are all checkable without it. Only the comparisons that need an
 oracle are skipped, and the exit code says which happened.
 
-Run:  python scripts/test-riteyaml.py
+Run:  <python> scripts/test-riteyaml.py
 Exit: 0 pass · 1 fail · 2 the oracle half was skipped (PyYAML absent)
 """
 

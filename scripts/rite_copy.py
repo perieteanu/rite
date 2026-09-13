@@ -34,7 +34,7 @@ IT REFUSES RATHER THAN GUESSES — the same rule riteyaml lives by. A plan match
 is reported unattributable and skipped. It is never placed by mtime proximity, because a
 plausible wrong attribution is indistinguishable from a right one after the fact.
 
-Run:  python scripts/rite_copy.py [--plans] [--memory] [--scripts] [--all] [--project P] [-n]
+Run:  <python> scripts/rite_copy.py [--plans] [--memory] [--scripts] [--all] [--project P] [-n]
 Exit: 0 always for the copy actions — this never blocks a session.
 """
 

@@ -45,7 +45,7 @@ whole sample run needs a scratch project, not a table generator — and because 
 fires on a code fence would be switched off before it was fixed. See
 c-readme-sample-output-is-a-copy.
 
-Run:  python scripts/test-stage-table-guard.py
+Run:  <python> scripts/test-stage-table-guard.py
 Exit: 0 pass · 1 fail
 """
 

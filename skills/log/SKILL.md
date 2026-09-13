@@ -2,6 +2,7 @@
 name: log
 description: Append an entry to this project's LOG.md — the durable record that outlives the session. Reads the machine clock per entry. Append-only.
 argument-hint: "(none = propose entries from what just happened) | [TYPE] free text = log exactly this"
+allowed-tools: Bash(bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" *)
 ---
 
 Append one or more entries to `LOG.md` in the current project. The log is the durable record:
@@ -12,11 +13,17 @@ written up to that point survives.
 
 ## This project, resolved
 
-!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+**Before step 1, run the resolver** with the Bash tool:
 
-The steps below name the canonical `docs/…` locations. **Where the block above shows something
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths
+```
+
+The steps below name the canonical `docs/…` locations. **Where the resolver shows something
 different, that is the truth** — a project predating the standard keeps its documents elsewhere.
-An empty block means skill shell execution is disabled; fall back to the canonical names.
+If it cannot run — refused, no Python, a non-zero exit — say so in one line and fall back to the
+canonical names. It is a step rather than text injected into this prompt on purpose: an injected
+command that is refused or fails aborts the whole skill before it is read.
 
 ## Steps
 

@@ -30,10 +30,22 @@ WHAT IS A VIOLATION, and the line is drawn at OPERATIONAL versus EXPLANATORY:
 
   half B, skills/*.md    A skill prompt is a command an agent RUNS, so a path it names that the
                          project does not have sends the agent to edit a file that is not there.
-                         The canonical names are allowed to STAY as the degradation path for a
-                         user with disableSkillShellExecution set — but only if the prompt also
-                         injects the resolver, so the reader always receives the project's real
+                         The canonical names are allowed to STAY as the degradation path for when
+                         the resolver cannot run — but only if the prompt also instructs the
+                         resolver as its first step, so the reader receives the project's real
                          paths first. Naming paths WITHOUT the resolver is the violation.
+
+  half C, skills/*.md    The resolver is run as a STEP, never injected at load time. Until
+                         2026-09-13 half B demanded the injection, and this gate put the defect
+                         in: Claude Code docs, "Injected commands never prompt for permission.
+                         When a command's permission check returns anything other than allow,
+                         Claude Code aborts the invocation", and any non-zero exit aborts it too.
+                         So /rite:end refused to load for every user without a bash allow rule,
+                         and on any machine with no Python — the fallback text written for those
+                         cases was never read. A step degrades instead: a prompt, or output the
+                         agent reads and falls back from. Any inline `!` command or `!` fenced
+                         block in a skill fails, because a session ritual must not be abortable
+                         before it starts.
 
 The vocabulary is not hardcoded here either: the directory names and the artifact paths are read
 from spec/project-standard.yaml at run time, so adding an artifact extends this gate for free.
@@ -46,7 +58,7 @@ switched off. Their protection is different in kind: they now have a declared ho
 local.docs_dir.formats, and the checker reads it. If someone re-types them, this gate stays
 green and only review catches it.
 
-Run:  python scripts/test-docs-path-literals.py
+Run:  <python> scripts/test-docs-path-literals.py
 Exit: 0 pass · 1 a violation
 """
 
@@ -54,6 +66,7 @@ from __future__ import annotations
 
 import ast
 import pathlib
+import re
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -70,6 +83,10 @@ SPEC_PATH = ROOT / "spec" / "project-standard.yaml"
 # call the resolver. Asserted UNIQUE below, because "one fallback" stops being true the moment a
 # second file copies it — which is how the three re-typed "docs" came about in the first place.
 FALLBACK_OWNER = "riterules.py"
+
+# Claude Code's two load-time injection forms: an inline !`command`, and a fenced block opened
+# with ```! . Either one runs before the prompt loads and aborts the whole skill on refusal.
+LOAD_TIME_INJECTION = re.compile(r"!`[^`\n]+`|^\s*```!", re.MULTILINE)
 
 # Entry points and libraries. Tests are excluded: a test asserting a path is asserting the
 # expected VALUE, which is its job.
@@ -202,6 +219,14 @@ def main() -> int:
             failures.append(f"{rel}: cannot read — {exc}")
             continue
         checked_skills += 1
+        # half C first: it applies to every skill, whether or not it names a path.
+        for m in LOAD_TIME_INJECTION.finditer(text):
+            lineno = text.count("\n", 0, m.start()) + 1
+            failures.append(
+                f"{rel}:{lineno}: injects {m.group(0).strip()!r} at load time. An injected "
+                f"command never prompts: any permission result but allow, or any non-zero "
+                f"exit, aborts the whole skill before its prompt is read. Run it as a step."
+            )
         named = sorted({p for p in declared_paths if p in text}
                        | {f"{d}/" for d in dirs if f"{d}/" in text})
         if not named:
@@ -209,14 +234,15 @@ def main() -> int:
         if "rite.sh\" paths" in text or "rite.sh' paths" in text or "rite.ps1 paths" in text:
             continue
         failures.append(
-            f"{rel}: names {', '.join(sorted(named)[:4])} but never injects the resolver. "
+            f"{rel}: names {', '.join(sorted(named)[:4])} but never runs the resolver. "
             f"A skill prompt is a command an agent runs, so on a project using a different "
             f"documentation directory it sends the agent to files that do not exist. Add the "
-            f"resolver injection; the canonical names may stay as the degradation path."
+            f"resolver as the first step; the canonical names may stay as the degradation path."
         )
 
     if failures:
-        print(f"FAIL  {len(failures)} documentation path(s) written as a literal:")
+        print(f"FAIL  {len(failures)} violation(s) — a documentation path written as a literal, "
+              f"or a skill injecting a command at load time:")
         for f in failures:
             print(f"        {f}")
         print()

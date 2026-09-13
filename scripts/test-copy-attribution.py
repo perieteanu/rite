@@ -24,7 +24,7 @@ test whose fixtures are the user's own session history would pass or fail for re
 nothing to do with the code, and transcripts are private data this project has no business
 reading for anything but a path.
 
-Run:  python scripts/test-copy-attribution.py
+Run:  <python> scripts/test-copy-attribution.py
 Exit: 0 pass · 1 fail
 """
 

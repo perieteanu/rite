@@ -19,7 +19,8 @@ NEVER OVERWRITES. An existing file is left alone and reported as skipped, so the
 to re-run and re-running is the intended use. It does not touch ~/.claude, install anything, or
 run git — see d-never-instruct-installation.
 
-Run:  python scripts/rite_init.py [PROJECT_DIR] [--name SHORT_NAME]
+Run:  <python> scripts/rite_init.py [PROJECT_DIR] [--name=SHORT_NAME]
+      From a skill or a user: bash hooks/rite.sh init [PROJECT_DIR] [--name=SHORT_NAME]
 Exit: 0 wrote or skipped cleanly · 1 the project directory is unusable
 """
 

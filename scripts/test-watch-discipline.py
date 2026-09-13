@@ -17,7 +17,7 @@ first attempt at this used a hardcoded "19:20:00" as a supposedly-legal entry an
 correctly, because the clock was 19:07. The check was right and the fixture was wrong; that is
 exactly why fixtures are computed from `now` here.
 
-Run:  python scripts/test-watch-discipline.py
+Run:  <python> scripts/test-watch-discipline.py
 Exit: 0 pass · 1 fail
 """
 

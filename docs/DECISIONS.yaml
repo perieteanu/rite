@@ -2256,3 +2256,50 @@ decisions:
       - "`spec` joined COMPARED in test-installed-current.py, settling c-installed-spec-is-not-compared. The running checker reads the INSTALLED spec, and that spec now carries per-project policy, so a stale copy silently changes what a project is asked for while every other gate is green."
     stated_by_user: true
     proposed_by: claude
+    correction_2026_09_13: >
+      The injection mechanism is SUPERSEDED by d-session-skills-never-inject-at-load. What this
+      entry called a mechanism rather than a reminder was the right instinct and the wrong
+      delivery: an injected command aborts the whole skill on any permission result but allow and
+      on any non-zero exit, so the resolver that was meant to stop the ritual failing quietly made
+      it fail loudly before it began. The resolver, the literal gate and the degradation path all
+      stand; only the load-time injection is withdrawn.
+
+  - id: d-session-skills-never-inject-at-load
+    date: "2026-09-13"
+    status: settled
+    title: "A skill runs the resolver as its first step; no skill injects a command at load time"
+    context: >
+      The haircut adoption ran /rite:end twice and it aborted both times before its prompt loaded,
+      with "Shell command permission check failed for pattern ... This command requires approval".
+      The four session skills injected rite.sh paths at load time and declared no allowed-tools.
+      Claude Code's skills documentation, fetched 2026-09-13: "Injected commands never prompt for
+      permission. When a command's permission check returns anything other than allow, Claude Code
+      aborts the invocation", and "A failed command aborts the entire skill invocation ... any
+      non-zero exit code counts as a failure". So the abort was not one user's settings. It covered
+      every user without a bash allow rule, every machine with no Python (rite.sh exits 1 there,
+      while its own message says /rite:end still works), and any matching ask or deny rule, which
+      aborts even when allowed-tools matches. The fallback text written for an empty block was
+      never read in any of those cases. The line arrived in cf9dcb8 because a gate demanded it.
+    decision: >
+      The resolver is an explicit first step the agent runs with the Bash tool. If it cannot run,
+      the agent says so and falls back to the canonical names, which is what the degradation path
+      always promised. Each session skill declares allowed-tools scoped to the shim, so on a
+      matching pattern the step runs without a prompt. test-docs-path-literals keeps half B — a
+      skill naming documentation paths must run the resolver — and gains half C: any load-time
+      injection in a skill, inline or fenced, fails.
+    why_a_step_and_not_allowed_tools_alone: >
+      allowed-tools would have made the injection pass for most users, and left it abortable by a
+      deny or ask rule, a missing interpreter or a resolver crash. A step degrades under every one
+      of those — to a prompt, or to output the agent reads — and a pattern that fails to match
+      costs a permission prompt rather than the session close. Closing a session must not be
+      abortable before it starts.
+    honest_limits:
+      - "Whether the quoted pattern Bash(bash \"${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh\" *) matches after substitution is unverified. The docs say the variable is substituted inside allowed-tools Bash rules; they do not show a quoted path. A mismatch costs a prompt, never an abort, which is why it was acceptable to ship unverified."
+      - "A step can be skipped by an agent in a way an injection could not. The canonical names remain the fallback, and the skill tells the agent to say when it fell back."
+      - "rite.ps1 gained the same init action and was not executed: this machine has no PowerShell. CI does not run the shims."
+    consequences:
+      - "The companion defect from the same adoption was fixed in the same change: python_invocation_differs banned only python3, so /rite:init shipped a bare python command by a relative path. rite.sh and rite.ps1 gained init, and the rule and its gate now cover every interpreter name, with `<python>` as the placeholder for developer commands."
+      - "Both gates were proved failing against the unfixed tree — 20 interpreter sites, 4 injecting skills — and against planted violations in a scratch copy."
+    stated_by_user: false
+    delegated_by_user: "2026-09-13 — the mechanism was left to Claude ('your choice'); the fix itself was requested ('focus on fixing rite')"
+    proposed_by: claude

@@ -10,12 +10,15 @@
 # absence. This runs BEFORE Python exists, so it is the only code that can say Python is
 # missing.
 #
-# Usage:  rite.sh <session-start|session-end|check|copy|watch|issue|paths> [args...]
+# Usage:  rite.sh <session-start|session-end|check|copy|watch|issue|paths|init> [args...]
 #         The session actions take hook JSON on stdin. `check` takes [PATH] [--force] and is
 #         what the skills call, so that no prompt has to name an interpreter — the rule
 #         python_invocation_differs, which two SKILL.md files broke until 2026-09-10.
 #         `paths` takes [PATH] and prints participation plus the project's real document set;
-#         the skills inject its output, so no prompt hardcodes a documentation path either.
+#         the skills run it as their first step, so no prompt hardcodes a documentation path.
+#         `init` takes [PATH] [--name=<short>] and seeds a project — /rite:init told adopters to
+#         run the seeder with bare `python` by a relative path, which fails on pyenv AND names a
+#         path that exists only inside the plugin. Found by the haircut adoption, 2026-09-13.
 set -euo pipefail
 
 action="${1:-}"
@@ -34,11 +37,12 @@ case "$action" in
   watch)         script="$here/../scripts/rite_watch.py" ;;
   issue)         script="$here/../scripts/rite_issue.py" ;;
   paths)         script="$here/../scripts/rite_paths.py" ;;
+  init)          script="$here/../scripts/rite_init.py" ;;
   *)             script="" ;;
 esac
 
 if [ -z "$script" ] || [ ! -f "$script" ]; then
-  echo "rite: no such action '${action}' (session-start, session-end, check, copy, watch, issue, paths)" >&2
+  echo "rite: no such action '${action}' (session-start, session-end, check, copy, watch, issue, paths, init)" >&2
   exit 2
 fi
 

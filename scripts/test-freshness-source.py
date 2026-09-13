@@ -17,7 +17,7 @@ THE CASES ARE THE FALSIFICATION, not a demonstration. Cases 1-2 are the concern'
 is the one that proves mtime no longer decides anything, and cases 6-8 are the three ways the
 answer can be UNKNOWABLE — each of which must say so in its own words rather than guess.
 
-Run:  python scripts/test-freshness-source.py
+Run:  <python> scripts/test-freshness-source.py
 Exit: 0 pass · 1 fail · 2 git is absent, so the fixtures cannot be built
 """
 

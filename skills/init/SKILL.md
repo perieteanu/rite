@@ -11,11 +11,12 @@ screen of RED.
 ## Run it
 
 ```bash
-python scripts/rite_init.py [PROJECT_DIR] [--name=<short>]
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" init [PROJECT_DIR] [--name=<short>]
 ```
 
-From an installed plugin the script lives under the plugin's own directory; run it from the
-project root with no arguments and it seeds the current directory.
+Run it from the project root with no arguments and it seeds the current directory. Go through
+the shim, never an interpreter by name: it is the one place that knows whether this machine has
+`py`, `python3` or `python`, and no single name exists on every machine.
 
 Then show the output as it came back, and run `/rite:preflight` so the user sees where the
 project actually stands.

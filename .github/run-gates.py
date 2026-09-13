@@ -17,7 +17,7 @@ test-installed-current.py compares between the repo and the install cache, so a 
 there would demand a plugin version bump to keep gate 6 green. This is CI plumbing, not part
 of the plugin.
 
-Run:  python .github/run-gates.py
+Run:  <python> .github/run-gates.py
 Exit: 0 all declared gates passed or skipped as declared · 1 any gate failed
 """
 

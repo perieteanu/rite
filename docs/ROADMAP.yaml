@@ -86,7 +86,8 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin at version 0.25.0 — rite@rite, SEVEN skills reachable as
+  Rite is an installed, running plugin — 0.26.0 in this tree, 0.25.0 installed until it is
+  updated — rite@rite, SEVEN skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -697,6 +698,24 @@ milestones:
       CONCERNS entry, and the new test file printing without declaring UTF-8 stdio. It was proved
       failing on ten sites first, and its first version MISSED two of them — MIRROR_NAME and
       SCRIPTS_SUBDIR contain no directory name and only become a path once joined.
+
+  - id: session-skills-run-the-resolver-as-a-step
+    what: "The session skills stop aborting at load, and the interpreter rule stops preferring one name"
+    closed: "2026-09-13"
+    log_ref: "13-09-2026"
+    note: >
+      Both from the haircut adoption, the first documents-only project adopted from an empty
+      directory. /rite:end refused to load, twice: its resolver was injected at load time, and an
+      injected command never prompts, so any user without a bash allow rule — and any machine with
+      no Python — lost the command whose job is closing the session. The previous handoff asked for
+      exactly this delivery path to be verified; an outside adoption verified it, and it failed.
+      THE GATE PUT IT THERE. test-docs-path-literals half B required the injection. It now forbids
+      it (half C) and requires the resolver as a step instead, with allowed-tools scoped to the shim.
+      THE INTERPRETER RULE BANNED ONE NAME, so it certified the other: /rite:init shipped a bare
+      python command by a relative path, which failed with exit 127 on the first command of
+      adoption under a green gate. rite.sh and rite.ps1 gained `init`; the rule now bans every
+      name, and 20 sites were found once the gate could see them. Both gates were proved failing
+      against the unfixed tree first, and again against planted violations in a scratch copy.
 
 near_term:
   label: "EMPTY — the path from private to public is complete"

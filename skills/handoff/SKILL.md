@@ -3,6 +3,7 @@ name: handoff
 description: Write or update HANDOFF.md — what the next session must know that the docs do not say. Write-once, freezes at session end, and always carries an expiry date.
 argument-hint: "(none = decide the outcome) | none = there is nothing to hand off, say so explicitly"
 disable-model-invocation: true
+allowed-tools: Bash(bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" *)
 ---
 
 Write the handoff: what the next session needs that is not already in the docs. A handoff is
@@ -15,11 +16,17 @@ side, except that one proves somebody decided.
 
 ## This project, resolved
 
-!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+**Before step 1, run the resolver** with the Bash tool:
 
-The steps below name the canonical `docs/…` locations. **Where the block above shows something
-different, that is the truth.** An empty block means skill shell execution is disabled; fall back
-to the canonical names and check each exists before editing it.
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths
+```
+
+The steps below name the canonical `docs/…` locations. **Where the resolver shows something
+different, that is the truth.** If it cannot run — refused, no Python, a non-zero exit — say so
+in one line, fall back to the canonical names, and check each exists before editing it. It is a
+step rather than text injected into this prompt on purpose: an injected command that is refused
+or fails aborts the whole command before it is read.
 
 ## Steps
 

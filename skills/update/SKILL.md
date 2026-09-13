@@ -2,6 +2,7 @@
 name: update
 description: Bring the project's record back to true mid-session, without ending it — distil the log, correct the docs, close finished items, copy what was written outside, run the checks. Explicitly NOT a session close.
 disable-model-invocation: true
+allowed-tools: Bash(bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" *)
 ---
 
 Bring the record back to true **without ending the session.**
@@ -21,11 +22,17 @@ command is not a substitute for it and will not record that the session closed.
 
 ## This project, resolved
 
-!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+**Before step 1, run the resolver** with the Bash tool:
 
-**Use the paths above, not the canonical ones in the steps below** — they differ on a project
-that predates the standard. If the block is empty, skill shell execution is disabled here: fall
-back to the canonical names and check each exists before editing it. If it says NOT
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths
+```
+
+**Use the paths it prints, not the canonical ones in the steps below** — they differ on a project
+that predates the standard. If it cannot run — refused, no Python, a non-zero exit — say so in one
+line, fall back to the canonical names, and check each exists before editing it. It is a step
+rather than text injected into this prompt on purpose: an injected command that is refused or
+fails aborts the whole command before it is read. If it says NOT
 PARTICIPATING, the copy and check steps will do nothing; say so rather than reporting them done.
 
 ## Steps

@@ -26,7 +26,7 @@ WHAT THE RULE MUST DO, and each clause here is a case below:
     docs-yaml/ while the copier creates docs/ beside it is two tools disagreeing about one
     project.
 
-Run:  python scripts/test-legacy-layout.py
+Run:  <python> scripts/test-legacy-layout.py
 Exit: 0 pass · 1 a failure
 """
 

@@ -829,9 +829,18 @@ portability:
     - id: python_invocation_differs
       severity: documentation
       rule: >
-        Never hardcode `python3` in documentation or a hook command. On Windows the name is
-        `py` or `python`; `python3` is not a standard Windows executable.
-      why: "The command printed in a README is the first thing a new user runs, and on Windows this one fails."
+        Never name an interpreter in a command a reader or an agent runs — not `python3`, not
+        `python`, not `py`. No single name exists everywhere: `python3` is not a standard
+        Windows executable, and `python` is absent on pyenv, on Debian without
+        python-is-python3, and on macOS without a shim. Route the command through the launcher
+        shim, which probes all three. Where prose must show a developer command, write the
+        placeholder `<python>`. A GitHub workflow may invoke bare `python`, because it
+        provisions that name itself through actions/setup-python.
+      why: >
+        The command printed in a skill or a README is the first thing a new user runs. Until
+        2026-09-13 this rule banned only `python3`, so it certified the bare-`python` command
+        in /rite:init — which failed with exit 127 on the first command of the haircut
+        adoption. A rule that bans one name is a preference for the other.
 
     - id: stdlib_only_no_pip_dependencies
       severity: correctness

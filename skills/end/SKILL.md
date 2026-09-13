@@ -3,6 +3,7 @@ name: end
 description: Close the session properly — distil the log, bring the docs back to true, close finished roadmap items, and record a handoff decision. The judgement half of the session protocol.
 argument-hint: "(no arguments — run this while turns remain, before you stop working)"
 disable-model-invocation: true
+allowed-tools: Bash(bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" *)
 ---
 
 Close the session. This is the **judgement half** of the protocol: it needs decisions, so it
@@ -17,16 +18,22 @@ Only the user invokes this. Claude never decides that a session is over.
 
 ## This project, resolved
 
-!`bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths`
+**Before step 1, run the resolver** with the Bash tool:
 
-**Use the paths above, not the canonical ones in the steps below.** They are the same on a
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" paths
+```
+
+**Use the paths it prints, not the canonical ones in the steps below.** They are the same on a
 project that follows the standard and different on one that predates it — `docs-yaml/` instead of
 `docs/`, YAML where the standard names Markdown, a CONCERNS file that does not exist. A session
 in September 2026 translated four such paths by hand mid-ritual and corrupted a file doing it, so
-the translation is done above rather than left to you.
+the translation is done by the resolver rather than left to you.
 
-If that block is empty, this environment has skill shell execution disabled: fall back to the
-canonical names in the steps, and check each one exists before editing it.
+If it cannot run — refused, no Python, a non-zero exit — say so in one line, fall back to the
+canonical names in the steps, and check each one exists before editing it. It is a step rather
+than text injected into this prompt on purpose: an injected command that is refused or fails
+aborts the whole command before it is read, and closing a session must not be abortable.
 
 **If it says NOT PARTICIPATING, say so before step 1.** Steps 6 and 7 will exit 0 having done
 nothing — not because there was nothing to do, but because the project has not opted in.

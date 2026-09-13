@@ -306,7 +306,7 @@ VS Code and the terminal differ MORE than Windows and macOS do, but not for file
 | `process_output_declares_encoding` | correctness | Every entry point declares its stdout and stderr as UTF-8 before printing, via ritefs.use_utf8_stdio(). Every read of another process's output names BOTH encoding="utf-8" AND errors="replace". A byte must not mean different things at the two ends of one pipe. |
 | `shell_only_as_a_launcher` | correctness | Shell is permitted in exactly ONE place: a launcher shim that locates Python or explains why it cannot. Nothing else. No checks, no parsing, no logic. |
 | `explicit_utf8_everywhere` | correctness | Every read and write names encoding='utf-8'. Never rely on the platform default. |
-| `python_invocation_differs` | documentation | Never hardcode `python3` in documentation or a hook command. On Windows the name is `py` or `python`; `python3` is not a standard Windows executable. |
+| `python_invocation_differs` | documentation | Never name an interpreter in a command a reader or an agent runs — not `python3`, not `python`, not `py`. No single name exists everywhere: `python3` is not a standard Windows executable, and `python` is absent on pyenv, on Debian without python-is-python3, and on macOS without a shim. Route the command through the launcher shim, which probes all three. Where prose must show a developer command, write the placeholder `<python>`. A GitHub workflow may invoke bare `python`, because it provisions that name itself through actions/setup-python. |
 | `stdlib_only_no_pip_dependencies` | correctness | Python stdlib only. No pip install, ever, for the base layer. YAML is read by a subset parser shipped with Rite. |
 | `claude_home_slug_derivation` | documentation | Derive root -> slug and never slug -> root. The first is deterministic and governs every write; the second is lossy and may only name a project in a report. |
 
@@ -326,7 +326,7 @@ _Rejected alternative: ASCII-only output. It would need no declaration at all, a
 
 **`explicit_utf8_everywhere`** — Windows defaults to cp1252. The generated standard contains 171 non-ASCII characters (em dash, middle dot, left arrow), and YAML mandates UTF-8 regardless of platform. An unqualified open() works on Linux and corrupts on Windows, which is the worst possible failure ordering — it passes where it is developed.
 
-**`python_invocation_differs`** — The command printed in a README is the first thing a new user runs, and on Windows this one fails.
+**`python_invocation_differs`** — The command printed in a skill or a README is the first thing a new user runs. Until 2026-09-13 this rule banned only `python3`, so it certified the bare-`python` command in /rite:init — which failed with exit 127 on the first command of the haircut adoption. A rule that bans one name is a preference for the other.
 
 **`stdlib_only_no_pip_dependencies`** — PyYAML is not installed by default on macOS or Windows, so depending on it would make "pip install first" the default first-run experience on two of three target platforms. Measured across 1839 lines of this project's own YAML, every construct that makes YAML hard to parse is unused — no anchors, aliases, tags, flow mappings, block literals, merge keys or complex keys — so the dependency buys almost nothing.
 

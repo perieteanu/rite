@@ -1095,7 +1095,7 @@ def main() -> int:
         return 0
 
     if not OUT.exists():
-        print(f"FAIL  {OUT.name} does not exist. Run: python spec/render-standard.py")
+        print(f"FAIL  {OUT.name} does not exist. Run: <python> spec/render-standard.py")
         return 1
 
     current = OUT.read_text(encoding="utf-8")
@@ -1112,7 +1112,7 @@ def main() -> int:
         n=2,
     )
     sys.stdout.writelines(diff)
-    print("\nFix: python spec/render-standard.py")
+    print("\nFix: <python> spec/render-standard.py")
     return 1
 
 

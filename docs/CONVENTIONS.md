@@ -213,7 +213,12 @@ so treat them as predictions to re-check on first contact.
 - **Every read and write names `encoding="utf-8"`.** Windows defaults to cp1252 and the
   generated standard carries 171 non-ASCII characters. Omitting it passes where it is
   developed and corrupts everywhere else — the worst failure ordering there is.
-- **Never write `python3` in docs or hook commands.** On Windows it is `py` or `python`.
+- **Never name an interpreter in a command anyone runs** — not `python3`, not `python`, not
+  `py`. No name exists everywhere: `python3` is missing on Windows, `python` on pyenv and on
+  Debian without python-is-python3. A skill or README routes through the shim; a developer
+  command in a docstring writes the placeholder `<python>`. The one exception is a GitHub
+  workflow, which provisions `python` itself. Until 2026-09-13 this line banned only `python3`,
+  and `/rite:init` shipped a bare-`python` command under a green gate.
 - **Missing PyYAML degrades loudly**: run the Markdown checks, report the YAML ones as SKIPPED
   with the reason and the fix, exit non-zero. Never a traceback. PyYAML is absent by default on
   macOS *and* Windows, so this is the default first run on two of three targets — not an edge

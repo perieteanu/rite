@@ -20,7 +20,7 @@ A CI runner has never had it. When Costin retires the fallback this gate will sk
 on his machine too — at which point DELETE IT, along with the parity claim in
 ~/.claude/commands/mirror-memory.md. A gate that can no longer fail is not a gate.
 
-Run:  python scripts/test-mirror-port-parity.py
+Run:  <python> scripts/test-mirror-port-parity.py
 Exit: 0 pass · 1 fail · 2 skip
 """
 

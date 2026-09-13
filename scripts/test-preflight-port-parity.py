@@ -16,7 +16,7 @@ IT SKIPS RATHER THAN FAILS when the original is absent, and that is the END STAT
 never had it, and when Costin retires the fallback this skips forever. DELETE IT THEN — a gate
 that can no longer fail is not a gate.
 
-Run:  python scripts/test-preflight-port-parity.py
+Run:  <python> scripts/test-preflight-port-parity.py
 Exit: 0 pass · 1 fail · 2 skip
 """
 

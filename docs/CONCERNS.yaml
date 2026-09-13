@@ -461,6 +461,31 @@ concerns:
       it does not.
 
 retired_ids:
+  # ── harvested 2026-09-13 from the haircut adoption, the first from an empty directory ──
+  # Opened and settled the same day. The field notes are gitignored (d-tests-folders-never-committed),
+  # so these two entries and the decision they name are the record.
+  - id: c-session-skills-abort-at-load
+    retired: "2026-09-13"
+    how: settled
+    outcome: d-session-skills-never-inject-at-load
+    why: >
+      /rite:end, /rite:handoff, /rite:log and /rite:update injected the resolver at load time, and
+      an injected command that is not pre-allowed or exits non-zero aborts the whole skill. The
+      command that closes a session could not start for any user without a bash allow rule. It
+      also retroactively answers the 2026-09-12 handoff, which asked for this exact delivery path to
+      be exercised: it was, by an outside adoption, and it failed.
+
+  - id: c-interpreter-rule-bans-one-name
+    retired: "2026-09-13"
+    how: settled
+    outcome: d-session-skills-never-inject-at-load
+    why: >
+      python_invocation_differs banned python3 only, so its gate certified bare python — missing on
+      pyenv, on Debian without python-is-python3, and on macOS without a shim. /rite:init's one
+      command failed with exit 127 on the first command of adoption, and it also named a relative
+      path that exists only inside the plugin. Settled by the rule rewrite and an init shim action,
+      recorded as a consequence of the decision above rather than a decision of its own, because it
+      corrects a spec rule rather than choosing between designs.
   - id: c-end-ritual-runs-where-its-tools-are-silent
     retired: "2026-09-12"
     how: settled

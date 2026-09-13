@@ -22,7 +22,7 @@ remember that the named ones might be wrong.
 IT READS AND PRINTS. It never writes, never creates a directory, and never exits non-zero for a
 project that has not opted in — that is a fact to report, not an error.
 
-Run:  python scripts/rite_paths.py [PROJECT_DIR]
+Run:  <python> scripts/rite_paths.py [PROJECT_DIR]
 Exit: 0 always
 """
 

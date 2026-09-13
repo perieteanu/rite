@@ -14,7 +14,7 @@ entries. Every project scaffolded by Rite would have opened on a YELLOW produced
 seed file. Guidance prose also has no business in an append-only file, where it becomes a
 permanent header nobody can tidy later.
 
-Run:  python scripts/test-scaffold.py
+Run:  <python> scripts/test-scaffold.py
 Exit: 0 pass · 1 fail
 """
 

@@ -126,8 +126,9 @@ scripts/
                      legacy layout and can no longer create a second documentation directory
                      beside the one a project has.
   rite_paths.py      THE RESOLVER. Prints whether this project participates and where its
-                     documents actually are. The four judgement skills inject its output
-                     before Claude reads them, so a prompt never names a path that a project
+                     documents actually are. The four judgement skills run it as their first
+                     step — never injected at load time, where a refusal or a non-zero exit
+                     aborts the whole command — so a prompt never names a path that a project
                      predating the standard does not have — and a project that has not opted
                      in says so above step 1 instead of reporting silent no-ops as success.
   test-copy-attribution.py  Synthetic-fixture test that writing and mentioning stay distinct.
