@@ -192,8 +192,9 @@ so treat them as predictions to re-check on first contact.
   a `.gitattributes` because that would be a hand-authored 14th file, and the inventory is
   frozen.
 - **Shell is permitted in exactly one place: a launcher shim.** It tries `python3`, then
-  `python`, then `py`; on success it execs the real work, on failure it prints what is missing
-  and how to install it, and exits non-zero. Nothing else — no checks, no parsing, no logic, no
+  `python`, then `py`; on success it execs the real work, on failure it names what is missing
+  and what that costs, and exits non-zero. It never says how to install anything —
+  `d-never-instruct-installation`. Nothing else — no checks, no parsing, no logic, no
   coreutils, no `LC_ALL`, no `date(1)`.
 
   **Two shims — `.sh` and `.ps1`. Never `.bat`.** Verified against the hooks docs: a hook's
@@ -219,11 +220,11 @@ so treat them as predictions to re-check on first contact.
   command in a docstring writes the placeholder `<python>`. The one exception is a GitHub
   workflow, which provisions `python` itself. Until 2026-09-13 this line banned only `python3`,
   and `/rite:init` shipped a bare-`python` command under a green gate.
-- **Missing PyYAML degrades loudly**: run the Markdown checks, report the YAML ones as SKIPPED
-  with the reason and the fix, exit non-zero. Never a traceback. PyYAML is absent by default on
-  macOS *and* Windows, so this is the default first run on two of three targets — not an edge
-  case. This is deliberately unlike the `enrichment` layer, which skips *silently*: enrichment
-  is optional, PyYAML is core.
+- **Missing Python degrades loudly**: the shim names what is unavailable (the verdict, the
+  checker, the mirror, plan copying) and what still works (the prompt-only skills), and exits 1.
+  Never a traceback. Rite reads YAML with its own stdlib subset parser, so there is no PyYAML to
+  be missing at run time; PyYAML is only the *oracle* of `scripts/test-riteyaml.py`, which exits
+  2 (skip) where it is absent — `d-stdlib-only-yaml-subset`.
 
 ## Prerequisites
 

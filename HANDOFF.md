@@ -1,59 +1,68 @@
 ---
-genre: task_brief
-written: "2026-09-13"
-session_end: written
-supersedes: "the 2026-09-12 evening close, whose verify-first item was answered by the haircut adoption — the load-time injection ran there, and aborted"
-expires: "2026-12-12"
+# WRITE DISCIPLINE — mixed. The text and the keys above session_end are write-once: a change
+# means a NEW file. session_end and closed are the close record, rewritten by every close.
+genre: state
+written: "2026-09-16"
+expires: "2026-12-16"
 status: live
+session_end: written
+closed: "2026-09-16"
+supersedes: "the 2026-09-13 handoff — its verify-first item was answered by haircut's 16-09 /rite:end, which loaded"
 ---
 
 # HANDOFF — rite
 
 State is in `ROADMAP.current_state`. This is what the docs do not say.
 
-## The one thing to verify first
+## Verify first
+**haircut's close on 0.27.0.** Its 16-09 /rite:end is unrecorded: it stopped at step 4 on the
+flaw fixed today. In a session there, the close should change ONLY `session_end:
+carried_forward` and add `closed: "<today>"`, plus two LOG lines (the stage-idea decision,
+logged late, and the close note). Expected: `closed_not_older_than_newest_log_entry` GREEN,
+`written:` still 2026-09-13. If it goes RED, read the finding's wording first — "no close
+record" means `closed:` was not written, "last closed" means it was written with an old date.
+Its earlier plan to move `written:` is the failure the fix removes; do not accept it.
 
-**Test the fix from the INSTALLED plugin, in a project other than rite.** Inside this repo the
-skills are served from the working tree (`Base directory: projects/rite/skills/end`) even while
-`installed_plugins.json` says 0.25.0, so a successful `/rite:end` here proves nothing about what
-users get. Run `claude plugin update rite` (0.25.0 → 0.26.0), restart, then `/rite:end` in
-`~/projects/haircut`. Three possible outcomes:
-- loads, no permission prompt for the resolver step → the allowed-tools pattern matched. Done.
-- loads, but prompts → the quoted pattern `Bash(bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" *)`
-  did not match after substitution. Harmless, but try an unquoted form and record which works.
-- aborts → the diagnosis in `d-session-skills-never-inject-at-load` is incomplete. Stop and read
-  the exact error before changing anything.
-
-The `installed-copy` gate stays red until the update; that is expected, not a regression.
-
-## Built but never exercised
-- `rite.ps1 init` — added, never run; no PowerShell on this machine and CI does not run shims.
-- `legacy_layout` still has no real user. hwprivacy still has no `.rite.yaml` (checked 2026-09-13).
-
-## Open, and what each is waiting on (all verified still `status: open`)
-- `c-watcher-cannot-see-shell-writes` (high) — blocked on one lookup: does `FileChanged` fire for
-  writes made by a Bash call? Read the hooks reference before designing.
-- `c-session-post-is-gated-by-participation` — needs a ruling, not code.
-- `c-copier-has-no-read-only-preview` — on a writer, the flag can only mean preview.
-
-## Found, deliberately not fixed
-- `docs/CONVENTIONS.md` says the shim prints "how to install it"; `rite.sh` deliberately does not
-  (`d-never-instruct-installation`). Its "Missing PyYAML degrades loudly" bullet predates stdlib-only.
-- CI annotates `actions/checkout@v4` and `actions/setup-python@v5` as Node.js 20, deprecated.
-- Three concerns still sit in BOTH `concerns` and `retired_ids` — `c-source-is-filesystem-mtime`,
-  `c-project-yaml-is-not-checked`, `c-readme-sample-output-is-a-copy`. Still unruled.
-- `tests/haircut/`, `tests/hwprivacy/` are harvested and can go (gitignored). haircut's repro 01
-  now prints an empty-name exit 127 at step 2 — a bug in the repro, not in Rite.
+## Next build, waiting on one ruling
+`c-watcher-cannot-see-shell-writes` (high). The hooks lookup is done and recorded in the
+concern: FileChanged sees every writer but cannot reach Claude; PostToolBatch can. The open
+ruling is (a) per-session hash snapshot vs (b) stateless mtime — Claude leans (a). Write the
+failing Bash-append test before the watcher.
 
 ## Traps this session paid for
-- **A gate can install the defect it was written to prevent.** half B of the literals gate demanded
-  the injection. When a gate requires a harness MECHANISM, check the vendor docs for how that
-  mechanism fails, not only that it exists.
-- **A rule that bans one name is a preference for the other.** The interpreter rule certified the
-  command that broke adoption.
-- **The widened gate caught its author** — prose quoting the banned command trips it. Rephrase
-  ("a bare-`python` command"); do not add an exemption.
+- **Every project on this machine runs the WORKING TREE**, not the install cache — the
+  marketplace source is `directory` (c-directory-marketplace-serves-the-working-tree). The
+  installed-copy gate compares the cache, so green there does not prove what runs. Only a
+  git-sourced install elsewhere tests what a user gets.
+- **A chained Bash call defeats the skills' allowed-tools rule.** `rite.sh paths; git status`
+  prompts for the second half. The two prompts at haircut's close came from that, so whether
+  the quoted pattern matches on its own is still unverified.
+- **A probe LOG line needs the machine clock too.** A hand-typed 20:30 at 19:51 went RED on
+  no_future_timestamps in a scratch copy.
+- **retired_ids is append-only, but the two 2026-09-13 entries sit at its top.** Today's was
+  appended at the end. Unruled whether to move them; moving them is itself a reorder.
+
+## Built but never exercised
+- `carried_forward` has never been recorded in a real close — haircut is the first.
+- `rite.ps1 init` — no PowerShell here, CI does not run the shims.
+- `legacy_layout` — still no real user.
+
+## Waiting on Costin, not on code
+- `c-session-post-is-gated-by-participation` — a ruling.
+- Three concerns sit in both `concerns` and `retired_ids` (c-source-is-filesystem-mtime,
+  c-project-yaml-is-not-checked, c-readme-sample-output-is-a-copy).
+- `tests/haircut/`, `tests/hwprivacy/` can be deleted (gitignored).
+- The founding plan is 8 of 10 done; `vscode-viewer` and `official-marketplace` both wait on
+  someone other than Costin running Rite.
+
+## Found, deliberately not fixed
+- CI: Node.js 20 deprecation on `actions/checkout@v4`, `actions/setup-python@v5`.
+- Hardcoded: `HANDOFF_LIFETIME_DAYS = 90` (scripts/rite_init.py); the `~/.claude/rite`
+  fallback when CLAUDE_PLUGIN_DATA is unset (rite_watch.py, rite_preflight.py), which writes
+  into ~/.claude.
+- `~/.claude/CLAUDE.md` names extension 2.1.263; 2.1.273 is active. Not this repo's file.
 
 ## Do not re-litigate
-The resolver is a STEP, never a load-time injection; the interpreter rule covers every name,
-with `<python>` as the developer placeholder. Reasoning in `DECISIONS.yaml`, evidence in `LOG.md`.
+`closed:` is its own key; the rule is `closed_not_older_than_newest_log_entry`; no `closed:`
+falls back to `written:`, the stricter reading. Reasoning in
+`d-handoff-close-record-is-its-own-field`.

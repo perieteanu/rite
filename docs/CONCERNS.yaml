@@ -432,7 +432,31 @@ concerns:
       riteyaml's rule — refuse rather than guess — is not suspended because the caller is a hook.
       A watcher that misses a redirect it did not understand reports silence, and silence here
       reads as a pass.
-    unverified: "that FileChanged fires on writes made by a Bash tool call, and what its payload names. Read the hooks reference before designing against it — the locked findings already record thirty-three events where this project once assumed four."
+    verified_2026_09_16: >
+      Against the hooks reference (code.claude.com/docs/en/hooks.md) and the 2.1.273 binary.
+      FileChanged DETECTS every writer — "no matter what changed the file: an Edit or Write tool
+      call, a script Claude runs with Bash, or a process outside Claude Code entirely"; payload
+      `file_path` and `event` (change/add/unlink). It CANNOT REPORT: only `watchPaths` and
+      `systemMessage` are read from its output, systemMessage is a terminal notification, stderr
+      goes to the user only, and FileChanged is absent from the events whose additionalContext
+      reaches Claude. On this machine systemMessage reaches nobody either (extension 2.1.273,
+      extension.js: 0 refs). Its watch list is named files only — literal names in the cwd, or
+      absolute `watchPaths` — so a newly created file is not seen. Proposal 1 is therefore
+      detection without a channel.
+      PostToolBatch is the trigger that fits: once per batch, no matcher (Bash, PowerShell and MCP
+      writers included), additionalContext injected before the next model call. The existing
+      predicate needs only a path (measured against git HEAD), so the watcher can find changed
+      files from the filesystem rather than from the command string, which is not the rejected
+      approach.
+    open_ruling: >
+      How "changed during this batch" is known: (a) a per-session content-hash snapshot in
+      ${CLAUDE_PLUGIN_DATA} — catches outside and mtime-preserving writes, needs a DECISIONS entry
+      narrowing d-write-discipline-watcher's "no state of its own" to the verdict baseline, which
+      stays HEAD; or (b) stateless mtime >= batch start from the transcript — misses outside
+      writes between batches, and assumes the transcript is flushed first (unverified). Claude
+      leans (a). Either way: retire the PostToolUse watch entry (double reports), seed at
+      SessionStart, reword "the file just written", test a Bash append first.
+    unverified: "whether PostToolBatch fires inside subagents and whose context gets the reminder; whether watchPaths accepts a directory."
 
   - id: c-copier-has-no-read-only-preview
     title: "check has --force and copy has none, so nothing can show what adoption would rescue"
