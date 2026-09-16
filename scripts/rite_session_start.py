@@ -38,10 +38,10 @@ import riteyaml  # noqa: E402
 import ritefs  # noqa: E402
 import rite_preflight  # noqa: E402
 import ritededup  # noqa: E402
+import riterules  # noqa: E402
 
 ritefs.use_utf8_stdio()
 
-_LOG_TS = re.compile(r"^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})(?::(\d{2}))?\s\|")
 _FM = re.compile(r"^---\s*\n(.*?)\n---\s*(\n|$)", re.S)
 
 
@@ -70,14 +70,7 @@ def newest_log_date(root: Path):
         text = (root / "LOG.md").read_text(encoding="utf-8")
     except OSError:
         return None
-    newest = None
-    for line in text.splitlines():
-        m = _LOG_TS.match(line)
-        if m:
-            d = dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
-            if newest is None or d > newest:
-                newest = d
-    return newest
+    return riterules.newest_log_date(text)
 
 
 def handoff_frontmatter(root: Path):
@@ -189,7 +182,6 @@ def main() -> int:
     fm = handoff_frontmatter(root)
     newest = newest_log_date(root)
     if fm is not None:
-        written = fm.get("written")
         status = str(fm.get("status", "")).lower()
         expires = re.search(r"\d{4}-\d{2}-\d{2}", str(fm.get("expires", "")))
         today = dt.date.today()
@@ -201,17 +193,17 @@ def main() -> int:
             parts.append(f"rite — HANDOFF.md expired on {expires.group(0)}. "
                          "Treat its claims as unverified until refreshed.")
 
-        try:
-            wdate = dt.date.fromisoformat(str(written).strip())
-        except (ValueError, AttributeError):
-            wdate = None
-        if wdate and newest and wdate < newest:
-            marker = f"{wdate}<{newest}"
+        # Same predicate as the checker's closed_not_older_than_newest_log_entry, from riterules.
+        cdate, field = riterules.handoff_close_date(fm)
+        if cdate and newest and cdate < newest:
+            marker = f"{cdate}<{newest}"
+            said = ("last recorded a close on" if field == "closed"
+                    else "carries no close record and was written")
             if not already_nagged(str(root), marker):
                 parts.append(
-                    f"rite — the last session did not close. HANDOFF.md was written {wdate}, "
-                    f"but LOG.md runs to {newest}. Work happened after the handoff was last "
-                    f"touched. Reported once; this will not be repeated."
+                    f"rite — the last session did not close. HANDOFF.md {said} {cdate}, "
+                    f"but LOG.md runs to {newest}. Work happened after the last recorded "
+                    f"close. Reported once; this will not be repeated."
                 )
     elif (root / "HANDOFF.md").exists():
         parts.append("rite — HANDOFF.md has no parseable front matter, so its expiry and "

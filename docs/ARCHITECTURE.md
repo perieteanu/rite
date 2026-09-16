@@ -55,7 +55,7 @@ SessionEnd hook   ──► MECHANICAL half: copy plans, mirror memory
                       (no stamp file — see below)
                                                   │
                                                   ▼
-                      next SessionStart compares HANDOFF `written:`
+                      next SessionStart compares HANDOFF `closed:`
                       against the newest LOG.md entry, and says what you skipped
 ```
 
@@ -64,12 +64,15 @@ The loop closes at the next session start. **That is the completion test.**
 **There is no stamp file.** An earlier version of this diagram had `SessionEnd` writing one;
 `d-end-outcome-recorded-in-handoff` rejected it. `/end` is a process and its result belongs in
 the artifact the process is about, so it goes in `HANDOFF.md` front matter as
-`session_end: written | updated | carried_forward | none`.
+`session_end: written | updated | carried_forward | none`, dated in `closed:`.
 
 That leaves the detection question, which the stamp was there to answer: a session that worked
-and then closed without touching the handoff leaves `written:` **older than the newest `LOG.md`
+and then ended without recording a close leaves `closed:` **older than the newest `LOG.md`
 entry**. Two Tier 0 files that already exist, no third artifact, and checkable today without
-revision history.
+revision history. `closed:` is its own key because `written:` dates the handoff's text, and
+reading the close from it made `carried_forward` unrecordable
+(`d-handoff-close-record-is-its-own-field`); with no `closed:` the check falls back to
+`written:`, the older and stricter reading.
 
 ## Layout
 
@@ -439,7 +442,8 @@ Gate: `render-standard.py --check` exits 1 on drift.
 The project applies its own principle to its own spec on day one.
 
 **session_start** — BUILT, `scripts/rite_session_start.py`. Reads the project's `docs/*` and
-`HANDOFF.md` front matter, and compares `written:` against the newest `LOG.md` entry. Writes one
+`HANDOFF.md` front matter, and compares `closed:` (or `written:` where there is none) against the
+newest `LOG.md` entry, through the same `riterules.handoff_close_date` the checker uses. Writes one
 thing: `hookSpecificOutput.additionalContext`, a verdict line. Never re-runs anything with side
 effects; surfaces data AGE instead.
 

@@ -717,27 +717,25 @@ def _session_end(ctx, art, test):
     return YELLOW, "session_end missing or not one of " + "/".join(sorted(ok))
 
 
-@rule("written_not_older_than_newest_log_entry")
-def _written_vs_log(ctx, art, test):
+@rule("closed_not_older_than_newest_log_entry")
+def _closed_vs_log(ctx, art, test):
     text = ctx.read(art["path"])
     log = ctx.read("LOG.md")
     if text is None or log is None:
         return NA, "HANDOFF or LOG absent"
     fm = frontmatter(text) or {}
-    written = parse_date(fm.get("written"))
-    if written is None:
-        return YELLOW, "written missing or unparseable"
-    newest = None
-    for ln in log.splitlines():
-        m = _LOG_LINE.match(ln)
-        if m:
-            d = dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
-            newest = d if newest is None or d > newest else newest
+    closed, field = riterules.handoff_close_date(fm)
+    if closed is None:
+        return YELLOW, f"{field} missing or unparseable"
+    newest = riterules.newest_log_date(log)
     if newest is None:
         return NA, "no parseable log entries"
-    if written < newest:
-        return YELLOW, f"handoff written {written}, newest log entry {newest} — session did not close"
-    return GREEN, f"written {written}, log current to {newest}"
+    # Name the field that was read: with no `closed:`, the date is the text's, and a reader must
+    # be able to tell a close record from the fallback.
+    said = "last closed" if field == "closed" else "no close record; handoff written"
+    if closed < newest:
+        return YELLOW, f"{said} {closed}, newest log entry {newest} — session did not close"
+    return GREEN, f"{said} {closed}, log current to {newest}"
 
 
 @rule("inception_present")

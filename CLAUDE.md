@@ -66,9 +66,12 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
 - **Never rename the docs directory after a format.** It was `docs-yaml/` and became a false
   claim the moment a `.md` landed in it. `docs/` is format-neutral on purpose.
 - **Every file declares a write discipline, and they are not interchangeable.** `LOG.md` and
-  `DECISIONS.yaml` are append-only. `ROADMAP.yaml` and `CONCERNS.yaml` are *mixed* and say so
-  inside themselves. `HANDOFF.md` and `PLAN-*.md` are write-once — a change means a NEW file,
-  never an edit. Everything else in `docs/` is rewrite-only: stale content is **deleted**, not
+  `DECISIONS.yaml` are append-only. `ROADMAP.yaml`, `CONCERNS.yaml` and `HANDOFF.md` are *mixed*
+  and say so inside themselves. `PLAN-*.md` is write-once — a change means a NEW file, never an
+  edit — and so is HANDOFF's **text**; its close record (`session_end`, `closed`) is rewritten by
+  every close, and `written:` dates the text, never the close. Until 2026-09-16 the close was read
+  from `written:`, which made `carried_forward` unrecordable by any session that logged
+  (`d-handoff-close-record-is-its-own-field`). Everything else in `docs/` is rewrite-only: stale content is **deleted**, not
   annotated. Full table in `docs/CONVENTIONS.md`.
 - **`ROADMAP.inception` is write-once.** Set at project birth, never edited — it is the only
   baseline that makes drift measurable. A re-agreed plan is a DECISIONS entry, not an edit.
@@ -134,7 +137,8 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
   See `d-stage-is-the-gating-axis`.
 - **`HANDOFF.md` always exists — required from stage `idea`, the earliest there is.** Nothing to
   hand off is written as `genre: none`, not as a missing file. Every session ends having
-  recorded one of four outcomes: written, updated, carried_forward, none.
+  recorded one of four outcomes — written, updated, carried_forward, none — and dated it in
+  `closed:`.
 
 ## Don'ts
 

@@ -36,7 +36,7 @@ rite — myproject
 
   NA     project  fresh      LOG.md                                  newest_entry_within_days_of_activity — documents-only project — no source to measure against
   NA     project  integrity  LOG.md                                  append_only_preserved — requires revision history — no git repository
-  RED    project  integrity  HANDOFF.md                              written_not_older_than_newest_log_entry — handoff written 2025-12-20, newest log entry 2026-01-01 — session did not close
+  RED    project  integrity  HANDOFF.md                              closed_not_older_than_newest_log_entry — last closed 2025-12-20, newest log entry 2026-01-01 — session did not close
   NA     project  populated  docs/PLAN-YYYY-MM-DD-<slug>.md          filename_matches_canonical — tier 2, not present — optional
   NA     project  fresh      docs/PLAN-YYYY-MM-DD-<slug>.md          source_plans_all_copied — tier 2, not present — optional
   NA     project  populated  docs/session-scripts/<ISO date>/<name>  filename_matches_canonical — tier 3, not present — optional

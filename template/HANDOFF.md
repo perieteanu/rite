@@ -1,9 +1,12 @@
 ---
+# WRITE DISCIPLINE — mixed. The text and the keys above session_end are write-once: a change
+# means a NEW file. session_end and closed are the close record, rewritten by every close.
 genre: none
 written: "{{DATE_ISO}}"
 expires: "{{EXPIRES}}"
 status: live
 session_end: none
+closed: "{{DATE_ISO}}"
 ---
 
 # HANDOFF — {{SHORT_NAME}}
@@ -19,9 +22,11 @@ next session's side, except that one proves somebody decided and the other prove
 ## What replaces this
 
 At the end of a real session, `/rite:end` decides the outcome and `/rite:handoff` writes the
-result. HANDOFF.md is **write-once** — a change means a NEW file replacing this one, never an
-edit to it — and every session ends having recorded one of four outcomes in the front matter
-above: `written`, `updated`, `carried_forward`, or `none`.
+result. The text of HANDOFF.md is **write-once** — a change means a NEW file replacing this
+one, never an edit to it — and every session ends having recorded one of four outcomes in the
+front matter above: `written`, `updated`, `carried_forward`, or `none`, with the date in
+`closed`. Those two keys are the only ones a close rewrites; `carried_forward` touches nothing
+else.
 
 Whatever replaces this must say what the documents do not. State is owned by
 `docs/ROADMAP.yaml`; a handoff that restates it is duplication with a second place to go stale.

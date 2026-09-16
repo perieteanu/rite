@@ -155,7 +155,7 @@ An include or exclude declared in .rite.yaml is reported as a counted line, the 
 | artifact | write discipline |
 |---|---|
 | `CLAUDE.md` | `rewrite_only` |
-| `HANDOFF.md` | `write_once` |
+| `HANDOFF.md` | `mixed` |
 | `LOG.md` | `append_only` |
 | `README.md` | `rewrite_only` |
 | `docs/ARCHITECTURE.md` | `rewrite_only` |
@@ -375,7 +375,7 @@ _Rejected alternative: ASCII-only output. It would need no declaration at all, a
 
 ### `HANDOFF.md`
 
-**Tier 0** · layer `core` · audience `agent` · form `md` · write `write_once`
+**Tier 0** · layer `core` · audience `agent` · form `md` · write `mixed`
 
 **Answers:** What must the next session know that the docs do not say?
 
@@ -390,10 +390,11 @@ _Rejected alternative: ASCII-only output. It would need no declaration at all, a
 
 ```yaml
 genre: one of the ids above
-written: YYYY-MM-DD
+written: YYYY-MM-DD — the date the TEXT was written. Not moved by a close that leaves the text alone.
 expires: YYYY-MM-DD — a DATE, always. Required.
 status: live | spent
 session_end: written | updated | carried_forward | none — the outcome the closing session recorded
+closed: YYYY-MM-DD — the date that outcome was recorded. Set by every close, whatever the outcome.
 ```
 
 **Expiry rule.** MANDATORY, and the clearest gap this standard closes. No HANDOFF in the entire sampled corpus carried any expiry, spent, consumed or valid_until marker. The failure is live today: claude-persistent/HANDOFF.md is described as "spent" in a sibling file and still sits in the project root reading as authoritative. A spent handoff is worse than no handoff, because it is confidently wrong.
@@ -406,7 +407,7 @@ session_end: written | updated | carried_forward | none — the outcome the clos
 | populated | `required_frontmatter_present` | — |
 | fresh | `not_expired` | status:spent or a past `expires` date must fail, loudly, and name the file. |
 | integrity | `session_end_decision_recorded` | The last session closed with one of the four outcomes, declared in this file's own front matter as `session_end`. NO separate stamp file: the outcome is recorded here, by user ruling on 2026-09-07, specifically to avoid inventing a file for it. |
-| integrity | `written_not_older_than_newest_log_entry` | **session-scoped.** This is what makes the previous test real without a stamp. A session that worked and then closed without touching the handoff leaves `written:` older than the newest LOG.md entry — detectable from two files that already exist. "Nobody thought about it" and "someone decided none was needed" are no longer indistinguishable: the first leaves a stale date, the second leaves a current one saying so. |
+| integrity | `closed_not_older_than_newest_log_entry` | **session-scoped.** This is what makes the previous test real without a stamp. A session that worked and then closed without recording a close leaves `closed:` older than the newest LOG.md entry — detectable from two files that already exist. "Nobody thought about it" and "someone decided none was needed" are no longer indistinguishable: the first leaves a stale date, the second leaves a current one saying so. With no `closed:` key the test reads `written:` instead, which is the pre-2026-09-16 reading and the stricter one; the missing key is reported separately by required_frontmatter_present. |
 
 ### `LOG.md`
 

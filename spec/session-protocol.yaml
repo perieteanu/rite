@@ -178,15 +178,20 @@ phases:
         what: "Delete each finished near_term item and append one milestones entry naming its id."
         do_not: "Mark an item done in place. The roadmap states the future only."
       - id: handoff_decision
-        what: "Record one of four outcomes in HANDOFF.md front matter as `session_end`."
+        what: "Record one of four outcomes in HANDOFF.md front matter as `session_end`, and today's date as `closed`."
         outcomes: [written, updated, carried_forward, none]
+        close_record: >
+          `closed` is set on EVERY outcome. It dates the close, not the text: carried_forward
+          moves `session_end` and `closed` and nothing else, and `written:` keeps dating the
+          text. Until 2026-09-16 the close was read from `written:`, which made carried_forward
+          unrecordable by any session that logged — d-handoff-close-record-is-its-own-field.
         mandatory: true
         why: >
           The mandatory thing is the DECISION, not the prose. "Must have a handoff" is not
           testable; "must have recorded one of four outcomes" is. `none` is a real answer,
           written as genre: none — an explicit nothing beats an absence, because the two look
           identical from the next session's side except that one proves somebody decided.
-        freeze_point: "the handoff freezes here. Before this moment it is drafted freely; after it, a change means a NEW file."
+        freeze_point: "the handoff's text freezes here. Before this moment it is drafted freely; after it, a change to the text means a NEW file. The close record is rewritten by the next close."
       - id: memory
         what: "Write or update what is worth remembering, and only that."
         do_not: >
@@ -244,9 +249,10 @@ tests:
     level: integrity
     checks: "HANDOFF front matter carries `session_end` with one of the four outcomes."
     implementable_today: true
-  - id: written_not_older_than_newest_log_entry
+  - id: closed_not_older_than_newest_log_entry
+    renamed_from: written_not_older_than_newest_log_entry
     level: integrity
-    checks: "HANDOFF `written:` is not older than the newest LOG.md entry."
+    checks: "HANDOFF `closed:` — or `written:` where there is no `closed:` — is not older than the newest LOG.md entry."
     means: "Distinguishes 'nobody thought about it' from 'someone decided none was needed'."
     implementable_today: true
   - id: log_timestamps_not_in_the_future
@@ -276,8 +282,14 @@ honest_limits:
     EVERY IMPLEMENTED COMPLETION TEST IS AN END-OF-SESSION TEST. All five key off HANDOFF.md
     or off LOG.md's relationship to it. Nothing checks anything mid-session, so a session can
     run for hours doing everything wrong and the standard stays green until it closes. Found
-    on 2026-09-10 when CI — which runs mid-session by nature — went red on
-    written_not_older_than_newest_log_entry for a session that was simply still open.
+    on 2026-09-10 when CI — which runs mid-session by nature — went red on the close test
+    (then written_not_older_than_newest_log_entry, now closed_not_older_than_newest_log_entry)
+    for a session that was simply still open.
+  - >
+    THE CLOSE TEST READS A DATE, NOT A TIME. A second session on the same day that logs and does
+    not close still passes. Comparing times breaks on ordering instead, because /rite:end logs
+    after it records the close. Stated 2026-09-16, when the close moved into its own `closed:`
+    field; the limit predates that change and was not introduced by it.
   - >
     Four of the five tests are implementable with no revision history and no new artifact,
     which is deliberate: this protocol was designed so its own checks would not join the six

@@ -460,6 +460,31 @@ concerns:
       honest form is preview-only, and the flag has to refuse to write rather than document that
       it does not.
 
+  - id: c-directory-marketplace-serves-the-working-tree
+    title: "On this machine every project runs Rite from the repository, so 'test the installed copy' cannot be done here"
+    status: open
+    severity: medium
+    opened: "2026-09-16"
+    what: >
+      known_marketplaces.json registers the rite marketplace with source `directory` at
+      ~/projects/rite. In the haircut session of 2026-09-16 the skill's
+      allowed-tools was substituted to `Bash(bash "~/projects/rite/hooks/rite.sh" *)`
+      — the working tree, not plugins/cache/rite/rite/0.26.0. The 2026-09-13 handoff assumed the
+      opposite: that inside rite the tree is served and elsewhere the install is. Its
+      verify-first item therefore tested the working tree a second time, from another project.
+    evidence: "The command_permissions attachment of haircut transcript 527d65ff…, 2026-09-16T16:38:49Z."
+    consequence: >
+      test-installed-current.py compares the cache to the tree and passes, but on a directory
+      source the cache may not be what runs at all — unverified whether hooks, as opposed to
+      skills, execute from the cache. Until a git-sourced install is exercised (CI or another
+      machine), "a user gets what the tree says" is still inference.
+    also_found: >
+      The two permission prompts Costin saw in that close are NOT evidence the allowed-tools
+      pattern failed to match: all three Bash calls chained rite.sh with other commands (git
+      status, tail, cp, rm -rf, git commit), and a prefix rule does not cover the rest of a
+      compound command. The skills could say "run the resolver on its own" — not done.
+    unverified: "whether a directory-source plugin's hooks run from the cache or the source; whether the pattern matches when rite.sh is run alone."
+
 retired_ids:
   # ── harvested 2026-09-13 from the haircut adoption, the first from an empty directory ──
   # Opened and settled the same day. The field notes are gitignored (d-tests-folders-never-committed),
@@ -813,3 +838,14 @@ retired_ids:
       the counter-argument it rested on — that Node is guaranteed present because Claude Code
       is a Node application — was verified FALSE against the binary on disk. Successor concern
       for the part that survived: c-vendor-pyyaml.
+
+  - id: c-carried-forward-is-unrecordable
+    retired: "2026-09-16"
+    how: settled
+    outcome: d-handoff-close-record-is-its-own-field
+    why: >
+      Opened and settled the same day, from the haircut adoption's /rite:end — the first close
+      anywhere to choose carried_forward. `written:` held both the text's date and the close's,
+      so a session that logged could record carried_forward only by moving `written:` over text
+      it did not write. The close now has its own key. Appended here at the END, as the header
+      declares; the two 2026-09-13 entries above were inserted at the top of this list.

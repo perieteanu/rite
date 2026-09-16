@@ -1,14 +1,15 @@
 ---
 name: handoff
-description: Write or update HANDOFF.md — what the next session must know that the docs do not say. Write-once, freezes at session end, and always carries an expiry date.
+description: Write or update HANDOFF.md — what the next session must know that the docs do not say. The text is write-once and freezes at session end; every close records its outcome and date. Always carries an expiry date.
 argument-hint: "(none = decide the outcome) | none = there is nothing to hand off, say so explicitly"
 disable-model-invocation: true
 allowed-tools: Bash(bash "${CLAUDE_PLUGIN_ROOT}/hooks/rite.sh" *)
 ---
 
-Write the handoff: what the next session needs that is not already in the docs. A handoff is
+Write the handoff: what the next session needs that is not already in the docs. A handoff's text is
 **write-once** — it freezes at session end. Before that moment it is drafted freely; after it,
-a change means a new file, not an edit.
+a change means a new file, not an edit. The close record (`session_end`, `closed`) is the one
+part every later close rewrites.
 
 The file always exists. "Nothing to hand off" is written down as `genre: none`, not left as an
 absent file — an explicit nothing and a missing file look identical from the next session's
@@ -33,7 +34,9 @@ or fails aborts the whole command before it is read.
 1. Decide the outcome and record it in the front matter as `session_end:`
    - `written` — a new handoff, replacing the previous one
    - `updated` — the live one rewritten to cover this session too
-   - `carried_forward` — it still holds unchanged, deliberately
+   - `carried_forward` — it still holds unchanged, deliberately. Change **only** `session_end`
+     and `closed`; the body and `written:` stay exactly as they are. Stop here — steps 2-5
+     are for the other three outcomes.
    - `none` — genre `none`, an explicit statement that nothing needs handing off, and why
 
 2. Write the front matter. Every key is required:
@@ -45,16 +48,22 @@ or fails aborts the whole command before it is read.
    expires: "YYYY-MM-DD"
    status: live
    session_end: written | updated | carried_forward | none
+   closed: "YYYY-MM-DD"
    ---
    ```
+
+   `written` dates the **text**. `closed` dates the **close** — today, read from the machine
+   clock, on every outcome. They are different facts and are only equal when the text was
+   written in the closing session.
 
    `expires` is **always a date.** A condition may accompany it in prose — "when the checker
    runs, or 2026-12-07, whichever comes first" — but a condition alone is not machine-readable
    and the check cannot run on it.
 
-3. `written:` must not be older than the newest `LOG.md` entry. If it is, the session worked
-   and then closed without touching the handoff — which is precisely what the next session
-   start will report.
+3. `closed:` must not be older than the newest `LOG.md` entry. If it is, the session worked
+   and then ended without recording a close — which is precisely what the next session start
+   will report. Never move `written:` to satisfy this; that is a false date on text nobody
+   rewrote.
 
 4. Write the body for someone who was not here and has no transcript. Cover: verified current
    state with the commands that verified it, what changed and why, what is settled and must
@@ -73,6 +82,7 @@ or fails aborts the whole command before it is read.
   second copy creates two records that will disagree.
 - **Don't leave a spent handoff in place.** A stale handoff is worse than no handoff, because
   it is confidently wrong. Replace it, or mark `status: spent`.
-- **Don't edit a frozen handoff.** Replace it wholesale and record what it supersedes.
+- **Don't edit a frozen handoff's text.** Replace it wholesale and record what it supersedes.
+  The close record — `session_end` and `closed` — is the one part every close rewrites.
 - **Don't write `expires` as a condition alone.** A date is required.
 - Don't add emojis or marketing language.

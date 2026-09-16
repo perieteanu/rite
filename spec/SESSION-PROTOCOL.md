@@ -80,9 +80,9 @@ _Rejected: block until acknowledged — highest enforcement, highest chance the 
   - _Covers:_ `ROADMAP current_state — it owns the project's stated state`, `ARCHITECTURE — declared must_be_current; rewrite in the same session the shape changes`, `DECISIONS — append any decision settled this session`, `CONCERNS — open, update or retire, using the declared three-way lifecycle`
 - **`close_roadmap_items`** — Delete each finished near_term item and append one milestones entry naming its id.
   - _Do NOT:_ Mark an item done in place. The roadmap states the future only.
-- **`handoff_decision`** — Record one of four outcomes in HANDOFF.md front matter as `session_end`.
+- **`handoff_decision`** — Record one of four outcomes in HANDOFF.md front matter as `session_end`, and today's date as `closed`.
   - _Why:_ The mandatory thing is the DECISION, not the prose. "Must have a handoff" is not testable; "must have recorded one of four outcomes" is. `none` is a real answer, written as genre: none — an explicit nothing beats an absence, because the two look identical from the next session's side except that one proves somebody decided.
-  - _Freeze point:_ the handoff freezes here. Before this moment it is drafted freely; after it, a change means a NEW file.
+  - _Freeze point:_ the handoff's text freezes here. Before this moment it is drafted freely; after it, a change to the text means a NEW file. The close record is rewritten by the next close.
   - _Outcomes:_ `written`, `updated`, `carried_forward`, `none`
 - **`memory`** — Write or update what is worth remembering, and only that.
   - _Do NOT:_ Duplicate what the repo already records. Decisions belong in DECISIONS, not in memory. Memory is for what the repo cannot hold.
@@ -116,17 +116,18 @@ A protocol with no completion test is not a protocol.
 | test | level | checks | implementable today |
 |---|---|---|---|
 | `session_end_decision_recorded` | integrity | HANDOFF front matter carries `session_end` with one of the four outcomes. | True |
-| `written_not_older_than_newest_log_entry` | integrity | HANDOFF `written:` is not older than the newest LOG.md entry. | True |
+| `closed_not_older_than_newest_log_entry` | integrity | HANDOFF `closed:` — or `written:` where there is no `closed:` — is not older than the newest LOG.md entry. | True |
 | `log_timestamps_not_in_the_future` | integrity | No LOG entry carries a timestamp later than the file's own mtime. | True |
 | `nag_delivered_once` | integrity | An unclosed-session report is marked delivered and is not repeated. | True |
 | `handoff_not_expired` | fresh | status: spent or a past `expires` date fails loudly, naming the file. | yes, as of 2026-09-08. `expires` is now always a DATE; a condition may accompany it in prose but is never the sole value. That was the only reason this test was unimplementable. |
 
-- **`written_not_older_than_newest_log_entry`** — Distinguishes 'nobody thought about it' from 'someone decided none was needed'.
+- **`closed_not_older_than_newest_log_entry`** — Distinguishes 'nobody thought about it' from 'someone decided none was needed'.
 - **`log_timestamps_not_in_the_future`** — Catches extrapolated clocks. Would have caught the 2026-09-07 failure immediately.
 
 ## Honest limits
 
 - THE DURING HALF IS HALF-BUILT AS OF 2026-09-10, and this entry used to say it did not exist at all. mirror_memory now runs on a PostToolUse hook, and checkpoint is reachable as /rite:update. What remains discipline an agent must remember is log_continuously and clock_per_entry — the exact category this project exists to abolish, still waiting on the watcher layer. Two of four is progress, not completion.
-- EVERY IMPLEMENTED COMPLETION TEST IS AN END-OF-SESSION TEST. All five key off HANDOFF.md or off LOG.md's relationship to it. Nothing checks anything mid-session, so a session can run for hours doing everything wrong and the standard stays green until it closes. Found on 2026-09-10 when CI — which runs mid-session by nature — went red on written_not_older_than_newest_log_entry for a session that was simply still open.
+- EVERY IMPLEMENTED COMPLETION TEST IS AN END-OF-SESSION TEST. All five key off HANDOFF.md or off LOG.md's relationship to it. Nothing checks anything mid-session, so a session can run for hours doing everything wrong and the standard stays green until it closes. Found on 2026-09-10 when CI — which runs mid-session by nature — went red on the close test (then written_not_older_than_newest_log_entry, now closed_not_older_than_newest_log_entry) for a session that was simply still open.
+- THE CLOSE TEST READS A DATE, NOT A TIME. A second session on the same day that logs and does not close still passes. Comparing times breaks on ordering instead, because /rite:end logs after it records the close. Stated 2026-09-16, when the close moved into its own `closed:` field; the limit predates that change and was not introduced by it.
 - Four of the five tests are implementable with no revision history and no new artifact, which is deliberate: this protocol was designed so its own checks would not join the six already parked in c-unimplementable-tests.
 - RESOLVED 2026-09-08. The nag-once mechanism needed somewhere to record that a report was delivered; HANDOFF front matter was the obvious place and the wrong one, because that file is write_once and freezes at session end. It lives in ${CLAUDE_PLUGIN_DATA} instead — the plugin's own storage, which ARCHITECTURE's never_mutate_claude_home already names as its one declared exception. Not a project artifact, so the inventory stays frozen at 13. Verified: the nag prose appears on the first run and not the second, while the checker's RED for the same condition correctly persists — a finding and a nag are different things.

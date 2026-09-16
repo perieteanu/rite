@@ -86,8 +86,8 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin — 0.26.0 in this tree, 0.25.0 installed until it is
-  updated — rite@rite, SEVEN skills reachable as
+  Rite is an installed, running plugin — 0.27.0 in this tree, 0.26.0 in the install cache until
+  it is updated — rite@rite, SEVEN skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -716,6 +716,21 @@ milestones:
       adoption under a green gate. rite.sh and rite.ps1 gained `init`; the rule now bans every
       name, and 20 sites were found once the gate could see them. Both gates were proved failing
       against the unfixed tree first, and again against planted violations in a scratch copy.
+
+  - id: handoff-close-record
+    what: "HANDOFF records its close in `closed:`, so carried_forward can be recorded without a false date"
+    closed: "2026-09-16"
+    log_ref: "16-09-2026"
+    note: >
+      From the haircut adoption's second /rite:end — the one that loaded, which confirmed the
+      2026-09-13 fix — and the first close anywhere to choose carried_forward. The close had been
+      read from `written:`, so any session that logged could record carried_forward only by
+      moving `written:` over text it did not write. The rule is now
+      closed_not_older_than_newest_log_entry, HANDOFF is declared mixed, and the checker and the
+      SessionStart nag share one predicate in riterules.py where each had carried its own copy
+      of the defect. Five of seven new cases failed before the fix; the two that held were
+      nag cases a stale `written:` already triggered. Not a near_term item: it was found and
+      fixed the same day, which is why this entry has no queued id to delete.
 
 near_term:
   label: "EMPTY — the path from private to public is complete"

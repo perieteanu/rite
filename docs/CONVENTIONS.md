@@ -79,7 +79,7 @@ only durable record, an edited plan falsifies what was actually approved.
 | `docs/ARCHITECTURE.md` | rewrite-only, and **must always be current** — see below |
 | `docs/ROADMAP.yaml` | **mixed, 3 zones** — `inception` write-once, body rewrite-only, `milestones` append-only |
 | `docs/CONCERNS.yaml` | **mixed** — entries mutate, `retired_ids` append-only |
-| `HANDOFF.md` | write-once |
+| `HANDOFF.md` | **mixed** — text and `written:` write-once, close record (`session_end`, `closed`) rewritten by every close |
 | `docs/PLAN-*.md` | write-once |
 | `spec/PROJECT-STANDARD.md` | free-replace (generated) |
 | `docs/claude-memory.md` | free-replace (generated, single file) |
@@ -95,8 +95,8 @@ generates it. Adding a 14th is a DECISIONS entry, not a good idea in the moment.
 - **rewrite-only** — states current truth; stale content is DELETED, never annotated. The
   hazard is accumulation: a rewrite-only file that only ever grows has silently become
   append-only and stopped being true.
-- **write-once** — frozen at a *declared moment*, not at the first keystroke. `HANDOFF.md`
-  freezes at session end; `PLAN-*.md` at copy; ROADMAP `inception` at project birth. Before
+- **write-once** — frozen at a *declared moment*, not at the first keystroke. `HANDOFF.md`'s
+  text freezes at session end (its close record is the mixed exception); `PLAN-*.md` at copy; ROADMAP `inception` at project birth. Before
   that moment it is drafted freely; after it, a change means a new file or a DECISIONS entry.
 - **free-replace** — overwritten wholesale from a declared source; local edits are discarded
   by design.

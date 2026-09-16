@@ -552,12 +552,13 @@ generated_blocks:
           expires: "2099-12-31"
           status: live
           session_end: none
+          closed: "2025-12-20"
           ---
 
           # HANDOFF — myproject
 
-          Nothing to hand off. `written:` deliberately predates the newest LOG entry, which is
-          what a session that worked and then closed without touching the handoff leaves behind —
+          Nothing to hand off. `closed:` deliberately predates the newest LOG entry, which is
+          what a session that worked and then ended without recording a close leaves behind —
           so the sample shows a real finding rather than an empty green report.
 
 # ── write discipline (CORE) ──────────────────────────────────────────────────
@@ -587,8 +588,9 @@ write_discipline:
         There is no source to regenerate it FROM — the file IS the record.
       freeze_point: >
         Named per artifact, because "creation" is ambiguous for anything a human drafts:
-        HANDOFF.md freezes at SESSION END (it is drafted and revised freely during the session
-        that authors it — otherwise it could never be written iteratively, which is absurd);
+        HANDOFF.md's text freezes at SESSION END (it is drafted and revised freely during the
+        session that authors it — otherwise it could never be written iteratively, which is
+        absurd; its close record is the mixed exception, rewritten at every close);
         PLAN-*.md freezes at COPY, since tooling produces it whole; ROADMAP `inception`
         freezes at project birth. After the freeze point, a change means a NEW file or a
         DECISIONS entry — never an edit.
@@ -1702,7 +1704,7 @@ artifacts:
 
   - id: handoff
     path: "HANDOFF.md"
-    write_discipline: write_once
+    write_discipline: mixed
     tier: 0
     required_from_stage: idea
     layer: core
@@ -1727,10 +1729,22 @@ artifacts:
             none is needed, made by someone who considered the question.
       required_frontmatter:
         genre: "one of the ids above"
-        written: "YYYY-MM-DD"
+        written: "YYYY-MM-DD — the date the TEXT was written. Not moved by a close that leaves the text alone."
         expires: "YYYY-MM-DD — a DATE, always. Required."
         status: "live | spent"
         session_end: "written | updated | carried_forward | none — the outcome the closing session recorded"
+        closed: "YYYY-MM-DD — the date that outcome was recorded. Set by every close, whatever the outcome."
+      mixed_discipline:
+        write_once_parts: [body, genre, written, expires, status]
+        rewritten_at_every_close: [session_end, closed]
+        why: >
+          The close record is not the text. Until 2026-09-16 this file was plain write-once and
+          the close was read from `written:`, so a session that logged anything could record
+          carried_forward only by moving `written:` over text it did not write — a false date,
+          which is the defect this standard exists to catch. The haircut adoption met it on the
+          first close anywhere to reach for that outcome. c-carried-forward-is-unrecordable;
+          d-handoff-close-record-is-its-own-field. `status: spent` is not a rewrite: marking a
+          handoff spent is how it is retired, and a spent file is replaced, not revived.
       session_end_rule:
         mandatory: true
         means: >
@@ -1738,13 +1752,13 @@ artifacts:
           end having recorded one of four outcomes. "Nobody thought about it" is not one of
           them, and is the failure this rule exists to catch.
         recorded_in: >
-          This file's own front matter, as `session_end: <outcome>` alongside `written:`. There
-          is deliberately NO separate stamp file — /end is a process, and its result belongs in
+          This file's own front matter, as `session_end: <outcome>` alongside `closed:`, the date
+          it was recorded. There is deliberately NO separate stamp file — /end is a process, and its result belongs in
           the artifact the process is about.
         outcomes:
           written: "A new handoff replaces the previous one."
           updated: "The live handoff is superseded by a rewritten one covering this session too."
-          carried_forward: "The live handoff still holds, unchanged, deliberately — recorded as a decision, not as silence."
+          carried_forward: "The live handoff still holds, deliberately — recorded as a decision, not as silence. The text and `written:` stay as they are; only `session_end` and `closed` move."
           none: "genre `none` — an explicit written statement that there is nothing to hand off."
         explicit_nothing_beats_absent: >
           A handoff saying "nothing to hand off" and a missing handoff look identical from the
@@ -1793,7 +1807,8 @@ artifacts:
           front matter as `session_end`. NO separate stamp file: the outcome is recorded here,
           by user ruling on 2026-09-07, specifically to avoid inventing a file for it.
       - level: integrity
-        rule: written_not_older_than_newest_log_entry
+        rule: closed_not_older_than_newest_log_entry
+        renamed_from: written_not_older_than_newest_log_entry
         scope: session
         scope_why: >
           THE ONLY TEST WHOSE VERDICT DEPENDS ON WHETHER THE CURRENT SESSION HAS CLOSED, and
@@ -1809,10 +1824,17 @@ artifacts:
           d-session-scope-excluded-from-ci.
         means: >
           This is what makes the previous test real without a stamp. A session that worked and
-          then closed without touching the handoff leaves `written:` older than the newest
-          LOG.md entry — detectable from two files that already exist. "Nobody thought about
-          it" and "someone decided none was needed" are no longer indistinguishable: the first
-          leaves a stale date, the second leaves a current one saying so.
+          then closed without recording a close leaves `closed:` older than the newest LOG.md
+          entry — detectable from two files that already exist. "Nobody thought about it" and
+          "someone decided none was needed" are no longer indistinguishable: the first leaves a
+          stale date, the second leaves a current one saying so. With no `closed:` key the test
+          reads `written:` instead, which is the pre-2026-09-16 reading and the stricter one;
+          the missing key is reported separately by required_frontmatter_present.
+        known_limit: >
+          A DATE, not a time. A second session on the same day that logs and does not close
+          still passes. Comparing times breaks on ordering instead — /rite:end logs after it
+          records the close — so the date stays, and the limit is stated here and in the
+          protocol's honest_limits rather than implied away.
 
   - id: plan_copy
     path: "docs/PLAN-YYYY-MM-DD-<slug>.md"

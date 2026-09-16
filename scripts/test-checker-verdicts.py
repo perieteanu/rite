@@ -16,6 +16,8 @@ Exit: 0 pass · 1 fail
 
 from __future__ import annotations
 
+import json
+import os
 import pathlib
 import re
 import subprocess
@@ -404,6 +406,103 @@ with tempfile.TemporaryDirectory() as d:
         out = run(tmp)
         if any("SCRATCH.yaml" in ln for ln in out.splitlines()):
             fail("a git-ignored file was graded — git's own statement about the file was ignored")
+
+# ── the close record ─────────────────────────────────────────────────────────
+# c-carried-forward-is-unrecordable. Until 2026-09-16 the close was read from `written:`, so a
+# session that logged anything could record carried_forward only by moving `written:` over text
+# it did not write. The haircut adoption hit it on the first close that tried. `closed:` is the
+# close record; `written:` is the text. These cases are that incident reduced to fixtures, plus
+# the fallback that keeps an un-migrated handoff exactly as strict as before.
+CLOSE_RULE = "closed_not_older_than_newest_log_entry"
+LOG_AT_0110 = ("# LOG — fixture\n\n"
+               "05-01-2026 09:00:00 | Mon | fixture | [note] the text of the handoff was written\n"
+               "10-01-2026 09:00:00 | Sat | fixture | [note] a later session worked and closed\n")
+
+
+def handoff(fields: str) -> str:
+    return ("---\ngenre: state\n" + fields
+            + 'expires: "2099-12-31"\nstatus: live\n---\n\n# HANDOFF — fixture\n\nBody.\n')
+
+
+def close_project(tmp: pathlib.Path, fields: str) -> str:
+    (tmp / ".rite.yaml").write_text("stage: idea\n", encoding="utf-8", newline="\n")
+    (tmp / "LOG.md").write_text(LOG_AT_0110, encoding="utf-8", newline="\n")
+    (tmp / "HANDOFF.md").write_text(handoff(fields), encoding="utf-8", newline="\n")
+    return run(tmp)
+
+
+CARRIED = 'written: "2026-01-05"\nclosed: "2026-01-10"\nsession_end: carried_forward\n'
+STALE_CLOSE = 'written: "2026-01-05"\nclosed: "2026-01-05"\nsession_end: written\n'
+NO_CLOSE_CURRENT = 'written: "2026-01-10"\nsession_end: written\n'
+NO_CLOSE_STALE = 'written: "2026-01-05"\nsession_end: written\n'
+
+# 24. THE INCIDENT. carried_forward with the text dated earlier than the log and the close dated
+#     with it passes — without anyone moving `written:`.
+with tempfile.TemporaryDirectory() as d:
+    out = close_project(pathlib.Path(d), CARRIED)
+    if verdicts(out, CLOSE_RULE, "HANDOFF.md"):
+        fail(f"a carried_forward close recorded in `closed:` must pass, got "
+             f"{verdicts(out, CLOSE_RULE, 'HANDOFF.md')}")
+    if "written_not_older_than_newest_log_entry" in out:
+        fail("the retired rule id is still being reported")
+
+# 25. A close record older than the log is the session that worked and did not close.
+with tempfile.TemporaryDirectory() as d:
+    out = close_project(pathlib.Path(d), STALE_CLOSE)
+    hits = [ln.strip() for ln in out.splitlines() if CLOSE_RULE in ln]
+    if verdicts(out, CLOSE_RULE, "HANDOFF.md") != ["RED"]:
+        fail(f"a close older than the newest log entry must be RED, got {hits}")
+    elif "last closed 2026-01-05" not in hits[0]:
+        fail(f"the finding must name the close date it read: {hits[0]}")
+
+# 26. No `closed:` and a current `written:` — the rule falls back and passes, AND the missing key
+#     is reported, so an un-migrated handoff is flagged rather than silently green.
+with tempfile.TemporaryDirectory() as d:
+    out = close_project(pathlib.Path(d), NO_CLOSE_CURRENT)
+    if verdicts(out, CLOSE_RULE, "HANDOFF.md"):
+        fail("with no `closed:`, a current `written:` must still satisfy the close rule")
+    fm = [ln.strip() for ln in out.splitlines() if "required_frontmatter_present" in ln]
+    if not fm or not fm[0].startswith("YELLOW") or "closed" not in fm[0]:
+        fail(f"a handoff with no `closed:` must be YELLOW naming it, got {fm}")
+
+# 27. THE ANTI-LOOPHOLE CASE. Deleting `closed:` must never be lenient: the fallback is exactly
+#     the old, stricter reading of `written:`.
+with tempfile.TemporaryDirectory() as d:
+    out = close_project(pathlib.Path(d), NO_CLOSE_STALE)
+    if verdicts(out, CLOSE_RULE, "HANDOFF.md") != ["RED"]:
+        fail("with no `closed:`, a stale `written:` must be RED exactly as before")
+
+
+# 28. The SessionStart nag asks the same question and must give the same answer. It runs through
+#     the shim, with plugin storage pointed at a scratch directory so the nag-once state and the
+#     dedup stamp of the real install are never touched.
+def nag(tmp: pathlib.Path, fields: str, sid: str) -> str:
+    (tmp / "proj").mkdir()
+    proj = tmp / "proj"
+    (proj / ".rite.yaml").write_text("stage: idea\n", encoding="utf-8", newline="\n")
+    (proj / "LOG.md").write_text(LOG_AT_0110, encoding="utf-8", newline="\n")
+    (proj / "HANDOFF.md").write_text(handoff(fields), encoding="utf-8", newline="\n")
+    env = dict(os.environ, CLAUDE_PLUGIN_DATA=str(tmp / "data"))
+    if os.name == "nt":
+        cmd = ["powershell", "-NoProfile", "-File",
+               str(HERE.parent / "hooks" / "rite.ps1"), "session-start"]
+    else:
+        cmd = ["bash", str(HERE.parent / "hooks" / "rite.sh"), "session-start"]
+    payload = json.dumps({"hook_event_name": "SessionStart", "source": "startup",
+                          "cwd": str(proj), "session_id": sid})
+    res = subprocess.run(cmd, input=payload, capture_output=True, text=True, env=env,
+                         encoding="utf-8", errors="replace", cwd=str(proj))
+    return res.stdout
+
+
+for sid, fields, want in (("close-carried", CARRIED, False),
+                          ("close-stale", STALE_CLOSE, True),
+                          ("close-fallback", NO_CLOSE_STALE, True)):
+    with tempfile.TemporaryDirectory() as d:
+        said = "did not close" in nag(pathlib.Path(d), fields, f"test-checker-verdicts-{sid}")
+        if said != want:
+            fail(f"the SessionStart nag disagrees with the checker on {sid}: "
+                 f"{'reported' if said else 'silent'}, expected {'reported' if want else 'silent'}")
 
 # ── the CLI contract ─────────────────────────────────────────────────────────
 # Until 2026-09-10 every unrecognised flag was silently discarded: `--help` ran a full check,

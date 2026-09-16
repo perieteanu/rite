@@ -2303,3 +2303,43 @@ decisions:
     stated_by_user: false
     delegated_by_user: "2026-09-13 — the mechanism was left to Claude ('your choice'); the fix itself was requested ('focus on fixing rite')"
     proposed_by: claude
+
+  - id: d-handoff-close-record-is-its-own-field
+    date: "2026-09-16"
+    status: settled
+    refines: d-end-outcome-recorded-in-handoff
+    title: "HANDOFF carries its close in `closed:`; `written:` dates the text, and HANDOFF becomes mixed"
+    context: >
+      The haircut adoption's /rite:end on 2026-09-16 was the first close anywhere to choose
+      carried_forward, and could not record it honestly. carried_forward means the handoff still
+      holds unchanged; the outcome is written into HANDOFF front matter; and
+      written_not_older_than_newest_log_entry required `written:` to be no older than the newest
+      LOG entry, which every close writes. The session had to move `written:` over text it did
+      not write, or stay RED. It proposed the false date. Rite's own closes never met this because
+      every one chose `written`. c-carried-forward-is-unrecordable.
+    decision: >
+      A new required front matter key, `closed: "YYYY-MM-DD"`, set by every close whatever the
+      outcome. The rule is renamed closed_not_older_than_newest_log_entry (formerly
+      written_not_older_than_newest_log_entry — LOG entries before this date use the old id) and
+      reads `closed:`; with no `closed:` key it reads `written:`, the old and stricter reading, and
+      required_frontmatter_present reports the missing key. HANDOFF's write discipline becomes
+      mixed: text, genre, written, expires and status are write-once; session_end and closed are
+      rewritten by every close. The predicate moves into riterules.py, and the checker and the
+      SessionStart nag both call it.
+    rationale:
+      - "One field held two facts — when the text was written and when a session last recorded its close. The test wanted the second and read the first."
+      - "It keeps the refined ruling intact: the outcome still lives in the artifact the process is about, and there is still no stamp file. Only the date moved to a field that means it."
+      - "The fallback makes deleting `closed:` stricter, never lenient — the same rule as a missing stage."
+      - "The checker and the nag held separate copies of this predicate. Both copies had the defect; one copy would have needed one fix."
+    rejected:
+      - "Recording the outcome as a LOG line. It reopens d-end-outcome-recorded-in-handoff."
+      - "Keeping the rule id. A rule named for `written:` that reads `closed:` is a false claim in the one place people look up what failed."
+      - "Comparing times instead of dates. /rite:end logs after it records the close, so a time comparison fails every honest close; the same-day limit is stated in honest_limits instead."
+    consequences:
+      - "Every HANDOFF without `closed:` is YELLOW on required_frontmatter_present until its next close. At this date that is this repository and haircut."
+      - "carried_forward rewrites exactly two keys. /rite:end and /rite:handoff say so, and say never to move `written:` to satisfy the check."
+      - "The haircut session's proposed workaround — move `written:`, add a sentence explaining why — is the failure this decision removes, not an interim to adopt."
+      - "Proved: of seven new cases, five failed against the unfixed tree for the stated reasons — all four checker cases and the carried_forward nag case — and all seven pass after. The two other nag cases held before the fix, because a stale `written:` already nagged. The scaffold test failed until the template carried `closed:`."
+    stated_by_user: false
+    chosen_by_user: "2026-09-16 — Costin approved the plan ('fix first', ahead of the shell-writes watcher)"
+    proposed_by: claude

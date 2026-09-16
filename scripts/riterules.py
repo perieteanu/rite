@@ -456,3 +456,44 @@ def log_future_timestamps(text: str, now: dt.datetime | None = None) -> list[str
         if ts > limit:
             out.append(line.strip()[:80])
     return out
+
+
+# ── did the last session close? ──────────────────────────────────────────────
+# ONE PREDICATE, TWO CONSUMERS AGAIN: rite-check.py grades it and rite_session_start.py nags on
+# it. Until 2026-09-16 each carried its own copy, and both read the close from `written:` — which
+# is how carried_forward became unrecordable (c-carried-forward-is-unrecordable). `written:` dates
+# the TEXT; `closed:` dates the last recorded close, and is what this question is about.
+LOG_ENTRY_DATE = re.compile(r"^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})(?::(\d{2}))?\s\|")
+
+
+def newest_log_date(text: str) -> dt.date | None:
+    """The newest day any LOG entry is dated. File order is not date order, so all are read."""
+    newest = None
+    for line in text.splitlines():
+        m = LOG_ENTRY_DATE.match(line)
+        if not m:
+            continue
+        try:
+            d = dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            continue  # entries_parse owns malformed dates; two rules for one defect is noise
+        newest = d if newest is None or d > newest else newest
+    return newest
+
+
+def handoff_close_date(fm: dict) -> tuple[dt.date | None, str]:
+    """The date HANDOFF says a session last closed, and the field it was read from.
+
+    `closed:` when the key is present — and a present key that does not parse is None, never a
+    quiet fall back to `written:`, because a broken close record is a finding of its own. With no
+    `closed:` key at all, `written:` is read: that is the pre-2026-09-16 behaviour and the
+    stricter one, so deleting a line can never make the standard more lenient.
+    """
+    field = "closed" if "closed" in fm else "written"
+    raw = fm.get(field)
+    if isinstance(raw, dt.date):
+        return raw, field
+    try:
+        return dt.date.fromisoformat(str(raw).strip()), field
+    except (ValueError, TypeError):
+        return None, field

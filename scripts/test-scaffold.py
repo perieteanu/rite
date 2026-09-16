@@ -100,6 +100,8 @@ with tempfile.TemporaryDirectory() as d:
     handoff = (tmp / "HANDOFF.md").read_text(encoding="utf-8")
     if f'written: "{today.isoformat()}"' not in handoff:
         fail("the seeded HANDOFF is not dated today")
+    if f'closed: "{today.isoformat()}"' not in handoff:
+        fail("the seeded HANDOFF carries no close record dated today")
     if f'expires: "{today.isoformat()}"' in handoff:
         fail("the seeded HANDOFF expires the day it is written")
 

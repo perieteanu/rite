@@ -67,11 +67,15 @@ Reporting them as done would be false.
    future only, and `milestones` is the append-only record of what shipped.
 
 4. **Record the handoff decision.** Exactly one of four outcomes, written into
-   `HANDOFF.md` front matter as `session_end:`
+   `HANDOFF.md` front matter as `session_end:`, with today's date as `closed:`
    - `written` — a new handoff replaces the previous one
    - `updated` — the live one is rewritten to cover this session too
-   - `carried_forward` — it still holds, unchanged, deliberately
+   - `carried_forward` — it still holds, unchanged, deliberately. Only `session_end` and
+     `closed` change; the text and `written:` stay as they are
    - `none` — genre `none`: an explicit statement that there is nothing to hand off
+
+   `closed:` is set on every outcome — it dates the close, `written:` dates the text. Never
+   move `written:` to make the close check pass.
 
    "Nobody thought about it" is not one of the four, and is the failure this step exists to
    catch. Use `/handoff` for the writing itself.
