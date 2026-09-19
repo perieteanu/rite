@@ -1,0 +1,8 @@
+# Rite copies these out of Claude's private area (~/.claude) so you can audit them locally.
+# You did not write them: they are agent state — mirrored memory, plan copies, session scripts.
+# They are ignored by default because publishing your own work record is a choice, not something
+# adopting a standard should decide for you.
+#
+# Delete the lines below if you want them in your repository and your repository is where you
+# want them. Rite will not change this file again.
+{{AGENT_COPY_IGNORES}}

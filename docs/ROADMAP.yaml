@@ -784,8 +784,33 @@ long_term:
     what: "Revive claude-persistent's extension as the optional persistent surface"
     why: "Only after the plugin ships and works alone. It is the upgrade, never the entry point."
   - id: official-marketplace
-    what: "Submit to anthropics/claude-plugins-official external_plugins/"
-    why: "Quality-gated, and a far better CV line than a self-hosted repo."
+    what: "Submit to the COMMUNITY marketplace via the Console form at platform.claude.com/plugins/submit"
+    why: "Reviewed and listed, and a far better CV line than a self-hosted repo."
+    id_note: >
+      THE ID IS KEPT DELIBERATELY THOUGH IT NOW NAMES THE WRONG MARKETPLACE. inception's
+      first_long_term cites it and inception is write-once, so renaming would dangle the one
+      baseline that makes drift measurable — and HANDOFF and two LOG entries cite it too. The id
+      is a handle; `what` is the claim, and `what` is what changed.
+    verified_2026_09_19: >
+      RETARGETED. This item read "Submit to anthropics/claude-plugins-official external_plugins/"
+      and aimed at a repository nobody can submit to: claude-plugins-official is curated by
+      Anthropic at its discretion, there is NO application process, and the submission form does
+      not add plugins to it. Third-party submissions land in anthropics/claude-plugins-community
+      after review, installed by users as @claude-community. Requirements, measured against the
+      docs the same day: the repository must be PUBLIC (closed-source is refused);
+      `claude plugin validate` must pass, and the review pipeline runs the same check plus
+      automated safety screening; approved plugins are pinned to a COMMIT SHA and CI bumps the
+      pin as you push, so any history rewrite must happen BEFORE submitting. The Console form
+      needs a Developer/Admin/Owner role on a Console organisation; the claude.ai form needs a
+      Team or Enterprise organisation and does not apply here. Blocked on Costin creating the
+      Console account, and downstream of d-refound-public-repo-diary-stays-private.
+    trap: >
+      `claude plugin validate .` at this repository's root validates ONLY marketplace.json and
+      never looks at the plugin, because Rite is both. The invocation that checks the plugin
+      names the manifest: `claude plugin validate .claude-plugin/plugin.json`. It passes with one
+      warning — a root CLAUDE.md is not loaded as project context — which does not fail
+      submission, and is correct to ignore here: that file serves this directory as a PROJECT,
+      which the validator cannot see.
 
 deferred_deliberately:
   - what: "Grading YAML documents on SUBSTANCE, so a docs-yaml project is checked rather than excused"

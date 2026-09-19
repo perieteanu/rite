@@ -2343,3 +2343,102 @@ decisions:
     stated_by_user: false
     chosen_by_user: "2026-09-16 — Costin approved the plan ('fix first', ahead of the shell-writes watcher)"
     proposed_by: claude
+
+  - id: d-agent-copies-default-untracked
+    date: "2026-09-19"
+    title: "The three artifacts Rite copies out of ~/.claude default to untracked, and /rite:init says so"
+    context: >
+      MEASURED, not supposed. docs/claude-memory.md in this repository published the SSH
+      host-alias layout, private-key filenames and a second GitHub account — automatically,
+      rewritten by the memory-mirror PostToolUse hook on every memory change, to a public repo.
+      No key material, so nothing to rotate. It was not an oversight: .gitignore carried a
+      deliberate, reasoned ruling that the file MUST be tracked "precisely so agent memory is
+      auditable from the repo; ignoring it would restore the problem it was created to solve".
+      The author of the standard, knowing the mechanism, chose to publish it. So the rule "the
+      user decides what to publish" was tested in the most informed hands available and failed —
+      it is a rule with no completion test, the class of failure this project exists to attack.
+      Costin's framing, previously unwritten: Rite is for a user tracking and continuing their
+      own work, and was never intended to make them publish their effort, notes and decisions.
+    decision: >
+      Of the 14 artifacts, three are COPIES Rite makes out of the agent's private area rather
+      than documents the user wrote: memory_mirror, plan_copy, script_copy. /rite:init seeds a
+      .gitignore covering those three and nothing else, and prints what it copies and where,
+      whether or not it wrote the file. An existing .gitignore is never edited — the paths are
+      printed for the user to paste or refuse. The rule in one sentence: Rite never publishes
+      what it copied out of the agent's private space; only what you wrote yourself.
+      Auditability is served by the copy EXISTING, never by its being pushed.
+    rationale:
+      - "The copies-versus-authored line is the only one that generalises. LOG, DECISIONS and MISSION are the user's own writing and theirs to publish; the three copies are ~/.claude content they never deliberately wrote into a repo."
+      - "A default decides the outcome for everyone who never thinks about it, which — measured here — includes the person who wrote the standard."
+      - "It reaches the adopter at the moment it matters. A README paragraph is read once; the seeded file is read when someone wonders why a path is ignored."
+      - "Three keystrokes reverse it, so the decision stays the user's. The change from the previous position is one word: the default."
+      - "The ignore rules are DERIVED from the standard via riterules.artifact_path + ignore_pattern, never typed. A project declaring a legacy documentation directory gets rules pointing at its own directory, and declaring a fourth copied artifact without covering it fails the scaffold gate."
+    rejected:
+      - "A 67th checker rule holding a declared denylist of sensitive strings. Costin ruled the .gitignore is the user's call. It also has a paradox — a denylist of literals IS the sensitive data, so a tracked .rite.yaml would publish exactly what it protects — and gitleaks/trufflehog do the general case far better."
+      - "Asking at init. It adds a prompt to a command that currently runs clean, and consent is already preserved by never editing an existing file."
+      - "Editing an existing .gitignore, even additively. Writing into a file Rite did not create is the behaviour this default exists to stop making automatic."
+      - "Seeding template/.gitignore with its dot. That file would be LIVE git configuration for the template directory rather than inert seed text — harmless while the paths stay under docs/, a trap the day someone widens one. The seed is template/gitignore; the destination carries the dot."
+    consequences:
+      - "/rite:init writes four files, not three. README, the module docstring and the scaffold gate all say four."
+      - "This repository follows the default rather than exempting itself: the three classes were untracked on this date. Verified — the checker's per-finding output is byte-identical before and after, because artifacts resolve on the filesystem, not through git."
+      - "The 11 existing adopters get nothing automatically. Migration stays opt-in, per the standing rule that the standard defines the target and migration is separate."
+      - "rite_copy.load_spec and read_marker moved into riterules.py and delegate, because rite_init.py became a second caller and two readers of the same file are free to disagree about what an unreadable spec means."
+      - "The scaffold gate exercises the rules with `git check-ignore` against real paths rather than comparing strings, and asserts the user's own documents are NOT ignored. Proved failing: a seed covering only the mirror produced four findings, two textual and two functional."
+    honest_limits:
+      - "RITE CANNOT DETECT THAT A REMOTE IS PUBLIC. That needs a network call and the checker is offline, stdlib-only, by design. The mechanism is a default plus disclosure, never a detection — do not 'improve' it into an API call."
+      - "It protects the next adopter, not this repository's author: what has already been distributed cannot be recalled."
+      - "A user who deletes the lines and pushes is doing exactly what the design intends. This is not a safety guarantee."
+    stated_by_user: true
+    chosen_by_user: "2026-09-19 — Costin: safe default with a three-line opt-out, plus the README disclosure, after being offered the blank-slate alternative and overruling it"
+    proposed_by: claude
+
+  - id: d-refound-public-repo-diary-stays-private
+    date: "2026-09-19"
+    title: "The public repository is re-founded carrying the argument; the diary moves to a private archive"
+    context: >
+      Asked what publishing to the community marketplace requires, the session measured the
+      repository instead of describing it. THE TRAFFIC, 14 days: 34 views, ONE unique visitor
+      (Costin), 0 forks, 0 stars, 0 watchers. 281 clones, of which ~120 are this project's own
+      CI — 40 workflow runs x 3 OS jobs, each an ephemeral runner counted as a distinct "unique
+      cloner"; publish-day's 47 uniques are fully covered by that day's 93 CI jobs. What
+      survives the decomposition is one block on 09-11: 32 clones, 21 uniques, no commits, no CI
+      and no page views, which is the shape of automated archivers, not readers. So NOBODY HAS
+      READ IT and machines cloned it within a day. Costin, on learning this: "I did not imagine
+      that GitHub can be scraped that free… it made me thinking deeper about publishing." He
+      accepts the effects of what is already out and declined an archive check.
+    decision: >
+      Re-found the public repository along the reasoning/record line. PUBLIC: the tool (scripts,
+      spec, skills, hooks, CI, template) and the argument (DECISIONS, CONCERNS, ROADMAP,
+      ARCHITECTURE, CONVENTIONS, MISSION, CLAUDE.md) — ~1.07 MB. PRIVATE, in a renamed rite-lab:
+      LOG.md's 527 timestamped entries, the 12 PLAN copies, the 111 session scripts and the
+      memory mirror — ~664 KB, 38% of the repository and effectively all of the exposure. The old repository is RENAMED and made private, never deleted. The public repo
+      carries a new LOG.md starting at re-founding, because the standard requires LOG.md and
+      CLAUDE.md at this stage and a reference implementation that exempts itself is worthless.
+      Six machine-identity strings are redacted across all commits at re-founding, never by
+      editing files in place.
+    rationale:
+      - "Zero human traffic makes the change free. There is no audience to lose, no link anyone follows, and the window is open precisely because nobody arrived."
+      - "The hirer value is in the reasoning, not the record. 69 decisions with their rejected alternatives read as engineering; 527 timestamps read as a diary — by hour they map the working day, heaviest from 17:00 to midnight."
+      - "Renaming beats deleting: identical public effect, keeps every SHA, and stays reversible. Deleting is the irreversible version of the same action with no extra benefit."
+      - "Redaction by history rewrite rather than in-place edit, because LOG.md is append-only and an in-place edit turns append_only_preserved RED — a deliberately broken gate is a gate nobody trusts again."
+      - "Costin's ruling on scope: only machine and identity strings are sensitive. The ai-collab-profile description and the per-project RED/GREEN scores for hwprivacy, plumbing, claude-persistent and peugeot307sw stay."
+    supersedes: d-publish-main-in-full-no-export
+    supersedes_note: >
+      NOT OVERTURNED — OUTLIVED. That decision refused an export FOLDER kept fresh by a sync
+      script: "two separate repositories… is two things to keep in sync — the drift problem this
+      project exists to attack." It remains right. This is not that: there is ONE working tree
+      with one remote, and a frozen archive nobody pushes to. Nothing syncs, so nothing drifts.
+      Its second premise — that Costin had chosen to publish everything anyway, leaving the
+      export a copy with no job — is what the traffic measurement removed.
+    consequences:
+      - "ROADMAP.inception stays 2026-09-07. It is write-once and the project was born then; the re-founding is a decision, not an edit to the baseline."
+      - "The public LOG.md's first entry states plainly that the detailed log lives in a private archive. Silence would read as a gap; a line reads as deliberate."
+      - "README's claim that LOG.md is 'Published in full, including the mistakes' becomes false and is rewritten in the same change."
+      - "Any commit SHA cited anywhere outside the repository stops resolving in the public copy. rite-lab keeps them."
+      - "Redacted, across all commits: the two github-* host aliases, the two id_ed25519_* key filenames, the second account name, and the absolute home path. `perieteanu` alone stays — it is the public handle; what breaks is the alias-to-key-to-account pairing."
+    honest_limits:
+      - "This retracts nothing. Roughly 20-40 automated cloners took full copies on 09-11 and 09-12, and those copies are beyond reach. The change controls what a reader finds from now on, never what is already distributed."
+      - "A public repository with a two-week-old LOG and no PLAN files is visibly a re-founding. That is why it says so."
+    stated_by_user: true
+    chosen_by_user: "2026-09-19 — Costin confirmed Option 2 (argument public, diary private) and the private rite-lab, after seeing every sensitive line displayed"
+    proposed_by: claude

@@ -101,6 +101,61 @@ def artifact_path(spec: dict, artifact_id: str, marker: dict | None = None) -> s
     return None
 
 
+def ignore_pattern(declared: str) -> str:
+    """A declared artifact path, as a gitignore pattern.
+
+    DERIVED RATHER THAN RE-TYPED, for the reason test-docs-path-literals.py exists: the seeded
+    .gitignore names three artifacts, and a hand-written copy of their paths would be a fourth
+    place those paths live. It is fed artifact_path() output, so a project that declares a legacy
+    documentation directory gets ignore rules pointing at ITS directory rather than `docs/`.
+
+    Two shapes, both present in the standard today:
+
+      docs/claude-memory.md              no placeholder      → itself
+      docs/PLAN-YYYY-MM-DD-<slug>.md     placeholder in leaf → docs/PLAN-*.md
+      docs/session-scripts/<ISO date>/…  placeholder above   → docs/session-scripts/
+
+    A placeholder is `<…>` or a date skeleton. Anything under a placeholder DIRECTORY is ignored
+    wholesale, because the level below it is arbitrary by declaration — naming it would be a
+    guess, and a guess in an ignore rule fails silently in the direction that publishes.
+    """
+    placeholder = re.compile(r"<[^>]*>|YYYY-MM-DD|YYYY")
+    segments = declared.split("/")
+    for index, segment in enumerate(segments):
+        if not placeholder.search(segment):
+            continue
+        if index < len(segments) - 1:
+            return "/".join(segments[:index]) + "/"
+        stem = placeholder.sub("*", segment)
+        # Collapse `PLAN-*-*.md` — one wildcard reads as intended; several look like a bug.
+        return "/".join(segments[:index] + [re.sub(r"\*[-_.]?\*+", "*", stem)])
+    return declared
+
+
+def load_spec(path: Path) -> dict:
+    """The standard, or an empty mapping if it cannot be read.
+
+    Empty rather than fatal: no tool here blocks a session, and a caller that gets no spec
+    reports that it could not resolve a path instead of guessing one.
+    """
+    try:
+        return riteyaml.load(path.read_text(encoding="utf-8"), str(path))
+    except (OSError, riteyaml.RiteYamlError):
+        return {}
+
+
+def read_marker(root: Path) -> dict | None:
+    """The project's .rite.yaml, for its legacy_layout declaration. None if unreadable."""
+    path = root / ritefs.MARKER
+    if not ritefs.exists_exactly(path):
+        return None
+    try:
+        loaded = riteyaml.load(path.read_text(encoding="utf-8"), str(path))
+    except (OSError, riteyaml.RiteYamlError):
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
 def git_show(root: Path, rel: str) -> str | None:
     """The committed version of a file at HEAD, or None if unavailable."""
     try:

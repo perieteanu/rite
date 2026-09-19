@@ -92,8 +92,33 @@ Then, in a project you want to adopt it in:
 /rite:init
 ```
 
-That writes three files — `.rite.yaml`, `LOG.md`, `HANDOFF.md` — and the project scores **0 RED**
-immediately. It never overwrites anything and is safe to re-run.
+That writes four files — `.rite.yaml`, `LOG.md`, `HANDOFF.md` and a `.gitignore` — and the
+project scores **0 RED** immediately. It never overwrites anything and is safe to re-run.
+
+### What Rite copies into your repository
+
+Three of the standard's artifacts are not documents you write. They are copies Rite makes out of
+Claude's private area, so that what the agent kept is auditable from the project rather than
+stranded in `~/.claude`:
+
+| copied into | from |
+|---|---|
+| `docs/claude-memory.md` | the memories Claude holds for this project |
+| `docs/PLAN-*.md` | the plans written during your sessions |
+| `docs/session-scripts/` | the scripts a session wrote to do its work |
+
+**They are ignored by default**, and the seeded `.gitignore` says why in the file itself.
+Auditability is served by those copies *existing*, never by their being pushed — publishing your
+own work record is a choice, and adopting a standard should not make it for you. Delete the lines
+to publish them.
+
+If your project already has a `.gitignore`, Rite does not touch it. It prints the three paths and
+leaves the decision where it belongs.
+
+This default exists because the rule *"the user decides what to publish"* was tested here and
+failed: this repository's own mirrored memory published a contributor's SSH host aliases, key
+filenames and second account, tracked deliberately, for auditability, by the person who wrote the
+standard. See `d-agent-copies-default-untracked`.
 
 ## It asks for very little at first
 
@@ -186,7 +211,7 @@ Full list, including what is deliberately deferred and what will never be built:
 | [`spec/PROJECT-STANDARD.md`](spec/PROJECT-STANDARD.md) | The standard, readable. **Generated** from the YAML beside it. |
 | [`spec/SESSION-PROTOCOL.md`](spec/SESSION-PROTOCOL.md) | The session protocol, readable. Also generated. |
 | [`docs/DECISIONS.yaml`](docs/DECISIONS.yaml) | Every settled decision and why, including the ones that were reversed. |
-| [`LOG.md`](LOG.md) | What happened, in order. Published in full, including the mistakes. |
+| [`LOG.md`](LOG.md) | What happened, in order, since this repository was re-founded. The detailed log of the build — sessions stamped to the minute — is kept in a private archive, along with the plan copies, session scripts and mirrored agent memory. The reasoning is all here: nothing was removed from `docs/DECISIONS.yaml`, including the decisions that were reversed. See `d-refound-public-repo-diary-stays-private`. |
 
 <!-- rite:claims
 # Every path below is checked on every run — see claims_match_filesystem in the standard.
@@ -200,6 +225,7 @@ present:
   - scripts/rite-check.py
   - scripts/rite_init.py
   - template/HANDOFF.md
+  - template/gitignore
   - skills/init/SKILL.md
   - hooks/hooks.json
   - .claude-plugin/plugin.json

@@ -28,7 +28,9 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import rite_init  # noqa: E402
 import ritefs  # noqa: E402
+import riterules  # noqa: E402
 
 ritefs.use_utf8_stdio()
 
@@ -83,7 +85,7 @@ with tempfile.TemporaryDirectory() as d:
 with tempfile.TemporaryDirectory() as d:
     tmp = pathlib.Path(d)
     scaffold(tmp)
-    for name in (ritefs.MARKER, "LOG.md", "HANDOFF.md"):
+    for name in (ritefs.MARKER, "LOG.md", "HANDOFF.md", ".gitignore"):
         body = (tmp / name).read_text(encoding="utf-8")
         if "{{" in body or "}}" in body:
             fail(f"{name} still contains an unsubstituted token")
@@ -130,10 +132,69 @@ with tempfile.TemporaryDirectory() as d:
         if want not in report:
             fail(f"the stage-spec report does not name {want}")
 
+# 6. THE SEEDED .gitignore COVERS EVERY ARTIFACT RITE COPIES OUT OF ~/.claude, and covers them
+#    FUNCTIONALLY — the rules are checked with `git check-ignore` against real paths rather than
+#    compared as strings, because a pattern that reads right and matches nothing fails silently
+#    in the direction that publishes. This is the gate on d-agent-copies-default-untracked: the
+#    ignore rules are derived from the standard, so declaring a fourth copied artifact without
+#    covering it here fails rather than shipping a hole.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp)
+    body = (tmp / ".gitignore").read_text(encoding="utf-8")
+    spec = riterules.load_spec(HERE.parent / "spec" / "project-standard.yaml")
+    for artifact_id in rite_init.AGENT_COPY_ARTIFACTS:
+        declared = riterules.artifact_path(spec, artifact_id)
+        if not declared:
+            fail(f"the standard declares no path for {artifact_id}, so the seed cannot cover it")
+            continue
+        if riterules.ignore_pattern(declared) not in body.splitlines():
+            fail(f"the seeded .gitignore does not ignore {artifact_id} ({declared})")
+
+    # The functional half. git is a capability, not a prerequisite — say so rather than pass.
+    git = subprocess.run(["git", "-C", str(tmp), "init", "-q"], capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
+    if git.returncode != 0:
+        print("SKIP  no git — the ignore rules were compared as text, never exercised")
+    else:
+        today = dt.date.today().isoformat()
+        samples = {
+            "docs/claude-memory.md": True,
+            f"docs/PLAN-{today}-some-slug.md": True,
+            f"docs/session-scripts/{today}/fix_thing.py": True,
+            # Must NOT be ignored: the user's own documents are theirs to publish.
+            "docs/DECISIONS.yaml": False,
+            "LOG.md": False,
+        }
+        for rel, want_ignored in samples.items():
+            path = tmp / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("x\n", encoding="utf-8", newline="\n")
+            r = subprocess.run(["git", "-C", str(tmp), "check-ignore", "-q", rel],
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
+            ignored = r.returncode == 0
+            if ignored != want_ignored:
+                verb = "must be ignored" if want_ignored else "must NOT be ignored"
+                fail(f"{rel} {verb} by the seeded .gitignore")
+
+# 7. AN EXISTING .gitignore IS NEVER EDITED — the paths are printed for the user to paste or
+#    refuse. Rite writing into a file it did not create is the behaviour this whole default
+#    exists to avoid making automatic.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    mine = "node_modules/\n"
+    (tmp / ".gitignore").write_text(mine, encoding="utf-8", newline="\n")
+    out = scaffold(tmp)
+    if (tmp / ".gitignore").read_text(encoding="utf-8") != mine:
+        fail("an existing .gitignore was modified — it must be left byte-identical")
+    if "docs/claude-memory.md" not in out:
+        fail("with a .gitignore already present, the copied paths must be printed for the user")
+
 if failures:
     print(f"\n{len(failures)} FAILED")
     sys.exit(1)
 print("PASS  a scaffolded project opens 0 RED / 0 YELLOW; tokens are substituted, dates are\n"
-      "      read at scaffold time, existing files are never overwritten, and raising the\n"
-      "      stage names the documents the scaffolder will not write.")
+      "      read at scaffold time, existing files are never overwritten, the seeded .gitignore\n"
+      "      really ignores every artifact Rite copies out of ~/.claude and nothing the user\n"
+      "      wrote, and raising the stage names the documents the scaffolder will not write.")
 sys.exit(0)

@@ -53,7 +53,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import ritefs  # noqa: E402
 import riterules  # noqa: E402
-import riteyaml  # noqa: E402
 
 ritefs.use_utf8_stdio()
 
@@ -105,25 +104,17 @@ def global_home_slug() -> str:
 def load_spec() -> dict:
     """The standard, or an empty mapping if it cannot be read.
 
-    Empty rather than fatal: this tool never blocks a session, and a caller that gets no
-    destination reports that it could not resolve one instead of guessing.
+    Delegates since 2026-09-19, when rite_init.py became a second caller: two readers of the same
+    file with their own error handling are free to disagree about what an unreadable spec means,
+    and this module's whole subject is what happens when a producer and a consumer each keep their
+    own copy.
     """
-    try:
-        return riteyaml.load(SPEC_PATH.read_text(encoding="utf-8"), str(SPEC_PATH))
-    except (OSError, riteyaml.RiteYamlError):
-        return {}
+    return riterules.load_spec(SPEC_PATH)
 
 
 def read_marker(root: Path) -> dict | None:
     """The project's .rite.yaml, for its legacy_layout declaration. None if unreadable."""
-    path = root / ritefs.MARKER
-    if not ritefs.exists_exactly(path):
-        return None
-    try:
-        loaded = riteyaml.load(path.read_text(encoding="utf-8"), str(path))
-    except (OSError, riteyaml.RiteYamlError):
-        return None
-    return loaded if isinstance(loaded, dict) else None
+    return riterules.read_marker(root)
 
 
 def destination(root: Path, artifact_id: str, spec: dict, marker: dict | None) -> Path | None:
