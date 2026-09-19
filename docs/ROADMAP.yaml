@@ -90,8 +90,8 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin — 0.27.0 in this tree and in the install cache (updated
-  2026-09-16) — rite@rite, SEVEN skills reachable as
+  Rite is an installed, running plugin — 0.28.0 in this tree and in the install cache (updated
+  2026-09-19) — rite@rite, SEVEN skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -147,8 +147,20 @@ current_state: >
   projects parse identically to PyYAML, where before 4 were refused and 3 parsed wrongly.
   Still stdlib only; PyYAML is imported nowhere.
   LICENSE exists, MIT, carrying no provenance header.
-  RITE IS PUBLISHED. github.com/perieteanu/rite went PUBLIC on 2026-09-10, main in full with
-  LOG.md included, per d-publish-main-in-full-no-export. .rite.yaml advanced from `build` to
+  RITE IS PUBLISHED, AND RE-FOUNDED. github.com/perieteanu/rite went PUBLIC on 2026-09-10, and
+  on 2026-09-19 it was rebuilt from filtered history: the tool and the argument are public, while
+  the diary — the original LOG.md, the PLAN copies, the session scripts and the memory mirror —
+  moved to the PRIVATE github.com/perieteanu/rite-lab, frozen at the migration and pushed to by
+  nothing. 70 commits public against 75 in the archive, because filter-repo pruned five whose
+  only change was to the diary. This paragraph said "main in full with LOG.md included, per
+  d-publish-main-in-full-no-export" until that day; that decision is SUPERSEDED by
+  d-refound-public-repo-diary-stays-private — outlived rather than overturned, since it refused a
+  sync script between two copies and there is still exactly one working tree and one remote. WHAT
+  FORCED IT: the memory mirror had been publishing a contributor's machine identity automatically
+  on every memory change, under a deliberate .gitignore ruling that it MUST be tracked. WHAT MADE
+  IT CHEAP: the traffic, measured rather than assumed — 14 days, ONE unique human visitor, 0
+  forks, 0 stars, and 281 clones of which ~120 were this project's own CI matrix. Nobody had read
+  it; machines had cloned it within a day. .rite.yaml advanced from `build` to
   `shipped` in the same commit — d-stage-advances-when-the-repo-goes-public — which is the only
   moment declaring `shipped` stops being a lie to our own checker.
   ONE EXPECTATION OF THAT COMMIT WAS WRONG, and it is worth keeping because it was written down

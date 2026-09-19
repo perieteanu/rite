@@ -508,6 +508,51 @@ concerns:
       status, tail, cp, rm -rf, git commit), and a prefix rule does not cover the rest of a
       compound command. The skills could say "run the resolver on its own" — not done.
     unverified: "whether a directory-source plugin's hooks run from the cache or the source; whether the pattern matches when rite.sh is run alone."
+    update_2026_09_19: >
+      UNCHANGED BY THE MIGRATION, but now TESTABLE for the first time. The marketplace is still a
+      directory source at ~/projects/rite, so 0.28.0 installing green today proves nothing about
+      a stranger. What changed is that the public repository exists and is clean, so a git-sourced
+      install of `perieteanu/rite` can finally be exercised. It must be sequenced AFTER a close,
+      never during one: the two marketplaces collide on the name `rite`, so testing means removing
+      the directory source — and with it /rite:log, /rite:end and /rite:preflight, the commands
+      that close a session. Costin's plan is to test it once and revert to the directory source,
+      because a git source would make test-installed-current.py compare the cache against pushed
+      commits and go RED on every uncommitted edit, which is a gate switched off within a week.
+
+  - id: c-log-redaction-has-no-completion-test
+    title: "The public LOG's redaction rule is discipline, in a project whose thesis is that discipline fails"
+    status: open
+    severity: medium
+    opened: "2026-09-19"
+    what: >
+      LOG.md is public again and stays full-granularity by Costin's ruling, with sensitive detail
+      edited as entries are written. CONVENTIONS forbids an absolute home path, a key filename on
+      this machine, a host alias, a second account or a client's project name. Nothing checks it.
+      This is the first rule in the repository that is explicitly a rule with no completion test —
+      the exact class the project exists to convert into a check that fails.
+    measured: >
+      NOT HYPOTHETICAL, and not alarming either. Of the 537 entries archived at the re-founding,
+      3 carried something sensitive: usage telemetry, a client path, and the ssh config layout
+      with a host alias. One line in 180; roughly one every four working days at the pace those
+      entries were written. The third is the one that reached a public repository.
+    proposal: >
+      A PATTERN-based report in the PostToolUse watcher, which already inspects every write to
+      LOG.md for future timestamps and append-only violations. Shapes rather than secrets — an
+      absolute home path, a default key filename, an ssh config path, a host-alias prefix — so
+      nothing private enters the tracked config, which was the objection that killed the
+      declared-string version. It would live in the watcher, not the rule set, so the frozen
+      inventory and the 66-of-66 coverage count are untouched, and it fires at the moment an
+      entry is typed rather than at the next session start.
+    status_note: >
+      OFFERED AND DECLINED, twice, on the day it was designed. Costin chose discipline alone.
+      Recorded as his decision rather than an oversight — see CONVENTIONS, which states the rule
+      with its measure and its cost. Reopen only if an entry actually leaks.
+    consequence: >
+      The cost of being wrong RISES with time. Today a leak could be removed by rewriting every
+      commit, which is how the identity strings were redacted at the re-founding. Once the
+      community marketplace pins the repository to a commit SHA and CI bumps the pin, a history
+      rewrite breaks the pin — so the cheap remedy expires at submission, not at some later date.
+    first_test: "The first entry written by a session that was not present for this decision."
 
 retired_ids:
   # ── harvested 2026-09-13 from the haircut adoption, the first from an empty directory ──

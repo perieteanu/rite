@@ -163,6 +163,13 @@ scripts/
                      canonical_docs_dir, docs_formats and artifact_path. That question used to
                      be answered in four places, twice here with byte-identical lines, and a
                      fifth site had diverged into a bare constant.
+                     Since 2026-09-19 it also holds load_spec, read_marker and ignore_pattern.
+                     The first two moved out of rite_copy.py and are delegated to, because
+                     rite_init.py became a second caller and two readers of one file are free to
+                     disagree about what an unreadable spec means. ignore_pattern turns a
+                     declared artifact path into a gitignore rule — a placeholder in the leaf
+                     becomes a wildcard, a placeholder DIRECTORY ignores everything below it —
+                     so the seeded .gitignore is derived from the standard rather than typed.
   rite_watch.py      THE WATCHER, dispatching on the event. PostToolUse: an append-only file
                      rewritten, a LOG entry dated in the future, or a write that leaves a
                      checked YAML file unparseable. CwdChanged: a mid-session move to a
@@ -204,13 +211,25 @@ scripts/
                      YELLOW, an artifact is never reported twice, and a git-ignored file is not
                      graded at all.
   rite_init.py       Seeds a project to stage `idea` from template/: .rite.yaml, LOG.md,
-                     HANDOFF.md. Substitutes date tokens from the machine clock. NEVER
-                     overwrites — an existing file is skipped and reported. Reached through
-                     `rite.sh init`, which is what /rite:init runs, so no prompt names an
-                     interpreter or a path that exists only inside the plugin.
+                     HANDOFF.md, and since 2026-09-19 a .gitignore. Substitutes date tokens from
+                     the machine clock. NEVER overwrites — an existing file is skipped and
+                     reported. Reached through `rite.sh init`, which is what /rite:init runs, so
+                     no prompt names an interpreter or a path that exists only inside the plugin.
+                     The .gitignore is the one seed that PROTECTS rather than satisfies a stage:
+                     it covers the three artifacts Rite copies out of ~/.claude, its rules come
+                     from riterules.ignore_pattern rather than from literals, and the paths are
+                     PRINTED whether or not the file was written, because a project that already
+                     has a .gitignore is told rather than edited. With no resolvable paths it
+                     writes nothing and says so — a header with no rules would read as protection
+                     while protecting nothing.
   test-scaffold.py   Scaffolds into a temp dir and checks the RESULT: 0 RED, 0 YELLOW. The
                      seed's "valid smallest instance" claim is untestable in template/ itself,
                      since those paths are not canonical and the checker never sees them.
+                     It also exercises the seeded .gitignore with `git check-ignore` against real
+                     paths rather than comparing strings, and asserts the user's OWN documents
+                     are not ignored — a rule that quietly swallowed DECISIONS.yaml would fail in
+                     the direction nobody notices. git absent degrades to the textual half and
+                     says so.
   test-portability-rules.py  Walks the SYNTAX TREE of every .py in scripts/, spec/ and
                      .github/: a module that prints must declare UTF-8 stdio at module level,
                      and every subprocess.run must name encoding and errors. AST, not grep —
