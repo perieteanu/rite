@@ -94,6 +94,23 @@ everyone has one. Almost nobody ships **the check that fails when you don't foll
   `errors="replace"`** — Python picks the console codepage for stdout on Windows, so `·` and
   `—` go out as cp1252 there and a UTF-8 parent dies on byte 0x97. CI proved this on 2026-09-10.
   Full list: `portability:` in the spec.
+- **THREE ARTIFACTS ARE UNTRACKED ON PURPOSE, and re-adding them is the mistake.**
+  `docs/claude-memory.md`, `docs/PLAN-*.md` and `docs/session-scripts/` are COPIES Rite makes out
+  of `~/.claude`, not documents anyone wrote. They are written on every session, live on disk,
+  and the checker still grades them — they are simply never pushed. The `.gitignore` argued the
+  exact opposite until 2026-09-19 (*"MUST be tracked… ignoring it would restore the problem it
+  was created to solve"*), and that deliberate, reasoned ruling published a contributor's SSH
+  host aliases, key filenames and second GitHub account. **Auditability is served by the copy
+  EXISTING, never by its being pushed.** `/rite:init` seeds the same three rules into every new
+  project and prints them when a project already has a `.gitignore`. A fourth copied artifact
+  must be covered in `AGENT_COPY_ARTIFACTS` or the scaffold gate fails. The ignore rules are
+  DERIVED — `riterules.ignore_pattern` over `artifact_path` — so never type these paths by hand.
+  See `d-agent-copies-default-untracked`.
+- **`LOG.md` IS tracked and public; the 527 entries before the re-founding are not.** New entries
+  go to GitHub with their timestamps. Write them knowing that: no absolute home paths, no key
+  filenames, no `~/.ssh` detail, no client project names. There is no check for this — Costin
+  ruled against a declared-string rule, so it is discipline, and discipline is what this project
+  otherwise refuses to rely on. Treat that asymmetry as known, not as an oversight.
 - **Stdlib only. There is no PyYAML dependency and nothing to `pip install`.** YAML is read by
   a subset parser shipped with Rite. The parser **refuses rather than guesses**, and its test is
   differential against PyYAML as an oracle. Do not "simplify" it into guessing, and do not
@@ -233,10 +250,19 @@ What is genuinely not built, as of 2026-09-12:
   both until the ports are proven, and a parity gate guards each pair. **Do not restore
   `mirror_drift`, `last_log_age` or `tracker_registered`** — each is superseded or out of
   scope, with the reason recorded beside the registry.
-- **Published 2026-09-10.** `github.com/perieteanu/rite` is PUBLIC, `main` in full including
-  `LOG.md`, per `d-publish-main-in-full-no-export`. This bullet said "Nothing published" until
-  that commit. What is still true: **nobody but this machine has run Rite**, so every claim
-  about how it behaves elsewhere rests on CI, not on a user.
+- **Published 2026-09-10, RE-FOUNDED 2026-09-19.** `github.com/perieteanu/rite` is PUBLIC but it
+  is no longer `main` in full: the repository was rebuilt from filtered history, and the diary —
+  the original `LOG.md`, the PLAN copies, the session scripts and the memory mirror — moved to
+  the PRIVATE `github.com/perieteanu/rite-lab`, which is frozen at the migration and pushed to by
+  nothing. This bullet read "`main` in full including `LOG.md`, per
+  `d-publish-main-in-full-no-export`" until that day; that decision is superseded by
+  `d-refound-public-repo-diary-stays-private` — outlived rather than overturned, because it
+  refused a sync script between two copies and there is still exactly one working tree.
+  **The public history is 70 commits where rite-lab has 75**: filter-repo pruned five whose only
+  change was to the diary, so the two commit counts will never match again. What is still true:
+  **nobody but this machine has run Rite**, so every claim about how it behaves elsewhere rests
+  on CI, not on a user — and the install is still a `directory` marketplace serving this working
+  tree, so a git-sourced install remains untested.
 - **NO declared rule is unimplemented.** Coverage is 66 of 66, including the two project-wide
   YAML rules added 2026-09-12. This bullet claimed `deleted_ids_appear_in_milestones` was
   outstanding, which stopped being true on 2026-09-10 in the commit that implemented it — and

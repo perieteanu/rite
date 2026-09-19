@@ -60,6 +60,26 @@ Prose goes in Markdown, structure goes in YAML, and the provenance header is ide
   spacing — and that is exactly what produced ~30 invented timestamps on 2026-09-07. A rule
   written to keep the log honest was the rule forcing the lie.
 - Ties are broken by file order, which is insertion order. Sort by timestamp, then by position.
+- **`LOG.md` is PUBLIC and append-only, so an entry is written once and published forever.**
+  Never put in an entry: an absolute home path (write `~/projects/rite`), the filename of a key
+  on this machine, a host alias, a second account name, or a client's project name. Other
+  projects on the machine may be named — `hwprivacy`, `plumbing`, `peugeot307sw` are Costin's own
+  and were ruled fine on 2026-09-19.
+  **THE LINE IS INSTANCE, NOT CLASS.** `~/.ssh/config`, `id_ed25519` and "host alias" are generic
+  vocabulary and may be written freely; what must never appear is *which* alias, *which* key file,
+  *which* account. The first draft of this rule banned the words, and two entries written minutes
+  later tripped it while disclosing nothing — a rule that forbids writing about SSH makes a real
+  finding unrecordable, and a rule that is obviously too wide gets ignored entirely rather than
+  narrowly.
+  MEASURE, so nobody treats this as hypothetical: of the 537 entries archived at the re-founding,
+  **3 carried something sensitive** — usage telemetry, a client path, and the `~/.ssh/config`
+  layout with a host alias. That is one line in 180, about one every four working days at the
+  pace those entries were written, and the third one is what reached a public repository.
+  THIS RULE HAS NO COMPLETION TEST, and that is a deliberate exception rather than an oversight.
+  A pattern-based watcher report was designed and offered — `/home/`, `id_ed25519`, `~/.ssh/`,
+  `@github-`, shapes rather than secrets, so nothing private would enter the config — and Costin
+  chose discipline alone on 2026-09-19. The cost of being wrong rises after the community
+  marketplace pins the repository to a commit, because a history rewrite then breaks the pin.
 - Seconds are **additive, not a migration**: minute-precision entries stay valid forever and are
   re-emitted byte-identically. Nothing is rewritten, so append-only is never violated.
   Round-trip proof: `project-tracker/test-log-roundtrip.py`.
