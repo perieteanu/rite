@@ -50,7 +50,11 @@ claims:
     - scripts/test-watch-discipline.py
     - scripts/test-mirror-port-parity.py
     - scripts/test-stage-table-guard.py
-    - docs/session-scripts
+    # docs/session-scripts was claimed present here until 2026-09-19. It still exists on the
+    # machine that writes it, but it is no longer TRACKED — the copies Rite makes out of
+    # ~/.claude default to untracked (d-agent-copies-default-untracked), so a clone does not
+    # have it and the claim was false for every reader but its author. Removed rather than
+    # rephrased: a claim is a path a machine checks, and "present for me" is not a claim.
     - hooks/hooks.json
     - hooks/rite.ps1
     - skills/end/SKILL.md
