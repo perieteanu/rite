@@ -363,9 +363,17 @@ concerns:
       - "Collapse `elsewhere` into one counted line, listed only on request."
       - "Resolve the documentation directory through local.docs_dir, the way the checker already does, and refuse where it is ambiguous."
     tension: >
-      The mirror is how agent memory becomes auditable from the repository, and this repo's own
-      .gitignore says ignoring it would restore the problem. An opt-out trades that away for one
-      project. That is the project's call, which is the point of making it a declaration.
+      The mirror is how a user audits what the agent remembers about the project. Since
+      d-agent-copies-default-untracked that audit happens on disk, not in the repository: the copy
+      is untracked by default, and this repo's own .gitignore says auditability is served by the
+      copy EXISTING, never by its being pushed. So a path setting trades nothing away, and only
+      `off` removes the one copy there is. That is still the project's call, which is the point of
+      making it a declaration. Until 2026-09-25 this note said the .gitignore argued the opposite,
+      which stopped being true on 2026-09-19.
+    recurred_2026_09_25: >
+      The `elsewhere` half, unchanged, in four adoptions: 21 to 23 lines per run naming other
+      projects' plans, which agents in manga and pdf-filler filtered out with grep to read the
+      result.
 
   - id: c-memory-has-no-cross-project-lane
     title: "/rite:end files every lesson under the project, and never asks whether it belongs to the user"
@@ -457,6 +465,12 @@ concerns:
       leans (a). Either way: retire the PostToolUse watch entry (double reports), seed at
       SessionStart, reword "the file just written", test a Bash append first.
     unverified: "whether PostToolBatch fires inside subagents and whose context gets the reminder; whether watchPaths accepts a directory."
+    measured_again_2026_09_25: >
+      Four adoptions, same method: writes to LOG, HANDOFF, DECISIONS, CONCERNS and ROADMAP,
+      counted by a pattern over the transcripts that may overcount Bash slightly. pdf-filler, 22
+      by Bash against 1 by Write/Edit in one session; manga's second session, 11 against 0; the
+      legacy-layout project, 7 against 8. Where the watcher could see, it worked: it caught two
+      future-dated LOG entries in manga before they were committed.
 
   - id: c-copier-has-no-read-only-preview
     title: "check has --force and copy has none, so nothing can show what adoption would rescue"
@@ -553,6 +567,248 @@ concerns:
       community marketplace pins the repository to a commit SHA and CI bumps the pin, a history
       rewrite breaks the pin — so the cheap remedy expires at submission, not at some later date.
     first_test: "The first entry written by a session that was not present for this decision."
+
+  # ── harvested 2026-09-25 from four adoptions, 2026-09-17 to 2026-09-23 ──
+  # manga (from an empty directory), pdf-filler (existing code, raised idea -> build), a
+  # legacy-layout project and a document project adopted mid-session. None exported field notes,
+  # so these were reconstructed from the session transcripts: one entry per ROOT CAUSE, each
+  # checked against the code before it was kept. The last two are work projects and are
+  # described rather than named. What was checked and dropped, and what Rite got right, is in
+  # LOG.md. Two findings were already open here and were added to instead:
+  # c-watcher-cannot-see-shell-writes and c-copier-ignores-the-project-it-writes-into.
+
+  - id: c-no-done-markers-assumes-an-undeclared-shape
+    title: "Two ROADMAP rules read near_term as a mapping nobody declared, and the shapes the spec does declare are read by nothing"
+    status: open
+    severity: high
+    opened: "2026-09-22"
+    what: >
+      The spec declares near_term's items as a LIST, near_term_item with required_keys [id, what],
+      and milestone entries as milestone_entry with required_keys [id, what, closed]. No script
+      reads either declaration, and the renderer does not print them, so neither reaches
+      PROJECT-STANDARD.md. Meanwhile BOTH rules that read near_term's items assume a MAPPING that
+      carries `candidates`, a shape declared nowhere: no_done_markers (rite-check.py:768) and
+      deleted_ids_appear_in_milestones, whose ids() helper returns an empty set for anything that
+      is not a dict. The same function reads mid_term and long_term as lists, so it holds both
+      assumptions at once.
+    measured: >
+      ON THE DECLARED SHAPE THE TWO RULES FAIL IN OPPOSITE DIRECTIONS. no_done_markers raises
+      AttributeError and reports NA on the claude side. deleted_ids_appear_in_milestones reports
+      GREEN, "no near_term id was removed", without having read an id.
+      THE SILENT ONE HAS ALREADY MISSED REAL DELETIONS. manga, whose ROADMAP was written from the
+      spec on 2026-09-19, removed five near_term items across three commits. Its milestones record
+      each closure in prose, "Closes n-install-vhost", with no `id:` and with `date:` where the
+      spec says `closed:`, so a rule that could read the list would have been RED every time.
+      Replaying manga commit e5cf8c0 as an uncommitted edit, the moment the rule exists for: as
+      written the rule is silent; with near_term rewritten as candidates under a mapping, it is RED
+      and names n-fill-sources and n-install-vhost. Nothing was lost, because the prose survives.
+      What never happened is the project learning the checkable form.
+      THE REPOSITORY THAT WROTE BOTH RULES NEVER EXERCISES THEM. Rite's own near_term is the only
+      mapping-shaped section of its ROADMAP, with candidates empty, and no test fixture contains a
+      near_term at all. All seven closures in its history landed as milestones with ids, by habit,
+      following a convention the rendered standard never shows.
+    corrected_before_commit: >
+      This entry was drafted on 2026-09-22 from a pdf-filler session and never committed. Its
+      evidence then was that nine other ROADMAP rules "pass GREEN on the same list-shaped
+      near_term", so "the checker contradicts itself". Checked on 2026-09-25, that did not hold:
+      those GREENs were inferred from lines ABSENT in a filtered output. min_list_items is keyed on
+      if_revisiting_cold only, entry_required_keys is not a ROADMAP rule at all, and the one other
+      rule that reads near_term assumes the mapping too. The checker agrees with itself; it is the
+      spec it contradicts. The draft also cited a notes file in another repository as precedent,
+      which only its author could verify, so the citation is gone.
+    why_it_matters: >
+      A completion test that passes by reading nothing, on the shape the standard tells an adopter
+      to write, in both projects that wrote a ROADMAP from the spec this week. Deleting a closed
+      item is safe only because this rule exists (d-roadmap-mixed-with-milestones). On a list it
+      does not exist.
+    proposal:
+      - "Decide the canonical shape and declare it where the renderer prints it. The list matches the spec text, the other five ROADMAP sections and every adopter; the mapping matches Rite's own file and nothing else."
+      - "Read items through ONE helper that both rules share, accepting the declared shape and refusing anything else with an NA that names the shape — never an empty set."
+      - "Enforce near_term_item and milestone_entry, or delete them. A declared shape that nothing reads is a claim with no completion test."
+      - "Fixtures with a non-empty near_term: a done marker must be caught, and a deletion whose milestone has no id must be RED."
+    found_in: "manga (first, 2026-09-19) and pdf-filler (2026-09-22)"
+    related: [c-rule-crash-reads-as-na]
+
+  - id: c-copy-checks-see-stale-never-missing
+    title: "The copy checks can report a stale copy, never a missing one"
+    status: open
+    severity: high
+    opened: "2026-09-25"
+    what: >
+      Two causes in one block of rite-check.py (around lines 1050 to 1095), one effect: the
+      checker's verdict on the copied artifacts never says "missing".
+      PRESENCE IS DECIDED BEFORE THE RULE RUNS. An artifact with no instance, and no stage that
+      requires it, is "optional and absent", and its rules are skipped with NA "not present —
+      optional". source_plans_all_copied is the rule that knows a plan exists without a copy — it
+      asks rite_copy.uncopied_plans with the project's own marker — and it is never called while
+      no copy exists. mirror_not_stale returns NA "file absent" by itself, whatever the memory
+      folder holds.
+      THE PRESENCE TEST FOR A PATTERN ARTIFACT IGNORES legacy_layout. plan_copy and script_copy
+      are found by globbing their literal path_pattern under docs/, and resolve() is skipped for
+      them by design. The copier resolves through riterules.artifact_path, which honours the
+      declared directory. So under legacy_layout the copier writes into docs-yaml/ and the checker
+      looks only in docs/.
+    measured: >
+      pdf-filler has 2 plan copies in docs-yaml/ and the legacy-layout project has 4; both report
+      plan_copy and script_copy "not present — optional". In manga on 2026-09-19 the check at
+      20:42 UTC said the same while a plan that session had written at 20:06 sat uncopied; the
+      rule produced its first YELLOW only the next morning, after /rite:end had made a first copy.
+      The document project had a memory written before its marker existed and no mirror, and
+      nothing said so until the close copied it.
+      NOTHING HAS BEEN MISSED YET. uncopied_plans returns empty for all six adopted projects on
+      this machine today, because every close ran copy --all. The check is blind, not yet wrong.
+    contradicts: >
+      d-legacy-layout-is-declared-not-tolerated, whose verified list says artifact_path resolves
+      all three copies into the declared directory "so the checker cannot accept a file the copier
+      never wrote". For the two pattern artifacts the failure runs the other way: the checker
+      cannot see a file the copier DID write.
+    why_it_matters: >
+      The checker states its own rule beside yaml_check: a check that found nothing to read and a
+      check that passed must not look alike. NA "not present" while copies sit on disk is that
+      failure, one layer further in than c-pattern-paths-are-matched-literally, which fixed the
+      glob and did not reach the directory.
+    proposal:
+      - "Resolve path_pattern through riterules, as artifact_path resolves a single path, so the checker and the copier cannot disagree about where a copy lives."
+      - "Let a rule whose question is whether an instance SHOULD exist run when none does. source_plans_all_copied and mirror_not_stale are exactly those rules."
+      - "One fixture per cause: a legacy_layout project with copies present, and a project with an authored plan and no copy. Both score NA today."
+    related: [c-pattern-paths-are-matched-literally, c-copier-ignores-the-project-it-writes-into]
+
+  - id: c-rule-crash-reads-as-na
+    title: "A rule that crashes is counted as NA and never reaches the session-start line"
+    status: open
+    severity: medium
+    opened: "2026-09-25"
+    what: >
+      rite-check.py catches any exception a rule raises and files it as NA on the claude side,
+      "rule raised <error>". Keeping one bug from taking the whole run down is right. But the
+      summary counts the crash with every other NA, and rite_session_start.py forwards only lines
+      that begin RED or YELLOW, so the one report a user sees without asking never shows it.
+    measured: >
+      The no_done_markers crash was in manga's full check output on 2026-09-19. From then until
+      2026-09-22 every manga SessionStart read "0 RED · 0 YELLOW · 6 NA", the crash one of the
+      six. On a fixture whose near_term carries a done-marked item, the mapping shape is RED and
+      the list shape is this NA: the summary goes from 5 RED to 4, and a real failure becomes an
+      NA nobody reads.
+    why_it_matters: >
+      Most NAs are statements about the PROJECT: absent, not yet required, needs git, optional. A
+      crash is a statement about RITE, and every answer the crashed rule would have given is now
+      unknown. It should be the loudest line in the report, not folded into the quietest count.
+    proposal:
+      - "Count crashes separately in the summary, 'N rule(s) crashed', and let that line through the session-start filter."
+      - "Fail the verdict fixtures on any crash, so a shape the tests never exercise cannot pass CI by crashing quietly."
+    related: [c-no-done-markers-assumes-an-undeclared-shape]
+
+  - id: c-init-assumes-a-newborn-project
+    title: "/rite:init writes and skips as if every project were born that minute"
+    status: open
+    severity: medium
+    opened: "2026-09-25"
+    what: >
+      Three of the four adoptions harvested here were not births, and init said something untrue
+      in two of them.
+      THE SEEDED HANDOFF ASSERTS HISTORY. template/HANDOFF.md says "The project has just adopted
+      Rite and no session has done work in it." The document project adopted mid-session, after
+      that session had built a model, a template and a generator, so the seed was false on arrival
+      and the session had to replace it.
+      AN EXISTING FILE IS SKIPPED WITHOUT BEING READ. rite_init.py prints "skipped HANDOFF.md —
+      already present, left untouched" and never looks inside. pdf-filler's HANDOFF had no front
+      matter, so its first preflight after init carried 2 RED and 2 YELLOW from that file alone,
+      after a command whose description promises "opens on green". The legacy-layout project,
+      adopted 2026-09-17, had to hand-add the same front matter.
+    tests_a_premise: >
+      d-scaffold-only-what-can-be-honest rests on "idea is the only stage a machine can satisfy
+      honestly". That holds at birth. At adoption, the more common case, the seed states a fact
+      init cannot know, and the skip hides a failure init could have named.
+    proposal:
+      - "Seed only what init can know: the date of adoption, and that no handoff has been written since. Or detect prior work (files beyond the seed, existing commits) and word the seed to match."
+      - "When a seed file is skipped, run the idea-stage checks on it and print their verdict beside the skip, naming the command that fixes it: /rite:handoff for a HANDOFF with no close record."
+      - "Scope 'opens on green' in the skill description to a new project, or keep the promise and make the two lines above true."
+    do_not: "Overwrite or edit an existing file. Never-overwrite is right; what is missing is saying what the untouched file will score."
+
+  - id: c-init-skill-states-the-seed-set-by-hand
+    title: "The init skill enumerates its seed files by hand, and has said three since init began writing four"
+    status: open
+    severity: low
+    opened: "2026-09-25"
+    what: >
+      skills/init/SKILL.md says "Three files ... Nothing else, deliberately", and its description
+      says init "writes .rite.yaml, LOG.md and HANDOFF.md". Init has written a fourth, .gitignore,
+      since 0.28.0. d-agent-copies-default-untracked listed what had to say four, "README, the
+      module docstring and the scaffold gate", and the one prompt an agent reads at the moment of
+      adoption was not on the list. .gitignore appears nowhere in the skill.
+    measured: "Reported by the agent adopting the document project, which counted four files where the skill promised three."
+    why_it_matters: >
+      The rot class of c-gate-count-restated-in-prose and c-stage-table-duplicated-in-three-places:
+      a fact restated in prose and falsified by the next change to what it describes. In a prompt
+      it is worse than in a README, because the reader acts on it.
+    proposal: "Delete the enumeration and let init's own output say it, since it already lists every file it wrote; or generate it from the seed list the scaffold gate reads."
+
+  - id: c-stages-have-names-and-no-meanings
+    title: "Seven stages are declared and one has a stated meaning, so 'the stage moved' cannot be checked"
+    status: open
+    severity: low
+    opened: "2026-09-25"
+    what: >
+      stage_vocabulary lists idea, spec, build, polish, shipped, maintain and archived, and defines
+      none of them. The only stated meaning is the one d-stage-advances-when-the-repo-goes-public
+      gives `shipped`. polish, maintain and archived gate no artifact at all.
+    measured: >
+      Each adoption improvised. pdf-filler mapped onto the portfolio registry's stage field, which
+      exists on one machine. manga reasoned that code which exists and runs means `build`. The
+      legacy-layout project still declares `idea` while a test instance of it runs on a server, so
+      its ROADMAP and DECISIONS are checked when present and never demanded.
+    why_it_matters: >
+      The same decision calls a stage "a claim about reality, not a dial". A claim with no stated
+      meaning cannot be wrong, which the spec's own words for claims_declared call worse than a
+      false one, because it cannot be caught either.
+    proposal: "One `means:` line per value in stage_vocabulary, rendered into the generated stage table. Descriptive, not enforced: the stage stays the project's declaration."
+    related: [c-roadmap-vocabulary-assumes-building]
+
+  - id: c-shapes-are-learned-by-grepping-the-spec
+    title: "Adopting agents learn a document's shape by grepping the 2,000-line spec, never from the readable standard"
+    status: open
+    severity: low
+    opened: "2026-09-25"
+    what: >
+      In every adoption session harvested here, the agent learned a required shape (ROADMAP keys,
+      HANDOFF front matter and genres, DECISIONS and CONCERNS entry keys) by reading
+      spec/project-standard.yaml in line ranges or walking it with an ad-hoc script. None opened
+      spec/PROJECT-STANDARD.md, which exists for that reader, and nothing they were shown points at
+      it: not a finding, not /rite:preflight, not init's output. required_frontmatter_present on a
+      HANDOFF with no front matter says "no front matter" and does not name the keys.
+    why_it_matters: >
+      Every adoption paid the cost, and one agent searched a directory that does not exist before
+      finding the spec. Sending them to the rendered standard is only half the fix: it omits the
+      ROADMAP item shapes entirely (c-no-done-markers-assumes-an-undeclared-shape).
+    proposal:
+      - "Name the rendered section in every finding that asks for a missing key, section or front matter."
+      - "List the required keys when there is no front matter at all, as the rule already does when some are present."
+      - "Render every shape the spec declares, so the readable standard is complete enough to be the thing to point at."
+
+  - id: c-yaml-check-says-no-yaml-in-scope
+    title: "yaml_check says 'no YAML files in scope' in projects whose only YAML is their artifacts"
+    status: open
+    severity: low
+    opened: "2026-09-25"
+    what: >
+      rite-check.py prints "no YAML files in scope — yaml_parses and yaml_within_subset read
+      nothing" whenever nothing is left after the artifact-covered files are removed. manga has
+      three YAML files in docs/, all artifacts and all parsed by their own rules, and is told it
+      has none.
+    why_it_matters: "The line exists so that reading nothing and passing do not look alike. It says something false instead, and a reader concludes YAML is not being checked."
+    proposal: "Say what is true: no YAML beyond the N artifact files, which their own rules parse."
+
+  - id: c-shim-actions-are-not-the-skill-names
+    title: "/rite:preflight runs the shim's `check`, so the obvious guess fails"
+    status: open
+    severity: low
+    opened: "2026-09-25"
+    what: >
+      The skill is /rite:preflight and the shim action it runs is `check`. manga's agent ran
+      `rite.sh preflight`, got "no such action 'preflight'", and wrote the trap into manga's
+      CLAUDE.md so the next session would not repeat it. pdf-filler's agent ran `rite.sh` with no
+      action and got "no such action ''" instead of a usage line.
+    proposal: "Name the action after the skill, or have the unknown-action error say which action the skill runs; print the usage line when no action is given."
 
 retired_ids:
   # ── harvested 2026-09-13 from the haircut adoption, the first from an empty directory ──
