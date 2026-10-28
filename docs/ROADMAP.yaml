@@ -90,9 +90,9 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin — 0.29.0 in this tree as of 2026-10-28, with the install
-  cache at 0.28.0 until Costin updates it; on this machine the TREE is what adopting projects
-  actually run (c-directory-marketplace-serves-the-working-tree) — rite@rite, SEVEN skills reachable as
+  Rite is an installed, running plugin — 0.29.0 in this tree and in the install cache (updated
+  2026-10-28); on this machine the TREE is what adopting projects actually run
+  (c-directory-marketplace-serves-the-working-tree) — rite@rite, SEVEN skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -152,8 +152,9 @@ current_state: >
   on 2026-09-19 it was rebuilt from filtered history: the tool and the argument are public, while
   the diary — the original LOG.md, the PLAN copies, the session scripts and the memory mirror —
   moved to the PRIVATE github.com/perieteanu/rite-lab, frozen at the migration and pushed to by
-  nothing. 70 commits public against 75 in the archive, because filter-repo pruned five whose
-  only change was to the diary. This paragraph said "main in full with LOG.md included, per
+  nothing. At the migration it was 70 commits public against 75 in the archive, because
+  filter-repo pruned five whose only change was to the diary; the public count has grown since
+  and the archive's has not. This paragraph said "main in full with LOG.md included, per
   d-publish-main-in-full-no-export" until that day; that decision is SUPERSEDED by
   d-refound-public-repo-diary-stays-private — outlived rather than overturned, since it refused a
   sync script between two copies and there is still exactly one working tree and one remote. WHAT

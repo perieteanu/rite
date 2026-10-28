@@ -115,7 +115,11 @@ Built, as of 2026-09-12:
 ```
 scripts/
   rite-check.py      THE CHECKER. Reads spec/project-standard.yaml and runs the completion
-                     tests. 67 checks on this project; 66 of 66 declared tests implemented.
+                     tests. Every declared test is implemented; the checker prints its own
+                     count and coverage on every run, so neither is repeated here. A rule that
+                     CRASHES is YELLOW on the claude side and counted on its own in the summary
+                     (2026-10-28) — it was NA until then, which no SessionStart line shows.
+                     Roadmap lists are read by one helper, in the shape the spec declares.
                      Two of those rules are PROJECT-WIDE rather than per-artifact: every YAML
                      file in scope must parse (RED) and stay inside the declared subset
                      (YELLOW). A file an artifact already covers is never reported twice.

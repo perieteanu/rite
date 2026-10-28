@@ -258,13 +258,15 @@ What is genuinely not built, as of 2026-09-12:
   `d-publish-main-in-full-no-export`" until that day; that decision is superseded by
   `d-refound-public-repo-diary-stays-private` — outlived rather than overturned, because it
   refused a sync script between two copies and there is still exactly one working tree.
-  **The public history is 70 commits where rite-lab has 75**: filter-repo pruned five whose only
-  change was to the diary, so the two commit counts will never match again. What is still true:
+  **At the re-founding the public history was 70 commits where rite-lab had 75**: filter-repo
+  pruned five whose only change was to the diary. The counts say nothing about each other since:
+  rite moves on and rite-lab is frozen, and on 2026-10-28 both read 75 by coincidence — which
+  falsified this bullet's old "will never match again". What is still true:
   **nobody but this machine has run Rite**, so every claim about how it behaves elsewhere rests
   on CI, not on a user — and the install is still a `directory` marketplace serving this working
   tree, so a git-sourced install remains untested.
-- **NO declared rule is unimplemented.** Coverage is 66 of 66, including the two project-wide
-  YAML rules added 2026-09-12. This bullet claimed `deleted_ids_appear_in_milestones` was
+- **NO declared rule is unimplemented.** Coverage is full, including the two project-wide YAML
+  rules added 2026-09-12 and list_items_have_keys added 2026-10-28. This bullet claimed `deleted_ids_appear_in_milestones` was
   outstanding, which stopped being true on 2026-09-10 in the commit that implemented it — and
   before that it claimed seven were. A count of what is missing is the single most rot-prone
   sentence in this file; the checker prints the real one on every run.
