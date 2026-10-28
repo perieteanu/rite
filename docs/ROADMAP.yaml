@@ -90,8 +90,9 @@ current_state: >
   public for two hours and a plugin eleven versions further on. The claims block below passed
   GREEN throughout — it checks PATHS, not values — which is its declared limit doing exactly
   what it says on the tin.
-  Rite is an installed, running plugin — 0.28.0 in this tree and in the install cache (updated
-  2026-09-19) — rite@rite, SEVEN skills reachable as
+  Rite is an installed, running plugin — 0.29.0 in this tree as of 2026-10-28, with the install
+  cache at 0.28.0 until Costin updates it; on this machine the TREE is what adopting projects
+  actually run (c-directory-marketplace-serves-the-working-tree) — rite@rite, SEVEN skills reachable as
   /rite:log /rite:preflight /rite:handoff /rite:end /rite:init /rite:update /rite:issue, and a SessionStart hook whose verdict line
   now actually reaches Claude's context. It was observed doing so on 2026-09-09, which is the
   first evidence that the loop closes.
@@ -100,8 +101,8 @@ current_state: >
   NOT repeated here: hook output
   shape, checker verdicts, portability rules, scaffold, installed-copy currency, and
   rite-check.py against this project itself — that last one was never counted in the list of six
-  this project told itself for three days. rite-check.py reports 67 checks on this project,
-  covering 66 of 66 declared tests.
+  this project told itself for three days. rite-check.py prints its own check count and
+  coverage on every run; neither is repeated here.
   STAGE IS NOW THE GATING AXIS OF THE STANDARD — d-stage-is-the-gating-axis. Every artifact
   declares required_from_stage, and a project is not asked for what its stage has not reached.
   THE MAPPING IS NOT REPEATED HERE and this sentence is the reason why: it used to be, and that
@@ -177,8 +178,8 @@ current_state: >
   it was drawn. c-plan-attribution is settled — d-attribution-is-authorship-not-mention — after
   three days as "the only genuinely hard part". It was never hard; the FIRST ANSWER was just
   wrong in a way nothing looked wrong about.
-  COVERAGE IS 66 OF 66 declared tests; the copier port took it from 57 of 64 to 61 of 66.
-  filename_matches_canonical,
+  COVERAGE IS FULL — every declared test implemented; the copier port took it from 57 of 64 to
+  61 of 66. filename_matches_canonical,
   source_plans_all_copied and mirror_not_stale are implemented, and the first two were
   UNREACHABLE rather than unwritten until an artifact could declare a path_pattern.
   THE INVENTORY IS 14, not 13. script_copy was added through the process the freeze exists to
@@ -222,8 +223,7 @@ current_state: >
   equal without needing PyYAML. Measured across all 478 YAML files on this machine: false accepts
   12 to 0, and the 29 multi-document files it used to merge silently now refuse. The watcher
   reports a third thing, invalid YAML at the moment of the write.
-  THE CHECKER IS AT FULL COVERAGE — 66 of 66 declared tests implemented, and 67 checks on this
-  project, whose one NA is the declared yaml_check scope reporting itself. deleted_ids_appear_in_milestones was the last, and it is what makes the
+  THE CHECKER IS AT FULL COVERAGE — every declared test implemented. deleted_ids_appear_in_milestones was the last, and it is what makes the
   deletion convention safe: closing an item by deleting it is only sound if the item is promoted
   rather than erased. required_any_of_sections was implemented all along and invoked by NOTHING,
   because the spec declared its data under `structure:` while no artifact listed the rule under
@@ -236,7 +236,7 @@ current_state: >
   project-tracker's projects.yaml from ~/.claude/scripts, wired in Costin's own checks.yaml.
   That is the mechanism working as designed — the engine never learns that file's shape.
   STILL MISSING: no declared rule is unimplemented. The
-  checker's coverage line now reads 66 of 66: `optional` markers were being counted in the
+  checker's coverage line counts only real rules: `optional` markers were being counted in the
   denominator as rules awaiting implementation, which understated the checker by four and had
   four documents repeating 'seven declared tests unimplemented' for days.
   THE FIRST WATCHER EXISTS — one of eight. scripts/rite_watch.py reports an append-only file
@@ -271,9 +271,17 @@ current_state: >
   global memory could not fire on anybody else's machine; it is derived now. The gate was proved
   failing on ten sites before any were fixed, and it caught its own author twice within the hour.
   THE INSTALLED SPEC IS COMPARED AT LAST. spec/ joined COMPARED in test-installed-current.py,
-  which was tidy until the same day made it urgent: the spec now carries per-project POLICY, and
-  the running checker reads the INSTALLED copy, so a stale one would change what a project is
-  asked for while every other gate stayed green.
+  which was tidy until the same day made it urgent: the spec now carries per-project POLICY. That
+  sentence went on to say the running checker reads the INSTALLED copy; on this machine it reads
+  the working tree (c-directory-marketplace-serves-the-working-tree), so the gate protects a
+  stranger's install, not this machine's adopters — for whom every uncommitted edit here is live.
+  A ROADMAP NEAR_TERM IS THE DECLARED LIST — d-roadmap-items-are-a-list-and-crashes-are-loud,
+  2026-10-28. Both rules that read near_term had been written against THIS file's mapping shape,
+  so on the list every adopter wrote no_done_markers crashed and deleted_ids_appear_in_milestones
+  read nothing. One helper reads every roadmap list; list_items_have_keys enforces the item shapes
+  the spec had declared and nothing had read; the renderer prints them. A crashing rule is now
+  YELLOW on the claude side and counted, where it used to be an NA no SessionStart line showed.
+  Predictions written before the code held line for line on all ten adopters.
   NOTE, because this paragraph is the standing example: the claims block above passed GREEN
   while every NUMBER in this text was stale. That is the declared limit of claims_match_filesystem
   working as specified — it checks paths, not counts — and it is why the block supplements the
@@ -748,15 +756,31 @@ milestones:
       nag cases a stale `written:` already triggered. Not a near_term item: it was found and
       fixed the same day, which is why this entry has no queued id to delete.
 
-near_term:
-  label: "EMPTY — the path from private to public is complete"
-  # Emptied 2026-09-10, and empty ON PURPOSE rather than by omission. All four items —
-  # ci-portability-matrix, setup-hook-scaffolding, readme-for-a-stranger and publish-github —
-  # were queued and closed the same day, each one closed by DELETING it here and APPENDING a
-  # milestones entry naming its id. The next move is a decision about direction, not a queued
-  # task; mid_term below is where the candidates are, and the HANDOFF says which of them the
-  # session that closed this one would pick.
-  candidates: []
+  - id: roadmap-items-are-a-list
+    what: "near_term read as the declared list by one helper; item shapes enforced and rendered; a crashing rule is loud"
+    closed: "2026-10-28"
+    log_ref: "28-10-2026 17:50:07"
+    note: >
+      Not a near_term item — near_term was empty, and this came from a survey of every adopting
+      session since the 09-25 harvest. Recorded on the same footing as handoff-close-record.
+      THE DEFECT WAS KNOWN FOR FIVE WEEKS AND COST MORE OPEN THAN FIXED. It was harvested on 09-25
+      with a full proposal and a tracker entry estimating fifteen minutes; no session opened this
+      project for 33 days, and adopting sessions re-diagnosed the same crash four more times.
+      Both rules had been written against this repository's own ROADMAP, the one file anywhere
+      using the mapping shape — the reference implementation was the only project the rules fit.
+      Predictions were written into the plan before any code and held line for line on all ten
+      adopters. Two test expectations and two document claims of the session's own were wrong and
+      were caught before commit, the second of them by a one-file fixture that took a minute.
+
+# near_term is a LIST of near_term_item ({id, what}), the shape the spec declares. Until
+# 2026-10-28 this file alone wrote it as a mapping {label, candidates: [...]}, and both rules that
+# read near_term were written against THIS file rather than the spec — so on the shape every
+# adopter wrote, one crashed and the other read nothing
+# (d-roadmap-items-are-a-list-and-crashes-are-loud).
+# Empty ON PURPOSE since 2026-09-10, when the path from private to public closed: the next move
+# is a decision about direction, not a queued task; mid_term below holds the candidates, and the
+# HANDOFF says which of them the closing session would pick.
+near_term: []
 
 mid_term:
   # ci-portability-matrix, setup-hook-scaffolding and publish-github were MOVED to near_term on

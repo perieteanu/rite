@@ -2442,3 +2442,42 @@ decisions:
     stated_by_user: true
     chosen_by_user: "2026-09-19 — Costin confirmed Option 2 (argument public, diary private) and the private rite-lab, after seeing every sensitive line displayed"
     proposed_by: claude
+
+  - id: d-roadmap-items-are-a-list-and-crashes-are-loud
+    date: "2026-10-28"
+    title: "near_term is the declared list, read by one helper; a rule that crashes is YELLOW and counted"
+    context: >
+      no_done_markers crashed on the near_term shape the spec declares — a list of near_term_item
+      — on five of ten adopters, for five weeks. Each crash was filed as NA, which the SessionStart
+      line never forwards, so every one of those projects opened on a clean verdict while its
+      sessions re-diagnosed the same "rite bug" from scratch (two adoptions, four separate
+      re-diagnoses since the 09-25 harvest). Its sibling deleted_ids_appear_in_milestones failed
+      the other way: GREEN without reading an id. Both had been written against Rite's OWN
+      ROADMAP, the only file anywhere that wrote near_term as a mapping {label, candidates}.
+    decision: >
+      THE LIST IS CANONICAL. Every rule reads a roadmap list through one helper, _list_items, which
+      names a shape it cannot read instead of reading it as empty. list_items_have_keys enforces
+      the declared item shapes, near_term_item and milestone_entry, which had been declared since
+      the start and read by nothing; the renderer prints every declared item shape, so the
+      readable standard finally shows what an adopter must write. Rite's own ROADMAP changes to
+      the list. A crashing rule becomes YELLOW on the claude side with the exception in its
+      message, and the summary appends "N crashed" when N is not zero.
+    rationale:
+      - "Costin's ruling, 2026-10-28: the list. It matches the spec text, the other roadmap sections and every adopter; the mapping matched one file, the one that wrote the rules."
+      - "One reader because two drifted: each rule carried its own copy of the wrong assumption, and the same function read mid_term as a list while reading near_term as a mapping."
+      - "YELLOW rather than a new severity word: it passes the SessionStart filter unchanged, and every consumer of the report already understands it. The side column says whose defect it is."
+      - "The crash count is appended only when non-zero, so a clean summary line stays byte-identical for the SessionStart tail, the generated README sample and every gate that matches 'checks ·'."
+    rejected:
+      - "Accepting both shapes. It would make the mapping a second canonical form that no adopter writes and only Rite's tests would exercise — the condition that produced this bug."
+      - "A new CRASH severity. Every parser of the report would need to learn it, and the first one that did not would drop the line silently."
+    consequences:
+      - "Three adopters gained one YELLOW each, for milestones dated with `date:` and no `closed:` (one also lacking `id`). True findings: without an id a deletion from near_term cannot be traced. Migrating them is their own opt-in work."
+      - "A project configured to fail on YELLOW now fails on a crashed rule. Intended: a check that could not run must not read as one that passed."
+      - "0.29.0 — a new rule that changes verdicts is a contract change, as with 0.28.0."
+    honest_limits:
+      - "list_items_have_keys checks keys are PRESENT, not that `closed` is a date or `id` is unique across sections."
+      - "The rendered standard still lists `milestones` as a former name of `near_term` (key_aliases) while declaring it as a key of its own. The checker reads no alias, so no verdict is affected; opened as c-near-term-alias-includes-milestones, not fixed."
+    settles: [c-no-done-markers-assumes-an-undeclared-shape, c-rule-crash-reads-as-na]
+    stated_by_user: false
+    chosen_by_user: "2026-10-28 — Costin chose the list and asked for the fix in this session"
+    proposed_by: claude

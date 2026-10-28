@@ -48,6 +48,8 @@ SPEC_PATH = HERE.parent / "spec" / "project-standard.yaml"
 
 RED, YELLOW, GREEN, NA = "RED", "YELLOW", "GREEN", "NA"
 LEVEL_SEVERITY = {"exists": RED, "integrity": RED, "populated": YELLOW, "fresh": YELLOW}
+# How a crashed rule's finding begins. The summary counts crashes by it, so it is one constant.
+CRASH_PREFIX = "RITE DEFECT — rule crashed"
 
 
 class Finding:
@@ -561,6 +563,51 @@ def _entry_keys(ctx, art, test):
         else (YELLOW, f"{len(bad)} incomplete ({bad[0]})")
 
 
+def _list_items(value):
+    """A roadmap list's items, or the shape it has instead. Every rule that reads one goes here.
+
+    ONE READER, because two drifted. no_done_markers and deleted_ids_appear_in_milestones both
+    read near_term as a mapping carrying `candidates`, a shape declared nowhere and used only by
+    Rite's own ROADMAP, while the spec declared a list and every adopter wrote one. On the
+    declared shape the first crashed and the second returned an empty set and passed
+    (c-no-done-markers-assumes-an-undeclared-shape). A shape this cannot read is named, never
+    read as empty: an empty set is an answer, and here it would be a false one.
+
+    Returns (items, None) for a list — the raw items, so a caller can judge a non-mapping item —
+    ([], None) for an absent key, and (None, "a mapping") or the like for anything else.
+    """
+    if value is None:
+        return [], None
+    if isinstance(value, list):
+        return value, None
+    return None, "a mapping" if isinstance(value, dict) else f"a {type(value).__name__}"
+
+
+@rule("list_items_have_keys")
+def _list_items_have_keys(ctx, art, test):
+    doc = _load_yaml(ctx, art)
+    if doc is None:
+        return NA, "file absent or unparseable"
+    key, shape = test.get("key"), test.get("shape")
+    want = (((art.get("structure") or {}).get(shape) or {}).get("required_keys")) or []
+    if not want:
+        return NA, f"{key}: the spec declares no required_keys for {shape!r}"
+    items, other = _list_items(doc.get(key))
+    if items is None:
+        return YELLOW, f"{key} is {other} — the standard declares a list of {shape}"
+    bad = []
+    for n, item in enumerate(items, 1):
+        if not isinstance(item, dict):
+            bad.append(f"item {n}: not a mapping")
+            continue
+        miss = [k for k in want if k not in item]
+        if miss:
+            bad.append(f"{item.get('id', f'item {n}')}: {'/'.join(miss)}")
+    if not bad:
+        return GREEN, f"{key}: {len(items)} item(s) complete"
+    return YELLOW, f"{key}: {len(bad)} of {len(items)} incomplete ({bad[0]})"
+
+
 @rule("unique_ids")
 def _unique_ids(ctx, art, test):
     doc = _load_yaml(ctx, art)
@@ -624,14 +671,18 @@ def _deleted_ids_appear(ctx, art, test):
     if z is None:
         return NA, "requires revision history — file not tracked or unparseable"
     old_nt, new_nt = z
+    old_items, old_other = _list_items(old_nt)
+    new_items, new_other = _list_items(new_nt)
+    if new_items is None:
+        return NA, f"near_term is {new_other}, not the declared list — see list_items_have_keys"
+    if old_items is None:
+        return NA, (f"near_term at HEAD is {old_other}, not the declared list — no id to "
+                    f"compare until a list is committed")
 
-    def ids(block):
-        if not isinstance(block, dict):
-            return set()
-        return {c.get("id") for c in (block.get("candidates") or [])
-                if isinstance(c, dict) and c.get("id")}
+    def ids(items):
+        return {c.get("id") for c in items if isinstance(c, dict) and c.get("id")}
 
-    gone = ids(old_nt) - ids(new_nt)
+    gone = ids(old_items) - ids(new_items)
     if not gone:
         return GREEN, "no near_term id was removed"
 
@@ -765,7 +816,9 @@ def _no_done(ctx, art, test):
     doc = _load_yaml(ctx, art)
     if doc is None:
         return NA, "file absent or unparseable"
-    items = ((doc.get("near_term") or {}).get("candidates")) or []
+    items, other = _list_items(doc.get("near_term"))
+    if items is None:
+        return NA, f"near_term is {other}, not the declared list — see list_items_have_keys"
     bad = [i.get("id") for i in items
            if isinstance(i, dict) and str(i.get("status", "")).lower() in {"done", "completed", "finished"}]
     return (GREEN, "none") if not bad else (YELLOW, "marked done in place: " + ", ".join(map(str, bad)))
@@ -1177,8 +1230,15 @@ def check(root: Path, spec: dict,
             try:
                 sev, msg = fn(ctx, art, test)
             except Exception as exc:  # a rule must never take the run down
-                findings.append(Finding(NA, "claude", level, rule_name, art["path"],
-                                        f"rule raised {type(exc).__name__}: {exc}"))
+                # ...and must never go quiet either. This was NA until 2026-10-28, counted with
+                # every "absent" and "not yet required", and the SessionStart line forwards only
+                # RED and YELLOW — so no_done_markers crashed on five adopters for five weeks and
+                # every one of them opened on a clean verdict (c-rule-crash-reads-as-na). A crash
+                # is a statement about RITE, and the answer the rule would have given is unknown:
+                # YELLOW on the claude side, and counted on its own in the summary.
+                findings.append(Finding(YELLOW, "claude", level, rule_name, art["path"],
+                                        f"{CRASH_PREFIX} ({type(exc).__name__}: {exc}): its "
+                                        f"answer is unknown; the project is not at fault"))
                 continue
             if sev in (RED, YELLOW):
                 sev = severity_if_failed if sev != NA else NA
@@ -1356,8 +1416,12 @@ def report(root: Path, findings: list[Finding], meta: dict) -> int:
     if not (counts[RED] or counts[YELLOW] or counts[NA]):
         print("  all checks green")
     print()
+    # The crash count is appended only when there is one, so a clean report stays byte-identical
+    # for every parser of this line (the SessionStart tail, the README sample, the gates).
+    crashed = sum(1 for f in findings if f.message.startswith(CRASH_PREFIX))
     print(f"  {len(findings)} checks · {counts[RED]} RED · {counts[YELLOW]} YELLOW · "
-          f"{counts[NA]} NA · {counts[GREEN]} GREEN")
+          f"{counts[NA]} NA · {counts[GREEN]} GREEN"
+          + (f" · {crashed} crashed (Rite's defect, counted in YELLOW)" if crashed else ""))
     print(f"  coverage: {meta['implemented']} of {meta['declared']} declared tests implemented")
     if not ctx.is_git:
         print("  no git repository — integrity checks report NA (capability, not prerequisite)")

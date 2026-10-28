@@ -44,13 +44,13 @@ rite — myproject
   NA     project  populated  docs/CONCERNS.yaml                      unique_ids — tier 2, not present — optional
   NA     project  fresh      docs/claude-memory.md                   mirror_not_stale — tier 3, not present — optional
   NA     project  integrity  .                                       yaml_check — no YAML files in scope — yaml_parses and yaml_within_subset read nothing
-  NA     project  —          47 checks not required at stage 'idea', waiting on:
+  NA     project  —          49 checks not required at stage 'idea', waiting on:
                                spec     README.md, CLAUDE.md, docs/MISSION.md, docs/ROADMAP.yaml
                                build    docs/ARCHITECTURE.md, docs/CONVENTIONS.md, docs/DECISIONS.yaml
                                shipped  LICENSE
 
-  65 checks · 1 RED · 0 YELLOW · 56 NA · 8 GREEN
-  coverage: 66 of 66 declared tests implemented
+  67 checks · 1 RED · 0 YELLOW · 58 NA · 8 GREEN
+  coverage: 68 of 68 declared tests implemented
   no git repository — integrity checks report NA (capability, not prerequisite)
 ```
 <!-- /rite:generated -->

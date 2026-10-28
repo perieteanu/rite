@@ -40,11 +40,22 @@ def fail(msg: str) -> None:
     print(f"FAIL  {msg}")
 
 
+CRASH_MARKERS = ("rule raised", "rule crashed")
+
+
 def run(root: pathlib.Path) -> str:
     out = subprocess.run([sys.executable, str(CHECKER), str(root), "--force"],
                          capture_output=True, text=True,
                          encoding="utf-8", errors="replace")
-    return out.stdout + out.stderr
+    text = out.stdout + out.stderr
+    # EVERY fixture guards against a crash, not only the ones about crashing. no_done_markers
+    # crashed on the shape the spec declares for five weeks while this file passed, because no
+    # fixture carried a near_term — a shape the tests never exercise cannot be allowed to pass
+    # CI by crashing quietly (c-rule-crash-reads-as-na).
+    crashed = [ln.strip() for ln in text.splitlines() if any(m in ln for m in CRASH_MARKERS)]
+    if crashed:
+        fail(f"a rule crashed on a fixture: {crashed[0]}")
+    return text
 
 
 def scaffold(tmp: pathlib.Path, roadmap: str, marker: str = "# marker\n") -> None:
@@ -504,6 +515,142 @@ for sid, fields, want in (("close-carried", CARRIED, False),
             fail(f"the SessionStart nag disagrees with the checker on {sid}: "
                  f"{'reported' if said else 'silent'}, expected {'reported' if want else 'silent'}")
 
+# ── the roadmap's item shapes ────────────────────────────────────────────────
+# c-no-done-markers-assumes-an-undeclared-shape. The spec declares near_term as a LIST of
+# near_term_item and every adopter wrote one, while both rules that read it assumed a mapping
+# carrying `candidates` that only Rite's own ROADMAP used. On the declared shape no_done_markers
+# crashed and deleted_ids_appear_in_milestones passed having read nothing. No fixture here carried
+# a near_term at all, which is how both survived five weeks of adoption.
+ITEMS_RULE = "list_items_have_keys"
+ITEMS_COL = ITEMS_RULE + " —"  # the rule column; other findings may MENTION the rule by name
+
+
+def roadmap_with(body: str) -> str:
+    return HEADER + "current_state: >\n  fine\n" + body
+
+
+# 29. A done marker on the DECLARED shape is caught — the rule's whole job, never once exercised.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp, roadmap_with("near_term:\n  - id: n-a\n    what: first\n    status: done\n"
+                               "  - id: n-b\n    what: second\n"))
+    out = run(tmp)
+    # RED, not YELLOW: no_done_markers is declared at level `integrity`.
+    if verdicts(out, "no_done_markers", "docs/ROADMAP.yaml") != ["RED"]:
+        fail(f"a done-marked item in a list near_term must be RED, got "
+             f"{verdicts(out, 'no_done_markers', 'docs/ROADMAP.yaml') or 'nothing'}")
+    elif not any("n-a" in ln and "no_done_markers" in ln for ln in out.splitlines()):
+        fail("the done-marker finding does not name the item")
+
+# 30. The undeclared mapping shape is ONE finding, on the rule that owns shapes, and the two rules
+#     that cannot read it say why instead of crashing or passing.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp, roadmap_with("near_term:\n  label: x\n  candidates:\n"
+                               "    - id: n-a\n      what: first\n"))
+    out = run(tmp)
+    shape = [ln.strip() for ln in out.splitlines()
+             if ITEMS_COL in ln and "near_term" in ln and "mapping" in ln]
+    if not shape or not shape[0].startswith("YELLOW"):
+        fail(f"a mapping-shaped near_term must be YELLOW on {ITEMS_RULE} naming the mapping, "
+             f"got {shape or 'nothing'}")
+    nd = [ln.strip() for ln in out.splitlines() if "no_done_markers" in ln]
+    if not nd or not nd[0].startswith("NA") or "mapping" not in nd[0]:
+        fail(f"no_done_markers on a mapping must be NA naming the shape, got {nd or 'nothing'}")
+
+# 31. The declared item shapes are enforced: an item without `what`, and a milestone dated with
+#     `date:` where the spec says `closed:` — the form two adopters actually wrote.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp, roadmap_with("near_term:\n  - id: n-a\n"
+                               "milestones:\n  - id: m-a\n    what: done\n    date: \"2026-01-01\"\n"))
+    out = run(tmp)
+    hits = [ln.strip() for ln in out.splitlines() if ITEMS_COL in ln]
+    nt = [h for h in hits if "near_term" in h]
+    ms = [h for h in hits if "milestones" in h]
+    if not nt or not nt[0].startswith("YELLOW") or "what" not in nt[0]:
+        fail(f"a near_term item without `what` must be YELLOW naming the key, got {nt or 'nothing'}")
+    if not ms or not ms[0].startswith("YELLOW") or "closed" not in ms[0]:
+        fail(f"a milestone without `closed` must be YELLOW naming the key, got {ms or 'nothing'}")
+
+# 32. Well-formed lists are silent: the new rule must not fire on the shape it asks for.
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp, roadmap_with("near_term:\n  - id: n-a\n    what: first\n"
+                               "milestones:\n  - id: m-a\n    what: done\n    closed: \"2026-01-01\"\n"))
+    out = run(tmp)
+    if verdicts(out, ITEMS_RULE, "docs/ROADMAP.yaml"):
+        fail(f"well-formed near_term and milestones were reported: "
+             f"{verdicts(out, ITEMS_RULE, 'docs/ROADMAP.yaml')}")
+
+
+# 33. The deletion rule READS a list. An id removed from near_term with no milestone is RED and
+#     named; the same removal with a milestone carrying that id passes. Before the fix both were
+#     "no near_term id was removed".
+def git(tmp: pathlib.Path, *args: str) -> int:
+    return subprocess.run(["git", "-C", str(tmp), "-c", "user.name=fixture",
+                           "-c", "user.email=fixture@example.invalid", *args],
+                          capture_output=True, text=True, encoding="utf-8",
+                          errors="replace").returncode
+
+
+TWO_ITEMS = "near_term:\n  - id: n-a\n    what: first\n  - id: n-b\n    what: second\n"
+ONE_ITEM = "near_term:\n  - id: n-b\n    what: second\n"
+for milestone, want in (("", "RED"),
+                        ("milestones:\n  - id: n-a\n    what: first\n    closed: \"2026-01-02\"\n",
+                         None)):
+    with tempfile.TemporaryDirectory() as d:
+        tmp = pathlib.Path(d)
+        scaffold(tmp, roadmap_with(TWO_ITEMS))
+        if git(tmp, "init", "-q") or git(tmp, "add", "-A") or git(tmp, "commit", "-q", "-m", "x"):
+            print("SKIP  case 33 needs git, which did not initialise here")
+            break
+        (tmp / "docs" / "ROADMAP.yaml").write_text(roadmap_with(ONE_ITEM + milestone),
+                                                   encoding="utf-8", newline="\n")
+        out = run(tmp)
+        v = verdicts(out, "deleted_ids_appear_in_milestones", "docs/ROADMAP.yaml")
+        if want == "RED" and (v != ["RED"] or not any(
+                "n-a" in ln and "deleted_ids" in ln for ln in out.splitlines())):
+            fail(f"an id removed from a list near_term without a milestone must be RED naming "
+                 f"it, got {v or 'nothing'}")
+        if want is None and v:
+            fail(f"an id removed with its milestone must pass, got {v}")
+
+
+# 34. A rule that crashes is LOUD: YELLOW on the claude side, and counted in the summary. Run
+#     in-process with one rule swapped for one that raises, because no shipped rule should crash
+#     and a fixture that relies on a real bug stops testing anything the day the bug is fixed.
+def crash_report(tmp: pathlib.Path) -> str:
+    import contextlib
+    import importlib.util
+    import io
+    spec = importlib.util.spec_from_file_location("rite_check_under_test", CHECKER)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    def boom(ctx, art, test):
+        raise RuntimeError("planted by test-checker-verdicts")
+
+    mod.RULES["no_done_markers"] = boom
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        mod.main(["rite-check", str(tmp), "--force"])
+    return buf.getvalue()
+
+
+with tempfile.TemporaryDirectory() as d:
+    tmp = pathlib.Path(d)
+    scaffold(tmp, roadmap_with("near_term:\n  - id: n-a\n    what: first\n"))
+    out = crash_report(tmp)
+    hit = [ln.strip() for ln in out.splitlines() if "no_done_markers" in ln]
+    if not hit or not hit[0].startswith("YELLOW") or " claude " not in f" {hit[0]} ":
+        fail(f"a crashing rule must be YELLOW on the claude side, got {hit or 'nothing'}")
+    elif "planted by test-checker-verdicts" not in hit[0]:
+        fail(f"the crash finding does not carry the exception: {hit[0]}")
+    tail = [ln for ln in out.splitlines() if "checks ·" in ln]
+    if not tail or "1 crashed" not in tail[0]:
+        fail(f"the summary must count the crash, got {tail or 'no summary'}")
+
 # ── the CLI contract ─────────────────────────────────────────────────────────
 # Until 2026-09-10 every unrecognised flag was silently discarded: `--help` ran a full check,
 # and a typo'd `--exclude-scpoe=session` scored at FULL strength while the caller believed a
@@ -548,5 +695,6 @@ if failures:
 print("PASS  unparseable is RED and named; absent stays NA; a broken marker is reported;\n"
       "      declared claims are checked against the tree and an undeclared one is nudged;\n"
       "      stage gates what is required, a declaration beats tier, and no stage means no\n"
-      "      leniency; unknown flags are rejected rather than swallowed.")
+      "      leniency; roadmap lists are read in the declared shape and a crashing rule is\n"
+      "      loud; unknown flags are rejected rather than swallowed.")
 sys.exit(0)

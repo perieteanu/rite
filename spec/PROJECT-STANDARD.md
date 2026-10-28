@@ -67,7 +67,7 @@ status: draft | current | superseded
 | form | provenance header | structure unit | tested by |
 |---|---|---|---|
 | `md` | YAML front matter, fenced by --- at the top of the file | H2 heading (`## Name`) | `required_sections`, `no_empty_sections`, `min_content_sections` |
-| `yaml` | top-level keys | mapping key | `required_keys_present`, `entry_required_keys`, `unique_ids`, `min_list_items` |
+| `yaml` | top-level keys | mapping key | `required_keys_present`, `entry_required_keys`, `list_items_have_keys`, `unique_ids`, `min_list_items` |
 | `text` | none — and a header would be a defect | n/a — reproduced verbatim | `min_lines`, `no_provenance_header` |
 
 This project's own spec exists in both forms with byte-identical content: 25287 bytes as YAML, 19275 as Markdown — 24% smaller — because YAML charges a `key:` and an indent for every line of prose. The saving reverses for genuinely structured data, where Markdown must reinvent nesting that YAML gives for free.
@@ -576,6 +576,12 @@ _Schema strictness: loose._
 - `near_term` ← `next_up`, `milestones`
 - `if_revisiting_cold` ← `what_to_do_if_revisiting_cold`, `revisiting_cold`, `cold_restart_checklist`
 
+**Item shapes:**
+
+- `near_term_item` — _required_ `id`, `what` · _recommended_ `why`, `mode`, `est_minutes`
+- `inception` — _required_ `date`, `goal` · _recommended_ `origin`, `first_near_term`, `first_mid_term`, `first_long_term`, `known_unbuilt_at_inception`
+- `milestone_entry` — _required_ `id`, `what`, `closed` · _recommended_ `log_ref`, `note`
+
 **Cold-restart shape.** An ordered list of imperative strings, conventionally ending with a "do NOT re-litigate X" line.
 
 **Completion tests:**
@@ -592,6 +598,8 @@ _Schema strictness: loose._
 | integrity | `deleted_ids_appear_in_milestones` | Every near_term `id` present in the previous revision and absent from this one must appear as a `milestones` entry. This is what makes deletion safe rather than lossy — the item is not erased, it is promoted. |
 | integrity | `milestones_append_only` | The append-only half of a mixed file. Existing entries stay byte-identical. |
 | integrity | `no_done_markers` | A near_term item carrying done/completed/finished status is a rewrite-only file being used as an append-only one. Delete it and log it instead. |
+| populated | `list_items_have_keys` | near_term is a LIST, and every item carries the keys near_term_item declares under `structure`. The shape was declared from the start and read by nothing until 2026-10-28; both rules that read near_term assumed a mapping declared nowhere, so on the shape every adopter wrote one crashed and the other passed having read no id. |
+| populated | `list_items_have_keys` | Every milestone carries the keys milestone_entry declares. `id` is what makes a deletion from near_term traceable: a milestone without it cannot satisfy deleted_ids_appear_in_milestones, however clearly its prose names the item. |
 | populated | `claims_declared` | — |
 | integrity | `claims_match_filesystem` | ROADMAP owns `current_state`, so it owns the project's most consequential claim about its own tree — and on 2026-09-09 that claim read "Still NO hooks, commands or skills. Not a git repo." against a running plugin in a repo with ten commits. The claims block is what makes the sentence testable; the sentence itself stays prose. |
 

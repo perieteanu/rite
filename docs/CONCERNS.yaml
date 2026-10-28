@@ -532,6 +532,15 @@ concerns:
       that close a session. Costin's plan is to test it once and revert to the directory source,
       because a git source would make test-installed-current.py compare the cache against pushed
       commits and go RED on every uncommitted edit, which is a gate switched off within a week.
+    update_2026_10_28: >
+      MORE EVIDENCE, same direction, and the consequence is now sharper than testing. Every skill
+      loaded by an adopting session since 2026-09-25 reported its base directory in the working
+      tree, and the latest session of one adopter called the tree's rite.sh 27 times and the
+      cache's 0 times. So an uncommitted edit in this repository is live in every adopting project
+      at once — and this concern was REDISCOVERED on 2026-10-28 by a session that had not read
+      this file, while ROADMAP current_state still said "the running checker reads the INSTALLED
+      copy" (rewritten the same day). Still unverified for hooks, as opposed to skill-substituted
+      commands.
 
   - id: c-log-redaction-has-no-completion-test
     title: "The public LOG's redaction rule is discipline, in a project whose thesis is that discipline fails"
@@ -577,58 +586,6 @@ concerns:
   # LOG.md. Two findings were already open here and were added to instead:
   # c-watcher-cannot-see-shell-writes and c-copier-ignores-the-project-it-writes-into.
 
-  - id: c-no-done-markers-assumes-an-undeclared-shape
-    title: "Two ROADMAP rules read near_term as a mapping nobody declared, and the shapes the spec does declare are read by nothing"
-    status: open
-    severity: high
-    opened: "2026-09-22"
-    what: >
-      The spec declares near_term's items as a LIST, near_term_item with required_keys [id, what],
-      and milestone entries as milestone_entry with required_keys [id, what, closed]. No script
-      reads either declaration, and the renderer does not print them, so neither reaches
-      PROJECT-STANDARD.md. Meanwhile BOTH rules that read near_term's items assume a MAPPING that
-      carries `candidates`, a shape declared nowhere: no_done_markers (rite-check.py:768) and
-      deleted_ids_appear_in_milestones, whose ids() helper returns an empty set for anything that
-      is not a dict. The same function reads mid_term and long_term as lists, so it holds both
-      assumptions at once.
-    measured: >
-      ON THE DECLARED SHAPE THE TWO RULES FAIL IN OPPOSITE DIRECTIONS. no_done_markers raises
-      AttributeError and reports NA on the claude side. deleted_ids_appear_in_milestones reports
-      GREEN, "no near_term id was removed", without having read an id.
-      THE SILENT ONE HAS ALREADY MISSED REAL DELETIONS. manga, whose ROADMAP was written from the
-      spec on 2026-09-19, removed five near_term items across three commits. Its milestones record
-      each closure in prose, "Closes n-install-vhost", with no `id:` and with `date:` where the
-      spec says `closed:`, so a rule that could read the list would have been RED every time.
-      Replaying manga commit e5cf8c0 as an uncommitted edit, the moment the rule exists for: as
-      written the rule is silent; with near_term rewritten as candidates under a mapping, it is RED
-      and names n-fill-sources and n-install-vhost. Nothing was lost, because the prose survives.
-      What never happened is the project learning the checkable form.
-      THE REPOSITORY THAT WROTE BOTH RULES NEVER EXERCISES THEM. Rite's own near_term is the only
-      mapping-shaped section of its ROADMAP, with candidates empty, and no test fixture contains a
-      near_term at all. All seven closures in its history landed as milestones with ids, by habit,
-      following a convention the rendered standard never shows.
-    corrected_before_commit: >
-      This entry was drafted on 2026-09-22 from a pdf-filler session and never committed. Its
-      evidence then was that nine other ROADMAP rules "pass GREEN on the same list-shaped
-      near_term", so "the checker contradicts itself". Checked on 2026-09-25, that did not hold:
-      those GREENs were inferred from lines ABSENT in a filtered output. min_list_items is keyed on
-      if_revisiting_cold only, entry_required_keys is not a ROADMAP rule at all, and the one other
-      rule that reads near_term assumes the mapping too. The checker agrees with itself; it is the
-      spec it contradicts. The draft also cited a notes file in another repository as precedent,
-      which only its author could verify, so the citation is gone.
-    why_it_matters: >
-      A completion test that passes by reading nothing, on the shape the standard tells an adopter
-      to write, in both projects that wrote a ROADMAP from the spec this week. Deleting a closed
-      item is safe only because this rule exists (d-roadmap-mixed-with-milestones). On a list it
-      does not exist.
-    proposal:
-      - "Decide the canonical shape and declare it where the renderer prints it. The list matches the spec text, the other five ROADMAP sections and every adopter; the mapping matches Rite's own file and nothing else."
-      - "Read items through ONE helper that both rules share, accepting the declared shape and refusing anything else with an NA that names the shape — never an empty set."
-      - "Enforce near_term_item and milestone_entry, or delete them. A declared shape that nothing reads is a claim with no completion test."
-      - "Fixtures with a non-empty near_term: a done marker must be caught, and a deletion whose milestone has no id must be RED."
-    found_in: "manga (first, 2026-09-19) and pdf-filler (2026-09-22)"
-    related: [c-rule-crash-reads-as-na]
-
   - id: c-copy-checks-see-stale-never-missing
     title: "The copy checks can report a stale copy, never a missing one"
     status: open
@@ -672,31 +629,6 @@ concerns:
       - "Let a rule whose question is whether an instance SHOULD exist run when none does. source_plans_all_copied and mirror_not_stale are exactly those rules."
       - "One fixture per cause: a legacy_layout project with copies present, and a project with an authored plan and no copy. Both score NA today."
     related: [c-pattern-paths-are-matched-literally, c-copier-ignores-the-project-it-writes-into]
-
-  - id: c-rule-crash-reads-as-na
-    title: "A rule that crashes is counted as NA and never reaches the session-start line"
-    status: open
-    severity: medium
-    opened: "2026-09-25"
-    what: >
-      rite-check.py catches any exception a rule raises and files it as NA on the claude side,
-      "rule raised <error>". Keeping one bug from taking the whole run down is right. But the
-      summary counts the crash with every other NA, and rite_session_start.py forwards only lines
-      that begin RED or YELLOW, so the one report a user sees without asking never shows it.
-    measured: >
-      The no_done_markers crash was in manga's full check output on 2026-09-19. From then until
-      2026-09-22 every manga SessionStart read "0 RED · 0 YELLOW · 6 NA", the crash one of the
-      six. On a fixture whose near_term carries a done-marked item, the mapping shape is RED and
-      the list shape is this NA: the summary goes from 5 RED to 4, and a real failure becomes an
-      NA nobody reads.
-    why_it_matters: >
-      Most NAs are statements about the PROJECT: absent, not yet required, needs git, optional. A
-      crash is a statement about RITE, and every answer the crashed rule would have given is now
-      unknown. It should be the loudest line in the report, not folded into the quietest count.
-    proposal:
-      - "Count crashes separately in the summary, 'N rule(s) crashed', and let that line through the session-start filter."
-      - "Fail the verdict fixtures on any crash, so a shape the tests never exercise cannot pass CI by crashing quietly."
-    related: [c-no-done-markers-assumes-an-undeclared-shape]
 
   - id: c-init-assumes-a-newborn-project
     title: "/rite:init writes and skips as if every project were born that minute"
@@ -784,6 +716,11 @@ concerns:
       - "Name the rendered section in every finding that asks for a missing key, section or front matter."
       - "List the required keys when there is no front matter at all, as the rule already does when some are present."
       - "Render every shape the spec declares, so the readable standard is complete enough to be the thing to point at."
+    update_2026_10_28: >
+      The third proposal is DONE for the shapes nested in an artifact's structure: the renderer
+      prints every one that declares required_keys, chosen by form rather than by name, so
+      near_term_item, milestone_entry and inception now reach PROJECT-STANDARD.md. The first two
+      proposals are untouched, and they are the ones that would send an agent there.
 
   - id: c-yaml-check-says-no-yaml-in-scope
     title: "yaml_check says 'no YAML files in scope' in projects whose only YAML is their artifacts"
@@ -809,6 +746,73 @@ concerns:
       CLAUDE.md so the next session would not repeat it. pdf-filler's agent ran `rite.sh` with no
       action and got "no such action ''" instead of a usage line.
     proposal: "Name the action after the skill, or have the unknown-action error say which action the skill runs; print the usage line when no action is given."
+
+  # ── opened 2026-10-28 from the transcripts of every adopting session since the 09-25 harvest ──
+  # Ten adopting projects, four of them new. Work projects are described rather than named.
+
+  - id: c-close-record-is-a-date
+    title: "`closed:` is a day, so a close that crosses midnight reads as a session that did not close"
+    status: open
+    severity: medium
+    opened: "2026-10-28"
+    what: >
+      closed_not_older_than_newest_log_entry compares two DATES: riterules.handoff_close_date reads
+      `closed:` as a day and riterules.newest_log_date reduces every entry to its day. A session
+      that closes at 23:50 and then writes one more line, or commits its close at 00:01, leaves a
+      LOG entry dated the next day, and the next session opens RED "session did not close".
+    measured: >
+      spare: the close commit of the 2026-10-22 session landed at 2026-10-23 00:01:53, and the next
+      session's agent cleared "this morning's RED, the date mismatch from my after-midnight log
+      line". The sessions on this machine routinely end between 23:50 and 00:05, so this is the
+      common case, not the edge.
+    why_it_matters: >
+      A false RED on the one rule that asks whether the ritual ran teaches the user that the rule
+      cries wolf. c-log-has-writers-outside-the-session makes it worse: an imported line for an
+      after-midnight commit does the same thing without any session writing at all.
+    proposal:
+      - "Let `closed:` carry a time ('2026-10-22 23:58') and compare it with entry timestamps; a date-only `closed:` keeps today's end-of-day reading, so nothing gets more lenient by omission."
+    related: [c-log-has-writers-outside-the-session]
+
+  - id: c-log-has-writers-outside-the-session
+    title: "LOG.md is written by tooling and by other projects' sessions, and Rite reads every line as this project's session"
+    status: open
+    severity: medium
+    opened: "2026-10-28"
+    what: >
+      project-tracker's seed-projects imports one `[work] commit:` line per git commit into the
+      LOG.md of every registered project, appended at the end and out of date order, and in one
+      adopter replaced the log's header. On 2026-10-20 it ran from a session in a project that
+      does not participate, and appended 74 such lines to this repository's LOG.md. Sessions also
+      log into projects they are not in. Rite assumes one project per session: the cwd watcher
+      reports a MOVE between projects, never a write from elsewhere, and no watcher sees a write
+      made through a shell (c-watcher-cannot-see-shell-writes).
+    effects:
+      - "Date rules read a commit line as session activity — the after-midnight false RED of c-close-record-is-a-date, arriving without any session writing."
+      - "d-log-ownership-split gave project-tracker the CREATION of LOG.md at registration. Importing commits for the file's whole life goes further than that, and nothing recorded the change."
+    user_note: >
+      Costin, 2026-10-28, offered the narrow fix (stop the import for projects with a marker):
+      "i think the issues is deeper". Recorded as said, not interpreted.
+    route: >
+      Its own dedicated session, per d-project-tracker-stays-separate: integration between the two
+      tools is never arrived at incrementally. Deliberately not designed here.
+    related: [c-close-record-is-a-date, c-watcher-cannot-see-shell-writes, c-memory-has-no-cross-project-lane]
+
+  - id: c-near-term-alias-includes-milestones
+    title: "The standard lists `milestones` as a former name of `near_term` while declaring it as a key of its own"
+    status: open
+    severity: low
+    opened: "2026-10-28"
+    what: >
+      ROADMAP's key_aliases maps near_term to [next_up, milestones], and PROJECT-STANDARD.md
+      renders that as "the names it replaces". But milestones is a recommended key with its own
+      shape, and it is where a near_term item goes when it closes, not an older name for the list.
+      The checker reads no alias, so no verdict is affected; the misleading part is what a reader
+      is told.
+    corrected_before_commit: >
+      First written as "key_aliases lets milestones satisfy a required near_term". A fixture with
+      milestones and no near_term disproved it in one run: required_keys_present still says
+      "missing: near_term".
+    proposal: "Drop `milestones` from near_term's aliases, unless the corpus that produced the list shows a project where it really did mean the queue."
 
 retired_ids:
   # ── harvested 2026-09-13 from the haircut adoption, the first from an empty directory ──
@@ -1174,3 +1178,23 @@ retired_ids:
       so a session that logged could record carried_forward only by moving `written:` over text
       it did not write. The close now has its own key. Appended here at the END, as the header
       declares; the two 2026-09-13 entries above were inserted at the top of this list.
+
+  - id: c-no-done-markers-assumes-an-undeclared-shape
+    retired: "2026-10-28"
+    how: settled
+    outcome: d-roadmap-items-are-a-list-and-crashes-are-loud
+    why: >
+      Costin chose the list. One helper now reads every roadmap list and names a shape it cannot
+      read; list_items_have_keys enforces near_term_item and milestone_entry; the renderer prints
+      them; Rite's own ROADMAP changed shape. Between the harvest and the fix the crash was
+      re-diagnosed four more times by adopting sessions, which is the measured cost of a known
+      defect left open.
+
+  - id: c-rule-crash-reads-as-na
+    retired: "2026-10-28"
+    how: settled
+    outcome: d-roadmap-items-are-a-list-and-crashes-are-loud
+    why: >
+      A crash is YELLOW on the claude side and counted on its own in the summary, so it reaches
+      the SessionStart line. Every verdict fixture now fails on any crash, and a planted crash is
+      tested in-process rather than through a real bug that a fix would remove.

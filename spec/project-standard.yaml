@@ -134,7 +134,7 @@ file_format:
     yaml:
       provenance: "top-level keys"
       structure_unit: "mapping key"
-      tested_by: [required_keys_present, entry_required_keys, unique_ids, min_list_items]
+      tested_by: [required_keys_present, entry_required_keys, list_items_have_keys, unique_ids, min_list_items]
       artifacts: [decisions, roadmap, concerns]
     text:
       provenance: "none — and a header would be a defect"
@@ -1692,6 +1692,23 @@ artifacts:
         means: >
           A near_term item carrying done/completed/finished status is a rewrite-only file
           being used as an append-only one. Delete it and log it instead.
+      - level: populated
+        rule: list_items_have_keys
+        key: near_term
+        shape: near_term_item
+        means: >
+          near_term is a LIST, and every item carries the keys near_term_item declares under
+          `structure`. The shape was declared from the start and read by nothing until
+          2026-10-28; both rules that read near_term assumed a mapping declared nowhere, so on
+          the shape every adopter wrote one crashed and the other passed having read no id.
+      - level: populated
+        rule: list_items_have_keys
+        key: milestones
+        shape: milestone_entry
+        means: >
+          Every milestone carries the keys milestone_entry declares. `id` is what makes a
+          deletion from near_term traceable: a milestone without it cannot satisfy
+          deleted_ids_appear_in_milestones, however clearly its prose names the item.
       - level: populated
         rule: claims_declared
       - level: integrity

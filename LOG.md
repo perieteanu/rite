@@ -22,3 +22,87 @@
 25-09-2026 22:50:48 | Fri | rite | [note] c-no-done-markers-assumes-an-undeclared-shape was drafted on 2026-09-22 from a pdf-filler session and rewritten before its first commit. Its evidence, nine ROADMAP rules passing GREEN on a list-shaped near_term so that "the checker contradicts itself", was inferred from lines absent in a filtered output and did not hold: min_list_items reads only if_revisiting_cold, entry_required_keys is not a ROADMAP rule, and deleted_ids_appear_in_milestones assumes the mapping too. Id kept. Checking the draft turned up a worse finding than the one it made.
 25-09-2026 22:50:48 | Fri | rite | [drop] Checked and dropped while harvesting. A concern that adoption findings have no route back to Rite was withdrawn: exporting them to tests/ is Costin's own step, and he expects nothing of Rite there (his ruling today). Also dropped: entries_parse counting a legacy LOG's prose preamble (by design, d-scaffold-only-what-can-be-honest); supersedes text moved to a prose key (the rule working, since prose is not an id); the written/closed fallback wording (it names the field it read); the DECISIONS as_of edit going RED (correct, the header is append-only); past-dated invented LOG timestamps (already a declared limit).
 25-09-2026 22:50:48 | Fri | rite | [note] What Rite got right in the same four adoptions, so the harvest does not read as a list of failures. yaml_parses found a spec file in pdf-filler that had been invalid YAML since its first session. The PostToolUse watcher caught two future-dated LOG entries in manga before they were committed. claims_match_filesystem caught three false claims, two of them made false by the session's own changes. The append-only rules caught two milestone reorders and one header edit. init, check, paths and copy all worked in a path containing a space.
+08-09-2026 18:04 | Tue | rite | [work] commit: Initial commit: the standard, the protocol, and the parser
+08-09-2026 18:13 | Tue | rite | [work] commit: not_expired made implementable; fix a self-inflicted path error in the spec
+08-09-2026 18:21 | Tue | rite | [work] commit: Drop claims_match_stage; Tier 1 now triggers on the .rite.yaml marker
+08-09-2026 18:28 | Tue | rite | [work] commit: The checker exists, discriminates, and caught its own author
+08-09-2026 18:49 | Tue | rite | [work] commit: The plugin shell: manifests, four skills, hooks, both shims
+08-09-2026 19:01 | Tue | rite | [work] commit: Plugin installs and runs; archive the probe in tools/
+08-09-2026 19:04 | Tue | rite | [work] commit: Handoff for the live-session test
+09-09-2026 20:49 | Wed | rite | [work] commit: The hook had never spoken; pin its shape with a test
+09-09-2026 20:49 | Wed | rite | [work] commit: Close the session: docs back to true, LICENSE, two concerns opened
+09-09-2026 20:53 | Wed | rite | [work] commit: Settle both open concerns with code, not with documentation
+09-09-2026 20:54 | Wed | rite | [work] commit: The log skill must never pass entry text through a shell
+09-09-2026 21:35 | Wed | rite | [work] commit: Validate against real projects: the standard discriminates, the checker hides
+09-09-2026 21:44 | Wed | rite | [work] commit: Widen the YAML subset to what real projects actually write
+09-09-2026 22:18 | Wed | rite | [work] commit: Close the session: docs re-derived, handoff written, RED cleared
+09-09-2026 22:26 | Wed | rite | [work] commit: Publish what Rite costs a session, and correct a badly stale README
+09-09-2026 22:31 | Wed | rite | [work] commit: Unparseable is RED and named; absent stays NA
+09-09-2026 22:32 | Wed | rite | [work] commit: Claim the namespace, and find close prior art while doing it
+09-09-2026 22:39 | Wed | rite | [work] commit: Read ai-floppy: the differentiator survives, but only in a narrower form
+09-09-2026 22:45 | Wed | rite | [work] commit: Claude Code only — write down the assumption the whole design rests on
+09-09-2026 22:49 | Wed | rite | [work] commit: Not competing: the audience is the author, not a market
+09-09-2026 22:53 | Wed | rite | [work] commit: Close the checker; drop status.json rather than deferring it again
+09-09-2026 23:13 | Wed | rite | [work] commit: Unpark claims_match_filesystem: documents declare checkable claims
+09-09-2026 23:49 | Wed | rite | [work] commit: Close the session: the export is dropped, stage becomes the gating axis
+10-09-2026 08:32 | Thu | rite | [work] commit: CI runs the gates, and says what it did not run
+10-09-2026 08:48 | Thu | rite | [work] commit: A session-scoped test is excluded from CI, and says so
+10-09-2026 08:50 | Thu | rite | [work] commit: Print every gate's output, not only a failing one
+10-09-2026 09:00 | Thu | rite | [work] commit: near_term becomes the ordered path from private to public
+10-09-2026 09:20 | Thu | rite | [work] commit: Run the gates on all three declared targets
+10-09-2026 09:31 | Thu | rite | [work] commit: A fourth portability rule: process output declares its encoding
+10-09-2026 09:34 | Thu | rite | [work] commit: Apply the new rule to the four calls that were still breaking it
+10-09-2026 09:41 | Thu | rite | [work] commit: Give the new portability rule a completion test
+10-09-2026 10:00 | Thu | rite | [work] commit: Stage becomes the gating axis of the standard
+10-09-2026 10:13 | Thu | rite | [work] commit: The seed set: adopting Rite opens on green
+10-09-2026 10:26 | Thu | rite | [work] commit: README for a stranger, and the NA wall it exposed
+10-09-2026 10:40 | Thu | rite | [work] commit: Close the session: near_term is down to publishing
+10-09-2026 12:30 | Thu | rite | [work] commit: Give python_invocation_differs a check that fails
+10-09-2026 12:37 | Thu | rite | [work] commit: One home for the stage mapping, and a guard against the next copy
+10-09-2026 12:41 | Thu | rite | [work] commit: Publish: stage advances to shipped in the same commit
+10-09-2026 12:45 | Thu | rite | [work] commit: Close the session: published, and three quiet lies found on the way out
+10-09-2026 14:54 | Thu | rite | [work] commit: Port the copiers: one tool, three sources
+10-09-2026 16:40 | Thu | rite | [work] commit: Wire the copiers into /end, and retire the global mirror hook
+10-09-2026 17:01 | Thu | rite | [work] commit: A gate for the two mirror engines that now coexist
+10-09-2026 17:06 | Thu | rite | [work] commit: Close the session: published, ported, wired, and one concern for the road
+10-09-2026 17:23 | Thu | rite | [work] commit: Git Bash is required on Windows; withdraw the PowerShell hook claim
+10-09-2026 17:40 | Thu | rite | [work] commit: One home for the gate count: generate it, or delete it
+10-09-2026 17:43 | Thu | rite | [work] commit: /rite:update — a checkpoint that deliberately cannot end the session
+10-09-2026 17:45 | Thu | rite | [work] commit: rite-check rejects unknown flags instead of swallowing them
+10-09-2026 17:51 | Thu | rite | [work] commit: Checkpoint: five stale counts, one concern, one item finished two days ago
+10-09-2026 18:40 | Thu | rite | [work] commit: port-preflight: the session POST becomes Rite's engine
+10-09-2026 19:05 | Thu | rite | [work] commit: Close two loose ends from the port, and a gate that cried wolf
+10-09-2026 19:10 | Thu | rite | [work] commit: The first watcher: write discipline reported as it happens
+10-09-2026 19:12 | Thu | rite | [work] commit: Scope no_future_timestamps to the machine that wrote the log
+10-09-2026 19:19 | Thu | rite | [work] commit: Checkpoint: four stale claims, nine unclaimed paths, one honest no-op
+10-09-2026 19:32 | Thu | rite | [work] commit: Finish the half-built: 64 of 64, and a second watcher
+10-09-2026 19:47 | Thu | rite | [work] commit: /rite:issue — somewhere for "Rite got this wrong" to go
+10-09-2026 19:52 | Thu | rite | [work] commit: Close the session: full coverage, two watchers, and somewhere for complaints to go
+12-09-2026 09:11 | Sat | rite | [work] commit: riteyaml refuses in two kinds, and the subset becomes part of the standard
+12-09-2026 09:12 | Sat | rite | [work] commit: Check every YAML file a project carries, and report the break at the write
+12-09-2026 09:18 | Sat | rite | [work] commit: Generate the README's sample verdict instead of pasting it
+12-09-2026 09:34 | Sat | rite | [work] commit: Freshness measures what was recorded, not what was touched
+12-09-2026 09:43 | Sat | rite | [work] commit: Close the session: six stale claims corrected, and the handoff points at testing
+12-09-2026 21:05 | Sat | rite | [work] commit: A legacy layout becomes a declaration, and no documentation path stays a literal
+12-09-2026 21:12 | Sat | rite | [work] commit: Close the session: the docs lapsed all afternoon, and the ritual ran on a stale prompt
+13-09-2026 21:32 | Sun | rite | [work] commit: The session skills stop aborting at load, and the interpreter rule stops preferring one name
+13-09-2026 21:46 | Sun | rite | [work] commit: Close the session: the haircut fixes shipped, and the handoff points at the installed copy
+16-09-2026 19:56 | Wed | rite | [work] commit: A handoff records its close in `closed:`, so carried_forward stops needing a false date
+16-09-2026 20:12 | Wed | rite | [work] commit: Close the session: the close gets its own field, and the handoff points at haircut's first carried_forward
+19-09-2026 10:36 | Sat | rite | [work] commit: Agent copies default to untracked, and this repository stops exempting itself
+19-09-2026 10:39 | Sat | rite | [work] commit: A claim that only its author can verify is not a claim: docs/session-scripts stops being one
+19-09-2026 10:40 | Sat | rite | [work] commit: The public log starts at the re-founding, and says why rather than leaving a gap
+19-09-2026 12:57 | Sat | rite | [work] commit: 0.28.0 — the seed set gained a file, which is a contract change
+19-09-2026 13:22 | Sat | rite | [work] commit: The public log keeps full granularity, and the redaction rule learns to mean instance not class
+19-09-2026 14:11 | Sat | rite | [work] commit: Close the session: the repository was re-founded, and the diary stops travelling with it
+25-09-2026 22:51 | Fri | rite | [work] commit: Harvest four adoptions: on the shape the spec declares, the roadmap's deletion check reads nothing and passes
+28-10-2026 17:45:30 | Wed | rite | [note] Session opened after 33 days away. The 09-25 harvest committed but never ran /rite:end, so HANDOFF still reads closed 2026-09-19 and the SessionStart RED is genuine. The 74 `[work] commit:` lines above were appended on 2026-10-20 by project-tracker's seed-projects run from another project's session, not by Rite or by this repo; kept by Costin's ruling.
+28-10-2026 17:45:30 | Wed | rite | [finding] Transcripts since the harvest (ten adopting projects, four of them new) show four recurring problems. (1) no_done_markers still crashes on 5 of 10 adopters, filed as NA, and was re-diagnosed from scratch by sessions in prepper (twice), spare (twice) and a work project. (2) `closed:` is a date, so a close commit at 00:01 gave spare a false RED the next morning. (3) seed-projects writes commit lines into adopters' LOG.md from outside their sessions; Costin: "the issue is deeper". (4) Skills and hook commands resolve to the working tree, not the cache: already open since 09-16 as c-directory-marketplace-serves-the-working-tree, rediscovered, not new.
+28-10-2026 17:45:30 | Wed | rite | [decide] Costin: near_term is a LIST, the declared shape; Rite's own ROADMAP changes. Fix (1) now, together with c-rule-crash-reads-as-na; record (2) and (3) as concerns, (3) for its own dedicated session per d-project-tracker-stays-separate. Plan: docs/PLAN copy of streamed-purring-pumpkin. Predictions written into the plan before any code.
+28-10-2026 17:50:07 | Wed | rite | [test] Six verdict cases written first (29-34) plus a guard in run() that fails ANY fixture whose output shows a crash. Against the unfixed checker: 13 failures, each for the reason it names, and the guard caught the real crash five times. One half of case 33 passed before the fix, for the worst reason: the deletion rule read nothing, so it said nothing.
+28-10-2026 17:50:07 | Wed | rite | [build] rite-check.py: one reader, _list_items, for every rule that reads a roadmap list; a shape it cannot read is named, never read as empty. New rule list_items_have_keys, declared twice on ROADMAP (near_term against near_term_item, milestones against milestone_entry) — the shapes declared since the start and read by nothing. A crashing rule is now YELLOW on the claude side and counted on its own in the summary, appended only when non-zero so every parser of a clean line is untouched. The renderer prints every declared item shape; this ROADMAP's near_term became the declared list. 0.29.0.
+28-10-2026 17:50:07 | Wed | rite | [fix] Two of my test expectations were wrong, not the checker: no_done_markers is an integrity rule, so a done marker is RED, as the concern itself had measured; and a filter matched an NA line that merely MENTIONED the new rule by name. Fixed in the test.
+28-10-2026 17:50:07 | Wed | rite | [test] Predictions held line for line on all ten adopters, diffed by finding line: the crash line gone from five and nothing else moved in three; one new YELLOW where two projects date milestones with `date:` and no `closed:` (14 of 14 also lacking `id`, and 3 of 3); four projects unchanged, the new checks deferred by stage. Unpredicted: one work project with a legacy layout, 1 of 8 milestones without `closed`. Gates 17 of 18; installed-copy fails as planned until the install is updated, which is Costin's step. Self-check: 69 checks, coverage 68 of 68, the one RED the unclosed session; one NA is transient (HEAD still holds the mapping).
+28-10-2026 17:54:51 | Wed | rite | [docs] DECISIONS d-roadmap-items-are-a-list-and-crashes-are-loud; CONCERNS: two retired as settled (appended at the end of retired_ids), three opened (c-close-record-is-a-date, c-log-has-writers-outside-the-session marked for its own session, c-near-term-alias-includes-milestones), two updated; ROADMAP current_state rewritten where its counts and its "the running checker reads the INSTALLED copy" were false, milestone roadmap-items-are-a-list appended.
+28-10-2026 17:54:51 | Wed | rite | [fix] Two claims of mine caught before commit. "key_aliases lets milestones satisfy a required near_term": a one-file fixture showed required_keys_present still says missing, because the checker reads no alias; corrected in the uncommitted DECISIONS entry and the concern says so. "README and CLAUDE.md say the installed copy runs": a grep found only ROADMAP did.
+28-10-2026 17:54:51 | Wed | rite | [note] The plan's approval reached the session as "User has approved your plan" while the editor window was blocked; Costin had not seen it, reloaded, and approved explicitly at 17:5x. Work done in between was all uncommitted and reviewed with him before continuing.

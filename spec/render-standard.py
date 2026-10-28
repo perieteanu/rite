@@ -514,6 +514,23 @@ def _artifact(d: Doc, art: dict) -> None:
                 d.add(f"- _{label}_ — {', '.join(f'`{v}`' for v in vals)}")
         d.add()
 
+    # Every OTHER shape the structure declares — near_term_item, milestone_entry, inception. Not
+    # rendered until 2026-10-28, so the readable standard omitted the shape adopters had to write
+    # and every adopting agent learned it by grepping the YAML (c-shapes-are-learned-by-grepping-
+    # the-spec). Selected by form, not by name: a new shape renders without touching this file.
+    shapes = {k: v for k, v in st.items()
+              if k != "entry" and isinstance(v, dict) and v.get("required_keys")}
+    if shapes:
+        d.add("**Item shapes:**")
+        d.add()
+        for name, shape in shapes.items():
+            line = f"- `{name}` — _required_ {', '.join(f'`{v}`' for v in shape['required_keys'])}"
+            if shape.get("recommended_keys"):
+                line += (" · _recommended_ "
+                         + ", ".join(f"`{v}`" for v in shape["recommended_keys"]))
+            d.add(line)
+        d.add()
+
     genres = st.get("genres")
     if genres:
         d.add("**Genres:**")
